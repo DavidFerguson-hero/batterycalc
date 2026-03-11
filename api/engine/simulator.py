@@ -86,13 +86,15 @@ def run_simulation(
     cap_kwh: float,
     max_rate_kw: float,
     efficiency: float,
-    days: list[list[float]],    # each inner list = 48 half-hourly kWh values
+    days: list[list[float]],        # each inner list = 48 half-hourly kWh values
     current_rate: float | None = None,
+    current_sc_pd: float = 53.0,    # user's current standing charge in pence/day
 ) -> SimResult | None:
     """
     Run the simulation across all uploaded days and annualise.
 
-    current_rate: the user's existing flat rate (£/kWh). Falls back to IMPLIED_RATE.
+    current_rate:  the user's existing flat rate (£/kWh). Falls back to IMPLIED_RATE.
+    current_sc_pd: the user's current standing charge in pence/day (default 53p).
     Returns None if days is empty.
     """
     if not days:
@@ -102,7 +104,7 @@ def run_simulation(
     n_days = len(days)
     scale = 365.0 / n_days
 
-    sc_current = 0.53 * 365          # assumed current standing charge
+    sc_current = (current_sc_pd / 100.0) * 365   # user-supplied standing charge
     sc_new = tariff.standing_charge * 365
 
     tot_curr = 0.0

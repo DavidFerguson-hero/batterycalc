@@ -24,6 +24,7 @@ def build_opt_matrix(
     selected_cap_kwh: float,
     selected_cost_gbp: float,
     inflation_pct: float = 5.0,
+    current_sc_pd: float = 53.0,
 ) -> dict:
     """
     Run simulation for every tariff in OPT_TARIFF_KEYS × every battery in OPT_BATTERIES.
@@ -48,6 +49,7 @@ def build_opt_matrix(
                 efficiency=efficiency,
                 days=days,
                 current_rate=current_rate,
+                current_sc_pd=current_sc_pd,
             )
             if sim is None:
                 continue

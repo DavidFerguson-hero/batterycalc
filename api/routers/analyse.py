@@ -33,6 +33,7 @@ class RecalculateRequest(BaseModel):
     max_charge_rate_kw: float = Field(3.6, ge=0.5, le=15)
     efficiency_pct: float = Field(90.0, ge=50, le=100)
     inflation_pct: float = Field(5.0, ge=0, le=20)
+    current_sc_pd: float = Field(53.0, ge=0, le=200)   # pence/day
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ def _build_response(
     max_charge_rate_kw: float,
     efficiency_pct: float,
     inflation_pct: float,
+    current_sc_pd: float,
     session_id: str,
 ) -> dict:
     tariff = TARIFFS.get(tariff_key)
@@ -62,6 +64,7 @@ def _build_response(
         efficiency=efficiency,
         days=parse.days,
         current_rate=current_rate,
+        current_sc_pd=current_sc_pd,
     )
     if sim is None:
         raise HTTPException(status_code=422, detail="No usable data in uploaded files.")
@@ -77,6 +80,7 @@ def _build_response(
         selected_cap_kwh=battery_cap_kwh,
         selected_cost_gbp=battery_cost_gbp,
         inflation_pct=inflation_pct,
+        current_sc_pd=current_sc_pd,
     )
 
     # Best tariff (by total saving, for selected battery size)
@@ -112,6 +116,7 @@ def _build_response(
             "max_charge_rate_kw": max_charge_rate_kw,
             "efficiency_pct": efficiency_pct,
             "inflation_pct": inflation_pct,
+            "current_sc_pd": current_sc_pd,
         },
         "financials": {
             "ann_cost_current": round(sim.ann_cost_current, 2),
@@ -220,6 +225,7 @@ async def analyse(
     max_charge_rate_kw: Annotated[float, Form()] = 3.6,
     efficiency_pct: Annotated[float, Form()] = 90.0,
     inflation_pct: Annotated[float, Form()] = 5.0,
+    current_sc_pd: Annotated[float, Form()] = 53.0,
 ):
     if not files:
         raise HTTPException(status_code=400, detail="At least one CSV file is required.")
@@ -254,6 +260,7 @@ async def analyse(
         max_charge_rate_kw=max_charge_rate_kw,
         efficiency_pct=efficiency_pct,
         inflation_pct=inflation_pct,
+        current_sc_pd=current_sc_pd,
         session_id=session_id,
     )
 
@@ -285,5 +292,6 @@ async def recalculate(req: RecalculateRequest):
         max_charge_rate_kw=req.max_charge_rate_kw,
         efficiency_pct=req.efficiency_pct,
         inflation_pct=req.inflation_pct,
+        current_sc_pd=req.current_sc_pd,
         session_id=req.session_id,
     )

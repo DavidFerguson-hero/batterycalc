@@ -297,6 +297,12 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
     </div>
     <div class="divider"></div>
     <div>
+      <div class="ctrl-label"><span>Your Current Standing Charge</span><span class="val" id="sc-val">53p/day</span></div>
+      <input type="range" id="sc-slider" min="20" max="100" step="1" value="53"
+             oninput="document.getElementById('sc-val').textContent=this.value+'p/day';debounceRecalc()">
+      <div class="range-limits"><span>20p</span><span>100p</span></div>
+    </div>
+    <div>
       <div class="ctrl-label"><span>Price Inflation (p.a.)</span><span class="val" id="infl-val">5.0%</span></div>
       <input type="range" id="infl-slider" min="0" max="15" step="0.5" value="5"
              oninput="document.getElementById('infl-val').textContent=parseFloat(this.value).toFixed(1)+'%';debounceRecalc()">
@@ -588,6 +594,7 @@ async function doAnalyse(files) {
   form.append('max_charge_rate_kw', p.maxRateKw);
   form.append('efficiency_pct',     p.effPct);
   form.append('inflation_pct',      p.inflPct);
+  form.append('current_sc_pd',      p.scPd);
   return apiFetch('/api/analyse', { method: 'POST', body: form });
 }
 
@@ -604,6 +611,7 @@ async function doRecalculate() {
       max_charge_rate_kw:  parseFloat(p.maxRateKw),
       efficiency_pct:      parseFloat(p.effPct),
       inflation_pct:       parseFloat(p.inflPct),
+      current_sc_pd:       parseFloat(p.scPd),
     }),
   });
 }
@@ -619,6 +627,7 @@ function getSliderParams() {
     maxRateKw: document.getElementById('rate-slider').value,
     effPct:    document.getElementById('eff-slider').value,
     inflPct:   document.getElementById('infl-slider').value,
+    scPd:      document.getElementById('sc-slider').value,
   };
 }
 
