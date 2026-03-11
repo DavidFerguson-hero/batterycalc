@@ -127,6 +127,10 @@ def _build_response(
             "soc_profile": [round(v, 3) for v in sim.avg_soc_profile],
             "cumulative_savings": pb.cumulative,
             "heatmap": heatmap,
+            "avg_consumption_profile": [
+                round(sum(day[i] for day in parse.days) / len(parse.days), 4)
+                for i in range(48)
+            ],
         },
         "recommendations": {
             "best_tariff_key": best_tariff,
@@ -169,6 +173,8 @@ def _build_heatmap(matrix: dict) -> list[dict]:
             "cells": [
                 {
                     "battery_kwh": r["battery_kwh"],
+                    "battery_label": r["battery_label"],
+                    "battery_cost": r["battery_cost"],
                     "payback_years": r["payback_years"],
                     "total_saving": r["total_saving"],
                     "roi_10yr": r["roi_10yr"],

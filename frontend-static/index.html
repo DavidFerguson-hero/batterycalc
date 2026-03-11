@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Home Battery Storage Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1424;--bg2:#162035;--bg3:#1e2d4a;--bg4:#243558;
+  --accent:#00d4a0;--accent2:#3d8bff;--accent3:#ff6b35;
+  --text:#e0e8f8;--text2:#8fa8cc;--text3:#5c78a0;
+  --border:#253650;--red:#ff4757;--yellow:#ffa502;--green:#00d4a0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+.app-header{
+  background:linear-gradient(135deg,#0a1628 0%,#162240 100%);
+  padding:1.1rem 2rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
+}
+.app-header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+.app-header .subtitle{color:var(--text2);font-size:.82rem;margin-top:.15rem}
+.badge{display:inline-block;background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;padding:.2rem .8rem;font-size:.72rem;color:var(--text2)}
+.header-stat{text-align:right}
+.header-stat .val{font-size:1.4rem;font-weight:700;color:var(--accent);line-height:1}
+.header-stat .lbl{font-size:.72rem;color:var(--text2)}
+.page-layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 60px)}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);
+  padding:1rem;display:flex;flex-direction:column;gap:.9rem;
+  position:sticky;top:0;height:calc(100vh - 60px);overflow-y:auto}
+.sidebar-section{display:flex;flex-direction:column;gap:.5rem}
+.sidebar-label{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--text3);padding-bottom:.35rem;border-bottom:1px solid var(--border)}
+.tariff-info{background:var(--bg3);border-left:3px solid var(--accent2);
+  border-radius:0 6px 6px 0;padding:.5rem .7rem;font-size:.75rem;color:var(--text2);line-height:1.4}
+.tariff-info .supplier{font-weight:600;color:var(--accent2);margin-bottom:.15rem;font-size:.78rem}
+.tariff-modal-link{color:var(--accent2);cursor:pointer;font-size:.72rem;white-space:nowrap;text-decoration:underline}
+.ctrl-label{display:flex;justify-content:space-between;align-items:center;
+  font-size:.78rem;color:var(--text2);margin-bottom:.2rem}
+.ctrl-label .val{background:var(--bg3);border:1px solid var(--border);
+  border-radius:5px;padding:.1rem .45rem;font-size:.78rem;color:var(--accent);font-weight:600}
+select{width:100%;background:var(--bg3);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);padding:.45rem .65rem;font-size:.82rem;
+  outline:none;transition:border-color .2s}
+select:focus{border-color:var(--accent2)}
+select option{background:var(--bg3)}
+input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.15rem 0;height:4px}
+.range-limits{display:flex;justify-content:space-between;font-size:.65rem;color:var(--text3)}
+.main-content{padding:1.25rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem}
+.hidden{display:none!important}
+.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--accent);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.section-sub{font-size:.82rem;color:var(--text2);margin-bottom:.6rem}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.65rem}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:.8rem .9rem}
+.metric .label{font-size:.67rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
+.metric .value{font-size:1.5rem;font-weight:700;line-height:1}
+.metric .sub{font-size:.72rem;color:var(--text2);margin-top:.2rem}
+.metric.highlight{border-color:var(--accent);background:rgba(0,212,160,.07)}
+.metric.highlight .value{color:var(--accent)}
+.metric.warn{border-color:var(--yellow);background:rgba(255,165,2,.06)}
+.metric.warn .value{color:var(--yellow)}
+.metric.danger{border-color:var(--red);background:rgba(255,71,87,.06)}
+.metric.danger .value{color:var(--red)}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.batt-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.batt-table th{padding:.45rem .6rem;text-align:left;color:var(--text2);
+  font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid var(--border)}
+.batt-table td{padding:.5rem .6rem;border-bottom:1px solid rgba(37,54,80,.4)}
+.batt-table tr:last-child td{border-bottom:none}
+.batt-table tr.batt-best td:first-child{border-left:2px solid var(--accent)}
+.batt-table tr.batt-selected{background:rgba(61,139,255,.08)}
+.batt-table tr.batt-selected td:first-child{border-left:2px solid var(--accent2)}
+.batt-table tr.batt-both{background:rgba(0,212,160,.07)}
+.batt-table tr.batt-both td:first-child{border-left:2px solid var(--accent)}
+.tariff-rec-row{display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;
+  border-radius:8px;border:1px solid var(--border);margin-bottom:.45rem;
+  cursor:pointer;transition:background .15s,border-color .15s}
+.tariff-rec-row:hover{background:var(--bg3)}
+.tariff-rec-row:last-child{margin-bottom:0}
+.tariff-rec-row.trr-selected{background:rgba(61,139,255,.08);border-color:var(--accent2)}
+.trr-rank{font-size:1rem;font-weight:700;color:var(--text3);min-width:1.8rem;text-align:center}
+.trr-info{flex:1;min-width:0}
+.trr-name{font-weight:600;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trr-supplier{font-size:.7rem;color:var(--text3);margin-top:.05rem}
+.trr-stats{text-align:right;flex-shrink:0}
+.trr-saving{font-weight:700;font-size:.85rem}
+.trr-payback{font-size:.72rem;color:var(--text2);margin-top:.05rem}
+.badge-best{display:inline-block;background:var(--accent);color:#000;
+  border-radius:10px;padding:.05rem .45rem;font-size:.62rem;font-weight:700;
+  margin-right:.3rem;vertical-align:middle}
+.badge-sel{display:inline-block;background:var(--accent2);color:#fff;
+  border-radius:10px;padding:.05rem .45rem;font-size:.62rem;font-weight:700;
+  margin-right:.3rem;vertical-align:middle}
+.good{color:var(--green);font-weight:600}
+.bad{color:var(--red)}
+.neutral{color:var(--yellow)}
+.na{color:var(--text3)}
+.heatmap-wrap{overflow-x:auto}
+.heatmap-table{border-collapse:separate;border-spacing:3px;font-size:.75rem;min-width:380px}
+.heatmap-table th{padding:.4rem .35rem;color:var(--text2);font-size:.62rem;font-weight:600;
+  text-align:center;white-space:nowrap}
+.heatmap-table th.row-header{text-align:left;min-width:115px}
+.heatmap-table th.hm-col-sel{color:var(--accent2)!important}
+.heatmap-table td{padding:.45rem .3rem;border-radius:6px;text-align:center;font-weight:500;
+  min-width:56px;cursor:pointer;transition:filter .15s;font-size:.68rem;line-height:1.3}
+.heatmap-table td:hover{filter:brightness(1.25)}
+.hm-best{background:rgba(0,212,160,.28);color:#00ffd0;border:2px solid var(--accent)}
+.hm-great{background:rgba(0,212,160,.17);color:#00c896}
+.hm-good{background:rgba(255,165,2,.17);color:#ffb830}
+.hm-poor{background:rgba(255,71,87,.14);color:#ff6b6b}
+.hm-na{background:rgba(37,54,80,.35);color:var(--text3)}
+.hm-current{outline:2px solid var(--accent2);outline-offset:-2px}
+.hm-row-label{text-align:left!important;font-weight:600;color:var(--text)!important;
+  background:var(--bg3)!important;padding:.5rem .8rem!important;border-radius:6px}
+.hm-row-sel{border-left:3px solid var(--accent2)!important}
+.hm-legend{display:flex;gap:.9rem;align-items:center;font-size:.7rem;color:var(--text2);
+  flex-wrap:wrap;margin-bottom:.65rem}
+.hm-swatch{width:13px;height:13px;border-radius:3px;display:inline-block;
+  vertical-align:middle;margin-right:3px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.cmp-table th{padding:.5rem .65rem;text-align:left;color:var(--text2);
+  font-weight:600;font-size:.67rem;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid var(--border)}
+.cmp-table td{padding:.5rem .65rem;border-bottom:1px solid rgba(37,54,80,.45)}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-table tr.highlighted{background:rgba(61,139,255,.07)}
+.cmp-table tr.highlighted td:first-child{border-left:3px solid var(--accent2)}
+.cmp-table tr.highlighted.hl-best{background:rgba(0,212,160,.06)}
+.cmp-table tr.highlighted.hl-best td:first-child{border-left:3px solid var(--accent)}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:2.25rem 1.5rem;
+  text-align:center;cursor:pointer;transition:padding .3s,background .2s;background:var(--bg3)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(0,212,160,.05)}
+.upload-zone .uz-exp{transition:opacity .2s}
+.upload-zone.collapsed .uz-exp{display:none}
+.upload-zone .uz-col{display:none}
+.upload-zone.collapsed .uz-col{display:flex;align-items:center;gap:.65rem;width:100%}
+.upload-zone.collapsed{padding:.6rem 1rem;border-style:solid;border-color:var(--border);
+  display:flex;align-items:center;gap:.65rem;cursor:default;border-radius:8px}
+.upload-zone.collapsed:hover{background:var(--bg3)}
+.upload-icon{font-size:2.2rem;margin-bottom:.6rem}
+.upload-icon-sm{font-size:1.2rem;flex-shrink:0}
+.upload-link{color:var(--accent);text-decoration:underline;cursor:pointer}
+.reupload-btn{margin-left:auto;flex-shrink:0;background:var(--bg);border:1px solid var(--border);
+  color:var(--text2);border-radius:6px;padding:.25rem .7rem;font-size:.72rem;cursor:pointer}
+.reupload-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.upload-hint{margin-top:.75rem;font-size:.72rem;color:var(--text3);
+  background:var(--bg);border-radius:7px;padding:.5rem .9rem;display:inline-block;text-align:left}
+.upload-hint code{color:var(--accent2);font-family:monospace}
+.msg-loading{color:var(--accent2);padding:.6rem .9rem;background:rgba(61,139,255,.1);
+  border-radius:7px;font-size:.82rem;margin-top:.6rem}
+.msg-success{color:var(--green);padding:.6rem .9rem;background:rgba(0,212,160,.08);
+  border-radius:7px;font-size:.82rem;margin-top:.6rem}
+.msg-error{color:var(--red);padding:.6rem .9rem;background:rgba(255,71,87,.08);
+  border-radius:7px;font-size:.82rem;margin-top:.6rem}
+.clear-btn{background:rgba(255,71,87,.07);border:1px solid rgba(255,71,87,.25);
+  color:var(--red);border-radius:7px;padding:.3rem .8rem;font-size:.75rem;font-weight:600;cursor:pointer}
+.clear-btn:hover{background:rgba(255,71,87,.16)}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.6rem}
+.chart-wrap-sm{position:relative;height:160px}
+.chart-wrap-md{position:relative;height:220px}
+.profile-placeholder{text-align:center;padding:1.5rem .5rem;color:var(--text3);font-size:.78rem}
+.profile-placeholder .ico{font-size:1.8rem;margin-bottom:.4rem}
+.text-sm{font-size:.78rem;color:var(--text2)}
+.divider{height:1px;background:var(--border);margin:.2rem 0}
+.page-footer{font-size:.72rem;color:var(--text3);background:var(--bg2);
+  border-top:1px solid var(--border);padding:.7rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.footer-links{display:flex;gap:1.25rem}
+.footer-link{color:var(--accent2);text-decoration:none;font-size:.72rem;cursor:pointer;
+  background:none;border:none;padding:0}
+.footer-link:hover{text-decoration:underline}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+  z-index:1000;align-items:center;justify-content:center;padding:1.5rem}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  max-width:680px;width:100%;max-height:85vh;display:flex;flex-direction:column;
+  box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 1.4rem .9rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-header h2{font-size:1rem;font-weight:700;letter-spacing:-.01em}
+.modal-close{background:none;border:none;color:var(--text3);font-size:1.4rem;cursor:pointer;
+  line-height:1;padding:.1rem .3rem;border-radius:5px}
+.modal-close:hover{color:var(--text);background:var(--bg3)}
+.modal-body{padding:1.2rem 1.4rem;overflow-y:auto;font-size:.83rem;line-height:1.65;color:var(--text2)}
+.modal-body h3{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--accent);margin:1.2rem 0 .45rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)}
+.modal-body h3:first-child{margin-top:0}
+.modal-body p{margin-bottom:.75rem}
+.modal-body p:last-child{margin-bottom:0}
+.modal-body ul{margin:.3rem 0 .75rem 1.2rem}
+.modal-body li{margin-bottom:.35rem}
+.modal-body strong{color:var(--text);font-weight:600}
+.modal-body .mono{font-family:monospace;font-size:.8em;background:var(--bg3);
+  padding:.1rem .35rem;border-radius:4px;color:var(--accent2)}
+.upload-summary-grid{display:contents}
+.upload-summary-grid.has-data #s-upload{display:none}
+.metric-grid-2x2{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+.left-col{display:flex;flex-direction:column;gap:1.25rem}
+.proj-heat-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:1.25rem;align-items:stretch}
+@media(max-width:1200px){.proj-heat-grid{grid-template-columns:1fr}}
+@media(max-width:960px){
+  .page-layout{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto}
+  .rec-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1>🔋 Home Battery Storage Calculator</h1>
+    <div class="subtitle">Upload your half-hourly usage data · find the best tariff &amp; battery size · model your savings</div>
+    <div style="margin-top:.4rem"><span class="badge" id="data-badge">No data loaded — upload your CSV to get started</span></div>
+  </div>
+  <div class="header-stat" id="header-stats" style="display:none">
+    <div class="lbl">Estimated annual consumption</div>
+    <div class="val" id="annual-kwh">—</div>
+    <div class="lbl" id="annual-cost">—</div>
+  </div>
+</header>
+
+<div class="page-layout">
+
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Tariff Selection</div>
+    <select id="tariff-select" onchange="onTariffChange()">
+      <option value="currentFlat">Current Tariff (Standard Variable, ~28p)</option>
+      <optgroup label="─── Time-of-Use Tariffs ───">
+        <option value="octopusGo" selected>Octopus Energy — Octopus Go</option>
+        <option value="intelligentOctopus">Octopus Energy — Intelligent Octopus Go</option>
+        <option value="octopusCosy">Octopus Energy — Octopus Cosy</option>
+        <option value="economy7">Multiple Suppliers — Economy 7</option>
+        <option value="eonNextDrive">E.ON — Next Drive</option>
+        <option value="edfGoElectric">EDF Energy — GoElectric Overnight</option>
+        <option value="edfFreePhase">EDF Energy — FreePhase Static</option>
+        <option value="edfFreePhaseDynamic">EDF Energy — FreePhase Dynamic</option>
+        <option value="scottishPower">Scottish Power — Smart Tariff</option>
+      </optgroup>
+      <optgroup label="─── Flat Rate ───">
+        <option value="britishGasSV">British Gas — Standard Variable</option>
+      </optgroup>
+    </select>
+    <div class="tariff-info">
+      <div class="supplier" id="tariff-supplier"></div>
+      <div id="tariff-desc"></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Consumption &amp; Tariff Profile</div>
+    <div id="profile-placeholder" class="profile-placeholder">
+      <div class="ico">📈</div>
+      Upload data to see your consumption profile
+    </div>
+    <div id="profile-chart-wrap" class="chart-wrap-sm" style="display:none">
+      <canvas id="sidebarProfileChart"></canvas>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Battery Configuration</div>
+    <div>
+      <div class="ctrl-label"><span>Battery Capacity</span><span class="val" id="cap-val">10 kWh</span></div>
+      <input type="range" id="cap-slider" min="3" max="25" step="0.5" value="10"
+             oninput="document.getElementById('cap-val').textContent=this.value+' kWh';suggestCost();debounceRecalc()">
+      <div class="range-limits"><span>3 kWh</span><span>25 kWh</span></div>
+    </div>
+    <div>
+      <div class="ctrl-label"><span>Installed Cost</span><span class="val" id="cost-val">£6,000</span></div>
+      <input type="range" id="cost-slider" min="2000" max="20000" step="500" value="6000"
+             oninput="document.getElementById('cost-val').textContent='£'+Number(this.value).toLocaleString();debounceRecalc()">
+      <div class="range-limits"><span>£2,000</span><span>£20,000</span></div>
+      <div class="text-sm" id="cost-hint" style="margin-top:.25rem;color:var(--text3)"></div>
+    </div>
+    <div>
+      <div class="ctrl-label"><span>Max Charge Rate</span><span class="val" id="rate-val">3.6 kW</span></div>
+      <input type="range" id="rate-slider" min="1" max="8" step="0.1" value="3.6"
+             oninput="document.getElementById('rate-val').textContent=parseFloat(this.value).toFixed(1)+' kW';debounceRecalc()">
+      <div class="range-limits"><span>1 kW</span><span>8 kW</span></div>
+    </div>
+    <div>
+      <div class="ctrl-label"><span>Round-Trip Efficiency</span><span class="val" id="eff-val">90%</span></div>
+      <input type="range" id="eff-slider" min="75" max="98" step="1" value="90"
+             oninput="document.getElementById('eff-val').textContent=this.value+'%';debounceRecalc()">
+      <div class="range-limits"><span>75%</span><span>98%</span></div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <div class="ctrl-label"><span>Price Inflation (p.a.)</span><span class="val" id="infl-val">5.0%</span></div>
+      <input type="range" id="infl-slider" min="0" max="15" step="0.5" value="5"
+             oninput="document.getElementById('infl-val').textContent=parseFloat(this.value).toFixed(1)+'%';debounceRecalc()">
+      <div class="range-limits"><span>0%</span><span>15%</span></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main-content">
+
+<div class="upload-summary-grid" id="upload-summary-wrap">
+  <div class="card hidden" id="s-summary">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+      <div class="section-title" style="margin-bottom:0">Uploaded Data Summary</div>
+      <button class="clear-btn" onclick="clearData()">✕ Clear Data</button>
+    </div>
+    <div class="sum-grid" id="sum-grid"></div>
+    <div class="text-sm" id="sum-note" style="margin-top:.6rem;color:var(--text3)"></div>
+  </div>
+  <div class="card" id="s-upload">
+    <div class="section-title">Upload Your Consumption Data</div>
+    <p class="text-sm" style="margin-bottom:.9rem">
+      Drop half-hourly CSV files exported from your energy supplier.
+      One file per day <em>or</em> a single multi-day file — both work.
+    </p>
+    <div class="upload-zone" id="upload-zone" onclick="onUploadClick(event)">
+      <div class="uz-exp">
+        <div class="upload-icon">📁</div>
+        <div style="font-size:.95rem;font-weight:600;margin-bottom:.35rem">
+          Drop CSV files here or <span class="upload-link">click to browse</span>
+        </div>
+        <div class="text-sm" style="margin-bottom:.1rem">48 rows per day (30-min intervals) · multiple files supported</div>
+        <div class="upload-hint">
+          Expected columns: <code>Timestamp</code>, <code>Electricity consumption (kWh)</code>,
+          optional <code>Electricity cost (£)</code>
+        </div>
+      </div>
+      <div class="uz-col">
+        <span class="upload-icon-sm">📂</span>
+        <span id="uz-label" style="font-size:.82rem;color:var(--text2)">Data loaded</span>
+        <button class="reupload-btn" onclick="document.getElementById('csv-input').click()">↑ Upload different files</button>
+      </div>
+      <input type="file" id="csv-input" accept=".csv" multiple style="display:none">
+    </div>
+    <div id="upload-status"></div>
+  </div>
+</div>
+
+<div class="proj-heat-grid hidden" id="s-proj-heat">
+  <div class="left-col">
+    <div class="card" id="s-financial">
+      <div class="section-title">Financial Summary
+        <span style="font-size:.68rem;text-transform:none;letter-spacing:0;
+          color:var(--text3);font-weight:400;margin-left:.5rem">(sidebar tariff &amp; battery)</span>
+      </div>
+      <div class="metric-grid-2x2">
+        <div class="metric">
+          <div class="label">Current Annual Cost</div>
+          <div class="value" id="m-current">—</div>
+          <div class="sub">existing tariff</div>
+        </div>
+        <div class="metric highlight">
+          <div class="label">New Annual Cost</div>
+          <div class="value" id="m-combined">—</div>
+          <div class="sub">tariff + battery</div>
+        </div>
+        <div class="metric highlight">
+          <div class="label">Total Saving vs Today</div>
+          <div class="value" id="m-total-saving">—</div>
+          <div class="sub">tariff switch + battery</div>
+        </div>
+        <div class="metric" id="m-payback-card">
+          <div class="label">Payback Period</div>
+          <div class="value" id="m-payback">—</div>
+          <div class="sub" id="m-payback-sub">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="s-projection">
+      <div class="section-title">Cumulative Savings Projection (10 Years)</div>
+      <div class="chart-wrap-md"><canvas id="projChart"></canvas></div>
+      <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
+        Uses selected inflation rate. Dashed line = battery installed cost.
+      </div>
+    </div>
+  </div>
+  <div class="card" id="s-heatmap">
+    <div class="section-title">Payback Period Heatmap</div>
+    <div class="hm-legend">
+      <span><span class="hm-swatch hm-best"></span>≤ 7 yrs</span>
+      <span><span class="hm-swatch hm-great"></span>7–10 yrs</span>
+      <span><span class="hm-swatch hm-good"></span>10–15 yrs</span>
+      <span><span class="hm-swatch hm-poor"></span>&gt;15 yrs</span>
+      <span><span class="hm-swatch hm-na"></span>No saving</span>
+    </div>
+    <div class="heatmap-wrap"><table class="heatmap-table" id="heatmap-table"></table></div>
+    <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
+      ⭐ best ROI overall · outlined = current selection · click any cell to apply.
+    </div>
+  </div>
+</div>
+
+<div class="rec-grid hidden" id="s-rec">
+  <div class="card">
+    <div class="section-title">Battery Size Recommendation</div>
+    <div class="section-sub" id="batt-rec-sub">For the selected tariff</div>
+    <table class="batt-table">
+      <thead><tr>
+        <th>Size</th><th>Cost</th><th>Saving vs Today/yr</th><th>Payback</th><th>10-yr ROI</th>
+      </tr></thead>
+      <tbody id="batt-rec-body"></tbody>
+    </table>
+    <div class="text-sm" style="margin-top:.6rem;color:var(--text3)">
+      ⭐ Best = highest 10-year ROI &nbsp;·&nbsp; ← = current slider selection. Click any row to apply.
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Tariff Recommendation</div>
+    <div class="section-sub" id="tariff-rec-sub">For the selected battery size</div>
+    <div id="tariff-rec-body"></div>
+    <div class="text-sm" style="margin-top:.4rem;color:var(--text3)">Click any row to select that tariff.</div>
+  </div>
+</div>
+
+<div class="card hidden" id="s-table">
+  <div class="section-title">All Combinations Ranked by 10-Year ROI</div>
+  <div style="overflow-x:auto">
+    <table class="cmp-table">
+      <thead><tr>
+        <th>#</th><th>Tariff</th><th>Battery</th><th>Cost</th>
+        <th>Saving vs Today/yr</th><th>Battery-Only Saving/yr</th>
+        <th>Payback</th><th>10-yr ROI</th>
+      </tr></thead>
+      <tbody id="full-table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+</div>
+
+<footer class="page-footer">
+  <span>Home Battery Storage Calculator · rates based on Q1 2026 published tariffs</span>
+  <div class="footer-links">
+    <button class="footer-link" onclick="openModal('modal-methodology')">How we calculate your recommendation</button>
+    <button class="footer-link" onclick="openModal('modal-legal')">Legal disclaimer</button>
+  </div>
+</footer>
+
+<!-- METHODOLOGY MODAL -->
+<div class="modal-overlay" id="modal-methodology" onclick="closeModalOnBackdrop(event,this)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>How We Calculate Your Recommendation</h2>
+      <button class="modal-close" onclick="closeModal('modal-methodology')">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>Your Data</h3>
+      <p>You upload one or more CSV files containing half-hourly electricity consumption readings (48 rows per day). Your data is sent securely to our server for analysis and is not stored beyond your session.</p>
+      <h3>Tariff Modelling</h3>
+      <p>Each tariff is defined by a <strong>rate for every half-hour slot</strong> across the day. Time-of-Use tariffs have a cheap overnight window and a more expensive daytime or peak rate. Standing charges are included in all annual cost figures.</p>
+      <h3>Battery Simulation</h3>
+      <p>For each day, the server runs a half-hourly simulation: the battery charges during cheap slots (subject to your charge rate and capacity) and discharges during expensive slots to offset consumption. Round-trip efficiency (default 90%) is applied on the charging side.</p>
+      <h3>Payback &amp; ROI</h3>
+      <p>Payback is calculated by compounding the annual saving at your chosen inflation rate until cumulative savings equal the installed cost. Ten-year ROI = (annual saving × 10) − installed cost.</p>
+      <h3>Limitations</h3>
+      <ul>
+        <li>The simulation resets battery state each day — no carry-over between days.</li>
+        <li>Battery degradation (~2%/yr) is not modelled.</li>
+        <li>Seasonal variation: your uploaded period is assumed representative of the full year.</li>
+        <li>Solar generation and export tariffs are not included.</li>
+        <li>Tariff rates are indicative Q1 2026 published rates.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- FREEPHASE DYNAMIC MODAL -->
+<div class="modal-overlay" id="modal-freephase-dynamic" onclick="closeModalOnBackdrop(event,this)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>EDF FreePhase Dynamic — How It Works</h2>
+      <button class="modal-close" onclick="closeModal('modal-freephase-dynamic')">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>What Makes It Dynamic?</h3>
+      <p>Unlike FreePhase Static, FreePhase Dynamic sets new unit rates <strong>every day</strong> based on day-ahead wholesale electricity prices. The three-band structure (Green/Amber/Red) stays fixed; only the pence-per-kWh values change.</p>
+      <h3>How This Calculator Models It</h3>
+      <p>Because rates vary daily, this calculator uses <strong>representative recent averages</strong>: Green ~3.9p, Amber ~26.2p, Red ~43.1p. At 3.9p overnight the battery earns a healthy margin discharging into every non-green hour.</p>
+      <h3>Why Results Could Differ</h3>
+      <p>On low-price days the Green rate can approach zero (making charging nearly free). On high-demand days, Red can spike to the 75p cap. A smart battery that adjusts to day-ahead prices could capture significantly more value.</p>
+    </div>
+  </div>
+</div>
+
+<!-- LEGAL MODAL -->
+<div class="modal-overlay" id="modal-legal" onclick="closeModalOnBackdrop(event,this)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Legal Disclaimer</h2>
+      <button class="modal-close" onclick="closeModal('modal-legal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>For Information Only</h3>
+      <p>This tool is provided for general information and illustrative purposes only. Nothing contained herein constitutes financial, investment, legal, or energy advice.</p>
+      <h3>No Warranty on Accuracy</h3>
+      <p>Tariff rates and battery costs are indicative figures based on publicly available information (Q1 2026). <strong>Always verify current rates directly with your energy supplier</strong> before making any decision.</p>
+      <h3>Actual Results May Differ</h3>
+      <p>Modelled savings are estimates. Actual results will depend on future tariff changes, battery degradation, changes in consumption, installation costs, and other factors.</p>
+      <h3>No Liability</h3>
+      <p>To the fullest extent permitted by law, the creators accept no liability for any loss arising from use of or reliance on this calculator.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG — set API_BASE to your Railway URL before deploying
+// ============================================================
+const API_BASE = '';  // e.g. 'https://batterycalc-api.railway.app'
+
+// ============================================================
+// STATE
+// ============================================================
+let sessionId    = null;
+let tariffMeta   = {};   // key → {name, supplier, description, color, slot_rates_pence, ...}
+let optBatteries = [];   // [{kwh, cost, label}]
+let defaultCosts = {};   // '10' → 6000 (string keys from JSON)
+let lastResult   = null;
+let _debounce    = null;
+
+const SLOT_LABELS = Array.from({length:48}, (_, i) => {
+  const h = String(Math.floor(i/2)).padStart(2,'0');
+  return `${h}:${i%2===0?'00':'30'}`;
+});
+
+// Charts
+let sidebarProfileChart = null;
+let projChart           = null;
+
+// ============================================================
+// API CALLS
+// ============================================================
+async function apiFetch(path, init) {
+  const res = await fetch(API_BASE + path, init);
+  if (!res.ok) {
+    const body = await res.text();
+    let msg = body;
+    try { msg = JSON.parse(body).detail || body; } catch(e) {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+async function loadMeta() {
+  try {
+    const [tariffs, batteries] = await Promise.all([
+      apiFetch('/api/tariffs'),
+      apiFetch('/api/batteries'),
+    ]);
+    tariffMeta   = Object.fromEntries(tariffs.map(t => [t.key, t]));
+    optBatteries = batteries.standard_sizes;
+    defaultCosts = batteries.default_costs;
+    updateTariffInfo();
+  } catch(e) {
+    console.warn('Could not load metadata from API:', e.message);
+  }
+}
+
+async function doAnalyse(files) {
+  const form = new FormData();
+  for (const f of files) form.append('files', f);
+  const p = getSliderParams();
+  form.append('tariff_key',         p.tariffKey);
+  form.append('battery_cap_kwh',    p.capKwh);
+  form.append('battery_cost_gbp',   p.costGbp);
+  form.append('max_charge_rate_kw', p.maxRateKw);
+  form.append('efficiency_pct',     p.effPct);
+  form.append('inflation_pct',      p.inflPct);
+  return apiFetch('/api/analyse', { method: 'POST', body: form });
+}
+
+async function doRecalculate() {
+  const p = getSliderParams();
+  return apiFetch('/api/recalculate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      session_id:          sessionId,
+      tariff_key:          p.tariffKey,
+      battery_cap_kwh:     parseFloat(p.capKwh),
+      battery_cost_gbp:    parseFloat(p.costGbp),
+      max_charge_rate_kw:  parseFloat(p.maxRateKw),
+      efficiency_pct:      parseFloat(p.effPct),
+      inflation_pct:       parseFloat(p.inflPct),
+    }),
+  });
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function getSliderParams() {
+  return {
+    tariffKey: document.getElementById('tariff-select').value,
+    capKwh:    document.getElementById('cap-slider').value,
+    costGbp:   document.getElementById('cost-slider').value,
+    maxRateKw: document.getElementById('rate-slider').value,
+    effPct:    document.getElementById('eff-slider').value,
+    inflPct:   document.getElementById('infl-slider').value,
+  };
+}
+
+function nearestBattKwh(kwh) {
+  const sizes = optBatteries.length
+    ? optBatteries.map(b => b.kwh)
+    : [5, 7.5, 10, 13.5, 15, 20];
+  return sizes.sort((a, b) => Math.abs(a - kwh) - Math.abs(b - kwh))[0];
+}
+
+function suggestCost() {
+  const kwh  = parseFloat(document.getElementById('cap-slider').value);
+  const keys = Object.keys(defaultCosts).map(Number);
+  if (!keys.length) return;
+  const near = keys.sort((a, b) => Math.abs(a-kwh) - Math.abs(b-kwh))[0];
+  const sug  = defaultCosts[String(near)] || defaultCosts[near];
+  if (!sug) return;
+  document.getElementById('cost-slider').value     = sug;
+  document.getElementById('cost-val').textContent  = '£' + sug.toLocaleString();
+  document.getElementById('cost-hint').textContent = `Typical for ${near} kWh: ~£${sug.toLocaleString()}`;
+}
+
+function heatmapClass(years) {
+  if (years === null || years <= 0) return 'hm-na';
+  if (years <= 7)  return 'hm-best';
+  if (years <= 10) return 'hm-great';
+  if (years <= 15) return 'hm-good';
+  return 'hm-poor';
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('upload-status');
+  el.className = type==='loading' ? 'msg-loading' : type==='success' ? 'msg-success' : type==='error' ? 'msg-error' : '';
+  el.innerHTML = msg;
+}
+
+function debounceRecalc() {
+  clearTimeout(_debounce);
+  _debounce = setTimeout(() => { if (sessionId) runRecalculate(); }, 400);
+}
+
+async function runRecalculate() {
+  try {
+    const data = await doRecalculate();
+    lastResult = data;
+    renderResult(data);
+  } catch(e) {
+    if (e.message.includes('Session not found')) {
+      setStatus('⚠️ Session expired — please re-upload your CSV files.', 'error');
+      clearData();
+    } else {
+      setStatus('❌ ' + e.message, 'error');
+    }
+  }
+}
+
+// ============================================================
+// MASTER RENDER — drives all UI sections from API response
+// ============================================================
+function renderResult(data) {
+  updateSidebarProfile(data);
+  updateFinancialSummary(data);
+  updateProjection(data);
+  updateHeatmap(data);
+  updateBatteryRec(data);
+  updateTariffRec(data);
+  updateRankedTable(data);
+}
+
+// ============================================================
+// TARIFF INFO (sidebar — uses local tariffMeta, no API call)
+// ============================================================
+function updateTariffInfo() {
+  const k = document.getElementById('tariff-select').value;
+  const t = tariffMeta[k];
+  if (!t) return;
+  document.getElementById('tariff-supplier').textContent = t.supplier || '';
+  document.getElementById('tariff-desc').innerHTML = t.description || '';
+}
+
+function onTariffChange() {
+  updateTariffInfo();
+  if (sessionId) runRecalculate();
+}
+
+// ============================================================
+// SIDEBAR PROFILE CHART
+// ============================================================
+function initSidebarProfileChart() {
+  if (sidebarProfileChart) return;
+  sidebarProfileChart = new Chart(document.getElementById('sidebarProfileChart'), {
+    type: 'line',
+    data: { labels: SLOT_LABELS, datasets: [
+      {label:'Avg kWh', data:[], borderColor:'#3d8bff', backgroundColor:'rgba(61,139,255,.15)',
+       fill:true, tension:.35, pointRadius:0, yAxisID:'y'},
+      {label:'p/kWh',   data:[], borderColor:'#ff6b35', backgroundColor:'rgba(255,107,53,.07)',
+       fill:true, tension:.1,  pointRadius:0, yAxisID:'y2'},
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#5c78a0',font:{size:8},maxTicksLimit:6},grid:{color:'rgba(37,54,80,.4)'}},
+        y:{ticks:{color:'#5c78a0',font:{size:9}},grid:{color:'rgba(37,54,80,.4)'},
+           title:{display:true,text:'kWh',color:'#5c78a0',font:{size:9}}},
+        y2:{position:'right',ticks:{color:'#ff6b35',font:{size:9},callback:v=>v.toFixed(0)+'p'},
+            grid:{display:false}},
+      },
+    },
+  });
+}
+
+function updateSidebarProfile(data) {
+  if (!sidebarProfileChart) return;
+  const tariffKey = data.selected.tariff_key;
+  const meta = tariffMeta[tariffKey];
+  const avgKwh = data.charts.avg_consumption_profile || [];
+  const rates  = meta ? meta.slot_rates_pence : [];
+  sidebarProfileChart.data.datasets[0].data = avgKwh;
+  sidebarProfileChart.data.datasets[1].data = rates;
+  sidebarProfileChart.update('none');
+}
+
+// ============================================================
+// FINANCIAL SUMMARY
+// ============================================================
+function updateFinancialSummary(data) {
+  const f = data.financials;
+  const costGbp = parseFloat(document.getElementById('cost-slider').value);
+  const fmt = v => '£' + Math.round(v).toLocaleString();
+
+  document.getElementById('m-current').textContent  = fmt(f.ann_cost_current);
+  document.getElementById('m-combined').textContent = fmt(f.ann_cost_with_battery);
+
+  const ts = f.total_saving;
+  const te = document.getElementById('m-total-saving');
+  te.textContent = ts >= 0 ? fmt(ts) : '-£' + Math.round(-ts).toLocaleString();
+  te.style.color = ts > 0 ? 'var(--green)' : 'var(--red)';
+
+  const years = f.payback_years;
+  const pe = document.getElementById('m-payback');
+  const ps = document.getElementById('m-payback-sub');
+  const pc = document.getElementById('m-payback-card');
+  if (years === null) {
+    pe.textContent='N/A'; ps.textContent='No saving'; pc.className='metric warn';
+  } else if (years <= 7) {
+    pe.textContent=years.toFixed(1)+' yrs'; ps.textContent='Excellent'; pc.className='metric highlight';
+  } else if (years <= 10) {
+    pe.textContent=years.toFixed(1)+' yrs'; ps.textContent='Good return'; pc.className='metric highlight';
+  } else if (years <= 15) {
+    pe.textContent=years.toFixed(1)+' yrs'; ps.textContent='Reasonable'; pc.className='metric warn';
+  } else {
+    pe.textContent=years.toFixed(1)+' yrs'; ps.textContent='Long payback'; pc.className='metric danger';
+  }
+}
+
+// ============================================================
+// PROJECTION CHART
+// ============================================================
+function initProjectionChart() {
+  if (projChart) return;
+  projChart = new Chart(document.getElementById('projChart'), {
+    type: 'line',
+    data: { labels: Array.from({length:10},(_,i)=>`Yr ${i+1}`), datasets: [
+      {label:'Cumulative saving', data:[], borderColor:'#00d4a0',
+       backgroundColor:'rgba(0,212,160,.12)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#00d4a0'},
+      {label:'Battery cost', data:[], borderColor:'#ff6b35', borderDash:[6,4], borderWidth:2, pointRadius:0, fill:false},
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8fa8cc',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#5c78a0',font:{size:10}},grid:{color:'rgba(37,54,80,.4)'}},
+        y:{ticks:{color:'#5c78a0',font:{size:10},callback:v=>'£'+v.toFixed(0)},grid:{color:'rgba(37,54,80,.4)'}},
+      },
+    },
+  });
+}
+
+function updateProjection(data) {
+  if (!projChart) return;
+  const costGbp = parseFloat(document.getElementById('cost-slider').value);
+  projChart.data.datasets[0].data = (data.charts.cumulative_savings || []).slice(0, 10);
+  projChart.data.datasets[1].data = new Array(10).fill(costGbp);
+  projChart.update('none');
+}
+
+// ============================================================
+// HEATMAP
+// ============================================================
+function updateHeatmap(data) {
+  const heatmap   = data.charts.heatmap || [];
+  const tariffKey = data.selected.tariff_key;
+  const capKwh    = parseFloat(document.getElementById('cap-slider').value);
+  const nearestKwh = nearestBattKwh(capKwh);
+
+  // Find overall best cell by roi_10yr
+  const allCells = heatmap.flatMap(row =>
+    row.cells.map(c => ({...c, tariff_key: row.tariff_key}))
+  );
+  const validCells = allCells.filter(c => c.total_saving > 0 && c.payback_years !== null);
+  const best = validCells.sort((a, b) => b.roi_10yr - a.roi_10yr)[0];
+
+  const battSizes = heatmap[0] ? heatmap[0].cells.map(c => c.battery_kwh) : [];
+
+  const table = document.getElementById('heatmap-table');
+  let html = '<thead><tr><th class="row-header">Tariff</th>';
+  for (const kwh of battSizes)
+    html += `<th${kwh === nearestKwh ? ' class="hm-col-sel"' : ''}>${kwh} kWh</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (const row of heatmap) {
+    const isTariffSel = row.tariff_key === tariffKey;
+    html += `<tr><td class="hm-row-label${isTariffSel ? ' hm-row-sel' : ''}">${row.tariff_name}</td>`;
+    for (const cell of row.cells) {
+      const cls    = cell.total_saving <= 0 ? 'hm-na' : heatmapClass(cell.payback_years);
+      const isBest = best && row.tariff_key === best.tariff_key && cell.battery_kwh === best.battery_kwh;
+      const isCurr = isTariffSel && cell.battery_kwh === nearestKwh;
+      const pb     = cell.total_saving > 0 && cell.payback_years !== null
+                     ? cell.payback_years.toFixed(1) + 'yr' : '—';
+      const sav    = cell.total_saving > 0
+                     ? '+£' + Math.round(cell.total_saving).toLocaleString() : 'No saving';
+      let extraCls = '';
+      if (isBest)          extraCls += ' hm-best';
+      if (isCurr && !isBest) extraCls += ' hm-current';
+      html += `<td class="${cls}${extraCls}"
+        onclick="applyCombo('${row.tariff_key}',${cell.battery_kwh},${cell.battery_cost})"
+        title="${row.tariff_name} + ${cell.battery_kwh} kWh — click to apply">
+        <div style="font-weight:700">${pb}${isBest?' ⭐':isCurr?' ←':''}</div>
+        <div style="font-size:.67rem;opacity:.85">${sav}</div>
+      </td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ============================================================
+// BATTERY RECOMMENDATION
+// ============================================================
+function updateBatteryRec(data) {
+  const rows = data.recommendations.battery_ranking || [];
+  const capKwh = parseFloat(document.getElementById('cap-slider').value);
+  const nearestKwh = nearestBattKwh(capKwh);
+  const byRoi = [...rows].sort((a, b) => b.roi_10yr - a.roi_10yr);
+  const bestKwh = byRoi[0] ? byRoi[0].battery_kwh : null;
+
+  document.getElementById('batt-rec-sub').textContent = `For ${data.selected.tariff_name}`;
+
+  const tbody = document.getElementById('batt-rec-body');
+  tbody.innerHTML = '';
+  const inOrder = [...rows].sort((a, b) => a.battery_kwh - b.battery_kwh);
+  for (const r of inOrder) {
+    const isBest    = r.battery_kwh === bestKwh;
+    const isNearest = r.battery_kwh === nearestKwh;
+    const tr = document.createElement('tr');
+    if (isBest && isNearest) tr.className = 'batt-both';
+    else if (isBest)         tr.className = 'batt-best';
+    else if (isNearest)      tr.className = 'batt-selected';
+
+    const sv    = r.total_saving;
+    const svCls = sv > 0 ? 'good' : 'bad';
+    const pb    = r.payback_years !== null ? r.payback_years.toFixed(1) + 'yr' : 'N/A';
+    const pbCls = r.payback_years === null || r.payback_years > 15 ? 'bad'
+                  : r.payback_years <= 10 ? 'good' : 'neutral';
+    const roiCls = r.roi_10yr > 0 ? 'good' : 'bad';
+
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => applyCombo(data.selected.tariff_key, r.battery_kwh, r.battery_cost);
+    tr.innerHTML = `
+      <td>${isBest ? '<span class="badge-best">⭐ Best</span>' : ''}
+          ${isNearest && !isBest ? '<span class="badge-sel">← Now</span>' : ''}
+          ${isBest && isNearest  ? '<span class="badge-sel">← Now</span>' : ''}
+          <strong>${r.battery_label}</strong></td>
+      <td>£${r.battery_cost.toLocaleString()}</td>
+      <td class="${svCls}">${sv>0?'+':''}£${Math.round(sv).toLocaleString()}/yr</td>
+      <td class="${pbCls}">${pb}</td>
+      <td class="${roiCls}">${r.roi_10yr>0?'+':''}£${Math.round(r.roi_10yr).toLocaleString()}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// ============================================================
+// TARIFF RECOMMENDATION
+// ============================================================
+function updateTariffRec(data) {
+  const rows = data.recommendations.tariff_ranking || [];
+  const capKwh = parseFloat(document.getElementById('cap-slider').value);
+  const nearestKwh = nearestBattKwh(capKwh);
+  const selectedKey = data.selected.tariff_key;
+
+  document.getElementById('tariff-rec-sub').textContent =
+    `For ${nearestKwh} kWh battery${Math.abs(capKwh - nearestKwh) > 0.01 ? ' (nearest standard size)' : ''}`;
+
+  const container = document.getElementById('tariff-rec-body');
+  container.innerHTML = '';
+  rows.forEach((r, idx) => {
+    const isBest = idx === 0;
+    const isSel  = r.tariff_key === selectedKey;
+    const sv     = r.total_saving;
+    const svCls  = sv > 0 ? 'good' : 'bad';
+    const pb     = r.payback_years !== null
+                   ? r.payback_years.toFixed(1) + ' yr payback' : 'No saving';
+    const pbCls  = r.payback_years === null || r.payback_years > 15 ? 'bad'
+                   : r.payback_years <= 10 ? 'good' : 'neutral';
+    const supplier = (tariffMeta[r.tariff_key] || {}).supplier || '';
+
+    const div = document.createElement('div');
+    div.className = 'tariff-rec-row' + (isSel ? ' trr-selected' : '');
+    div.onclick = () => {
+      document.getElementById('tariff-select').value = r.tariff_key;
+      onTariffChange();
+    };
+    div.innerHTML = `
+      <div class="trr-rank" style="color:${isBest?'var(--accent)':'var(--text3)'}">${idx+1}</div>
+      <div class="trr-info">
+        <div class="trr-name">
+          ${isBest ? '<span class="badge-best">⭐ Best</span>' : ''}
+          ${isSel  ? '<span class="badge-sel">Selected</span>' : ''}
+          ${r.tariff_name}
+        </div>
+        <div class="trr-supplier">${supplier}</div>
+      </div>
+      <div class="trr-stats">
+        <div class="trr-saving ${svCls}">${sv>0?'+':''}£${Math.round(sv).toLocaleString()}/yr</div>
+        <div class="trr-payback ${pbCls}">${pb}</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+// FULL RANKED TABLE
+// ============================================================
+function updateRankedTable(data) {
+  const ranked = data.all_combinations || [];
+  const tariffKey  = data.selected.tariff_key;
+  const capKwh     = parseFloat(document.getElementById('cap-slider').value);
+  const nearestKwh = nearestBattKwh(capKwh);
+
+  const tbody = document.getElementById('full-table-body');
+  tbody.innerHTML = '';
+  ranked.forEach((r, idx) => {
+    const isBest = idx === 0 && r.total_saving > 0;
+    const isSel  = r.tariff_key === tariffKey && r.battery_kwh === nearestKwh;
+    const tr = document.createElement('tr');
+    if (isBest)     tr.className = 'highlighted hl-best';
+    else if (isSel) tr.className = 'highlighted';
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => applyCombo(r.tariff_key, r.battery_kwh, r.battery_cost);
+    const svCls  = r.total_saving > 0 ? 'good' : 'bad';
+    const pbCls  = r.payback_years === null || r.payback_years > 15 ? 'bad'
+                   : r.payback_years <= 10 ? 'good' : 'neutral';
+    const roiCls = r.roi_10yr > 0 ? 'good' : 'bad';
+    tr.innerHTML = `
+      <td style="color:var(--text3)">${idx+1}</td>
+      <td>${isBest?'<span class="badge-best">⭐</span> ':''}${r.tariff_name}</td>
+      <td>${r.battery_label}</td>
+      <td>£${r.battery_cost.toLocaleString()}</td>
+      <td class="${svCls}">${r.total_saving>0?'+':''}£${Math.round(r.total_saving).toLocaleString()}/yr</td>
+      <td class="${(r.saving_battery_only||0)>0?'good':'bad'}">${(r.saving_battery_only||0)>0?'+':''}£${Math.round(r.saving_battery_only||0).toLocaleString()}/yr</td>
+      <td class="${pbCls}">${r.payback_years!==null?r.payback_years.toFixed(1)+' yrs':'N/A'}</td>
+      <td class="${roiCls}">${r.roi_10yr>0?'+':''}£${Math.round(r.roi_10yr).toLocaleString()}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ============================================================
+// DATA SUMMARY (driven by API response)
+// ============================================================
+function showDataSummary(data) {
+  const s = data.summary;
+  const rate    = s.inferred_rate_pence !== null ? s.inferred_rate_pence / 100 : 0.2816;
+  const hasCost = s.inferred_rate_pence !== null;
+  const annBill = data.financials.ann_cost_current;
+
+  document.getElementById('sum-grid').innerHTML = `
+    <div class="metric"><div class="label">Days Loaded</div><div class="value">${s.days_analysed}</div><div class="sub">of data</div></div>
+    <div class="metric"><div class="label">Daily Average</div><div class="value">${s.daily_avg_kwh.toFixed(1)}</div><div class="sub">kWh/day</div></div>
+    <div class="metric"><div class="label">Annual Estimate</div><div class="value">${Math.round(s.annual_kwh_estimate).toLocaleString()}</div><div class="sub">kWh/year</div></div>
+    <div class="metric ${hasCost?'highlight':''}">
+      <div class="label">Current Unit Rate</div>
+      <div class="value">${(rate*100).toFixed(1)}p</div>
+      <div class="sub">${hasCost?'inferred from data':'default SV rate'}</div>
+    </div>
+    <div class="metric"><div class="label">Est. Annual Bill</div><div class="value">£${Math.round(annBill).toLocaleString()}</div><div class="sub">incl. standing charge</div></div>`;
+
+  document.getElementById('sum-note').textContent = hasCost
+    ? `Unit rate inferred from cost column: ${(rate*100).toFixed(2)}p/kWh.`
+    : `No cost column — using standard variable default (${(rate*100).toFixed(2)}p/kWh) as baseline.`;
+
+  document.getElementById('header-stats').style.display = '';
+  document.getElementById('annual-kwh').textContent   = Math.round(s.annual_kwh_estimate).toLocaleString() + ' kWh/yr';
+  document.getElementById('annual-cost').textContent  = 'Est. bill: £' + Math.round(annBill).toLocaleString() + '/yr';
+  document.getElementById('data-badge').textContent   = `${s.days_analysed} days uploaded · ${(rate*100).toFixed(2)}p/kWh`;
+}
+
+// ============================================================
+// APPLY COMBO (heatmap / table click)
+// ============================================================
+function applyCombo(tariffKey, capKwh, cost) {
+  document.getElementById('tariff-select').value   = tariffKey;
+  document.getElementById('cap-slider').value      = capKwh;
+  document.getElementById('cap-val').textContent   = capKwh + ' kWh';
+  document.getElementById('cost-slider').value     = cost;
+  document.getElementById('cost-val').textContent  = '£' + cost.toLocaleString();
+  document.getElementById('cost-hint').textContent = '';
+  updateTariffInfo();
+  if (sessionId) runRecalculate();
+}
+
+// ============================================================
+// UPLOAD HANDLERS
+// ============================================================
+const uploadZone = document.getElementById('upload-zone');
+const csvInput   = document.getElementById('csv-input');
+
+function onUploadClick(e) {
+  if (!uploadZone.classList.contains('collapsed')) csvInput.click();
+}
+uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+csvInput.addEventListener('change', e => { if (e.target.files.length) handleFiles(Array.from(e.target.files)); });
+
+async function handleFiles(files) {
+  const csvFiles = files.filter(f => f.name.toLowerCase().endsWith('.csv'));
+  if (!csvFiles.length) { setStatus('No .csv files found.', 'error'); return; }
+
+  setStatus(`⏳ Uploading ${csvFiles.length} file${csvFiles.length > 1 ? 's' : ''} — analysing on server…`, 'loading');
+
+  try {
+    const data = await doAnalyse(csvFiles);
+    sessionId  = data.session_id;
+    lastResult = data;
+
+    setStatus(`✅ <strong>${data.summary.days_analysed} day${data.summary.days_analysed > 1 ? 's' : ''}</strong> analysed.`, 'success');
+    uploadZone.classList.add('collapsed');
+    document.getElementById('uz-label').textContent =
+      `${data.summary.days_analysed} days loaded`;
+
+    showDataSummary(data);
+    showAllSections();
+    initProjectionChart();
+    initSidebarProfileChart();
+    document.getElementById('profile-placeholder').style.display = 'none';
+    document.getElementById('profile-chart-wrap').style.display  = '';
+    renderResult(data);
+  } catch(e) {
+    setStatus('❌ ' + e.message, 'error');
+  }
+}
+
+function showAllSections() {
+  document.getElementById('upload-summary-wrap').classList.add('has-data');
+  ['s-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+    document.getElementById(id).classList.remove('hidden');
+  });
+}
+
+function clearData() {
+  sessionId = null; lastResult = null;
+  setStatus('', '');
+  document.getElementById('upload-status').className = '';
+  csvInput.value = '';
+  uploadZone.classList.remove('collapsed');
+  document.getElementById('upload-summary-wrap').classList.remove('has-data');
+  ['s-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('header-stats').style.display = 'none';
+  document.getElementById('data-badge').textContent = 'No data loaded — upload your CSV to get started';
+  document.getElementById('profile-chart-wrap').style.display = 'none';
+  document.getElementById('profile-placeholder').style.display = '';
+  if (sidebarProfileChart) { sidebarProfileChart.destroy(); sidebarProfileChart = null; }
+  if (projChart)           { projChart.destroy();           projChart = null; }
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(id)  { document.getElementById(id).classList.add('open');    document.body.style.overflow = 'hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+function closeModalOnBackdrop(e, overlay) { if (e.target === overlay) closeModal(overlay.id); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+});
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadMeta();
+  suggestCost();
+  updateTariffInfo();
+});
+</script>
+</body>
+</html>
