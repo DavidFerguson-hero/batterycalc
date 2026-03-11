@@ -688,6 +688,7 @@ async function runRecalculate() {
 // MASTER RENDER — drives all UI sections from API response
 // ============================================================
 function renderResult(data) {
+  showDataSummary(data);
   updateSidebarProfile(data);
   updateFinancialSummary(data);
   updateProjection(data);
