@@ -516,7 +516,19 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 // ============================================================
 // CONFIG — set API_BASE to your Railway URL before deploying
 // ============================================================
-const API_BASE = '';  // e.g. 'https://batterycalc-api.railway.app'
+const API_BASE = '';  // ← paste your Railway URL here, e.g. 'https://xyz.railway.app'
+
+// Guard: warn clearly if API_BASE is not configured
+if (!API_BASE) {
+  window.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('upload-status');
+    if (el) {
+      el.className = 'msg-error';
+      el.innerHTML = '⚠️ <strong>API not configured.</strong> The backend has not been deployed yet. '
+        + 'Set <code>API_BASE</code> in the HTML to your Railway URL, or run the API locally.';
+    }
+  });
+}
 
 // ============================================================
 // STATE
