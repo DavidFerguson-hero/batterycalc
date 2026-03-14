@@ -24,6 +24,7 @@ app.add_middleware(
         "http://localhost:3000",                          # Next.js dev
         "http://localhost:8080",                          # local static dev
         "https://davidferguson-hero.github.io",           # GitHub Pages
+        "https://batterycalc.vercel.app",                 # Vercel
     ],
     allow_methods=["*"],
     allow_headers=["*"],
