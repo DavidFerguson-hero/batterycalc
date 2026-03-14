@@ -7,10 +7,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#0d1424;--bg2:#162035;--bg3:#1e2d4a;--bg4:#243558;
-  --accent:#00d4a0;--accent2:#3d8bff;--accent3:#ff6b35;
+  --bg:#0a1628;--bg2:#162035;--bg3:#1e2d4a;--bg4:#243558;
+  --accent:#f97316;--accent2:#3d8bff;--accent3:#f97316;
   --text:#e0e8f8;--text2:#8fa8cc;--text3:#5c78a0;
-  --border:#253650;--red:#ff4757;--yellow:#ffa502;--green:#00d4a0;
+  --border:#253650;--red:#ff4757;--yellow:#ffa502;--green:#22c55e;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{font-size:15px}
@@ -18,10 +18,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
 .app-header{
   background:linear-gradient(135deg,#0a1628 0%,#162240 100%);
-  padding:1.1rem 2rem;border-bottom:1px solid var(--border);
+  padding:.9rem 2rem;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
 }
-.app-header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+.app-header .logo{height:44px;width:auto;display:block}
 .app-header .subtitle{color:var(--text2);font-size:.82rem;margin-top:.15rem}
 .badge{display:inline-block;background:var(--bg3);border:1px solid var(--border);
   border-radius:20px;padding:.2rem .8rem;font-size:.72rem;color:var(--text2)}
@@ -29,6 +29,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .header-stat .val{font-size:1.4rem;font-weight:700;color:var(--accent);line-height:1}
 .header-stat .lbl{font-size:.72rem;color:var(--text2)}
 .page-layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:calc(100vh - 60px)}
+.page-layout.no-sidebar{grid-template-columns:1fr}
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);
   padding:1rem;display:flex;flex-direction:column;gap:.9rem;
   position:sticky;top:0;height:calc(100vh - 60px);overflow-y:auto}
@@ -61,7 +62,7 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .metric .label{font-size:.67rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
 .metric .value{font-size:1.5rem;font-weight:700;line-height:1}
 .metric .sub{font-size:.72rem;color:var(--text2);margin-top:.2rem}
-.metric.highlight{border-color:var(--accent);background:rgba(0,212,160,.07)}
+.metric.highlight{border-color:var(--accent);background:rgba(249,115,22,.07)}
 .metric.highlight .value{color:var(--accent)}
 .metric.warn{border-color:var(--yellow);background:rgba(255,165,2,.06)}
 .metric.warn .value{color:var(--yellow)}
@@ -111,8 +112,8 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .heatmap-table td{padding:.45rem .3rem;border-radius:6px;text-align:center;font-weight:500;
   min-width:56px;cursor:pointer;transition:filter .15s;font-size:.68rem;line-height:1.3}
 .heatmap-table td:hover{filter:brightness(1.25)}
-.hm-best{background:rgba(0,212,160,.28);color:#00ffd0;border:2px solid var(--accent)}
-.hm-great{background:rgba(0,212,160,.17);color:#00c896}
+.hm-best{background:rgba(249,115,22,.28);color:#fed7aa;border:2px solid var(--accent)}
+.hm-great{background:rgba(249,115,22,.17);color:#fdba74}
 .hm-good{background:rgba(255,165,2,.17);color:#ffb830}
 .hm-poor{background:rgba(255,71,87,.14);color:#ff6b6b}
 .hm-na{background:rgba(37,54,80,.35);color:var(--text3)}
@@ -132,11 +133,11 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .cmp-table tr:last-child td{border-bottom:none}
 .cmp-table tr.highlighted{background:rgba(61,139,255,.07)}
 .cmp-table tr.highlighted td:first-child{border-left:3px solid var(--accent2)}
-.cmp-table tr.highlighted.hl-best{background:rgba(0,212,160,.06)}
+.cmp-table tr.highlighted.hl-best{background:rgba(249,115,22,.06)}
 .cmp-table tr.highlighted.hl-best td:first-child{border-left:3px solid var(--accent)}
 .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:2.25rem 1.5rem;
   text-align:center;cursor:pointer;transition:padding .3s,background .2s;background:var(--bg3)}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(0,212,160,.05)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(249,115,22,.05)}
 .upload-zone .uz-exp{transition:opacity .2s}
 .upload-zone.collapsed .uz-exp{display:none}
 .upload-zone .uz-col{display:none}
@@ -167,14 +168,14 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   color:var(--text);padding:.45rem .65rem;font-size:.88rem;outline:none;
   transition:border-color .2s;width:100%;box-sizing:border-box}
 .est-input:focus{border-color:var(--accent2)}
-.btn-primary{background:var(--accent2);color:#fff;border:none;border-radius:8px;
+.btn-primary{background:#f97316;color:#fff;border:none;border-radius:8px;
   padding:.6rem 1.2rem;font-size:.88rem;font-weight:600;cursor:pointer;
   transition:background .15s;width:100%}
-.btn-primary:hover{background:#5a9fff}
+.btn-primary:hover{background:#ea6c0a}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .msg-loading{color:var(--accent2);padding:.6rem .9rem;background:rgba(61,139,255,.1);
   border-radius:7px;font-size:.82rem;margin-top:.6rem}
-.msg-success{color:var(--green);padding:.6rem .9rem;background:rgba(0,212,160,.08);
+.msg-success{color:var(--green);padding:.6rem .9rem;background:rgba(34,197,94,.08);
   border-radius:7px;font-size:.82rem;margin-top:.6rem}
 .msg-error{color:var(--red);padding:.6rem .9rem;background:rgba(255,71,87,.08);
   border-radius:7px;font-size:.82rem;margin-top:.6rem}
@@ -234,10 +235,14 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 <body>
 
 <header class="app-header">
-  <div>
-    <h1>🔋 Home Battery Storage Calculator</h1>
-    <div class="subtitle">Upload your half-hourly usage data · find the best tariff &amp; battery size · model your savings</div>
-    <div style="margin-top:.4rem"><span class="badge" id="data-badge">No data loaded — upload your CSV to get started</span></div>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <a href="/" style="display:block;line-height:0">
+      <img src="/batterysizer-logo.png" alt="BatterySizer" class="logo" />
+    </a>
+    <div>
+      <div class="subtitle">Upload your half-hourly usage data · find the best tariff &amp; battery size · model your savings</div>
+      <div style="margin-top:.4rem"><span class="badge" id="data-badge">No data loaded — upload your CSV to get started</span></div>
+    </div>
   </div>
   <div class="header-stat" id="header-stats" style="display:none">
     <div class="lbl">Estimated annual consumption</div>
@@ -246,9 +251,9 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   </div>
 </header>
 
-<div class="page-layout">
+<div class="page-layout no-sidebar" id="page-layout">
 
-<aside class="sidebar">
+<aside class="sidebar hidden" id="sidebar">
   <div class="sidebar-section">
     <div class="sidebar-label">Tariff Selection</div>
     <select id="tariff-select" onchange="onTariffChange()">
@@ -944,8 +949,8 @@ function initProjectionChart() {
   projChart = new Chart(document.getElementById('projChart'), {
     type: 'line',
     data: { labels: Array.from({length:10},(_,i)=>`Yr ${i+1}`), datasets: [
-      {label:'Cumulative saving', data:[], borderColor:'#00d4a0',
-       backgroundColor:'rgba(0,212,160,.12)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#00d4a0'},
+      {label:'Cumulative saving', data:[], borderColor:'#f97316',
+       backgroundColor:'rgba(249,115,22,.12)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#f97316'},
       {label:'Battery cost', data:[], borderColor:'#ff6b35', borderDash:[6,4], borderWidth:2, pointRadius:0, fill:false},
     ]},
     options: { responsive:true, maintainAspectRatio:false,
@@ -1254,6 +1259,8 @@ function showAllSections() {
   ['s-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
+  document.getElementById('sidebar').classList.remove('hidden');
+  document.getElementById('page-layout').classList.remove('no-sidebar');
 }
 
 function clearData() {
@@ -1270,6 +1277,8 @@ function clearData() {
   document.getElementById('data-badge').textContent = 'No data loaded — upload your CSV to get started';
   document.getElementById('profile-chart-wrap').style.display = 'none';
   document.getElementById('profile-placeholder').style.display = '';
+  document.getElementById('sidebar').classList.add('hidden');
+  document.getElementById('page-layout').classList.add('no-sidebar');
   if (sidebarProfileChart) { sidebarProfileChart.destroy(); sidebarProfileChart = null; }
   if (projChart)           { projChart.destroy();           projChart = null; }
 }
