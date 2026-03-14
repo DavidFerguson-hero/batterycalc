@@ -153,6 +153,25 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .upload-hint{margin-top:.75rem;font-size:.72rem;color:var(--text3);
   background:var(--bg);border-radius:7px;padding:.5rem .9rem;display:inline-block;text-align:left}
 .upload-hint code{color:var(--accent2);font-family:monospace}
+.input-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem}
+.input-tab{padding:.45rem 1.1rem;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--text3);
+  border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;
+  transition:color .15s,border-color .15s}
+.input-tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+.input-tab:hover:not(.active){color:var(--text)}
+.est-form{display:flex;flex-direction:column;gap:.85rem}
+.est-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
+.est-field{display:flex;flex-direction:column;gap:.3rem}
+.est-label{font-size:.7rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.est-input{background:var(--bg3);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);padding:.45rem .65rem;font-size:.88rem;outline:none;
+  transition:border-color .2s;width:100%;box-sizing:border-box}
+.est-input:focus{border-color:var(--accent2)}
+.btn-primary{background:var(--accent2);color:#fff;border:none;border-radius:8px;
+  padding:.6rem 1.2rem;font-size:.88rem;font-weight:600;cursor:pointer;
+  transition:background .15s;width:100%}
+.btn-primary:hover{background:#5a9fff}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .msg-loading{color:var(--accent2);padding:.6rem .9rem;background:rgba(61,139,255,.1);
   border-radius:7px;font-size:.82rem;margin-top:.6rem}
 .msg-success{color:var(--green);padding:.6rem .9rem;background:rgba(0,212,160,.08);
@@ -323,30 +342,83 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
     <div class="text-sm" id="sum-note" style="margin-top:.6rem;color:var(--text3)"></div>
   </div>
   <div class="card" id="s-upload">
-    <div class="section-title">Upload Your Consumption Data</div>
-    <p class="text-sm" style="margin-bottom:.9rem">
-      Drop half-hourly CSV files exported from your energy supplier.
-      One file per day <em>or</em> a single multi-day file — both work.
-    </p>
-    <div class="upload-zone" id="upload-zone" onclick="onUploadClick(event)">
-      <div class="uz-exp">
-        <div class="upload-icon">📁</div>
-        <div style="font-size:.95rem;font-weight:600;margin-bottom:.35rem">
-          Drop CSV files here or <span class="upload-link">click to browse</span>
-        </div>
-        <div class="text-sm" style="margin-bottom:.1rem">48 rows per day (30-min intervals) · multiple files supported</div>
-        <div class="upload-hint">
-          Expected columns: <code>Timestamp</code>, <code>Electricity consumption (kWh)</code>,
-          optional <code>Electricity cost (£)</code>
-        </div>
-      </div>
-      <div class="uz-col">
-        <span class="upload-icon-sm">📂</span>
-        <span id="uz-label" style="font-size:.82rem;color:var(--text2)">Data loaded</span>
-        <button class="reupload-btn" onclick="document.getElementById('csv-input').click()">↑ Upload different files</button>
-      </div>
-      <input type="file" id="csv-input" accept=".csv" multiple style="display:none">
+    <div class="section-title">Get Your Battery Estimate</div>
+
+    <!-- Tab switcher -->
+    <div class="input-tabs">
+      <button class="input-tab active" id="tab-csv" onclick="switchInputTab('csv')">📁 Upload CSV</button>
+      <button class="input-tab"        id="tab-est" onclick="switchInputTab('est')">✏️ Estimate from usage</button>
     </div>
+
+    <!-- ── CSV upload panel ───────────────────────────────── -->
+    <div id="panel-csv">
+      <p class="text-sm" style="margin-bottom:.9rem">
+        Drop half-hourly CSV files exported from your energy supplier.
+        One file per day <em>or</em> a single multi-day file — both work.
+      </p>
+      <div class="upload-zone" id="upload-zone" onclick="onUploadClick(event)">
+        <div class="uz-exp">
+          <div class="upload-icon">📁</div>
+          <div style="font-size:.95rem;font-weight:600;margin-bottom:.35rem">
+            Drop CSV files here or <span class="upload-link">click to browse</span>
+          </div>
+          <div class="text-sm" style="margin-bottom:.1rem">48 rows per day (30-min intervals) · multiple files supported</div>
+          <div class="upload-hint">
+            Expected columns: <code>Timestamp</code>, <code>Electricity consumption (kWh)</code>,
+            optional <code>Electricity cost (£)</code>
+          </div>
+        </div>
+        <div class="uz-col">
+          <span class="upload-icon-sm">📂</span>
+          <span id="uz-label" style="font-size:.82rem;color:var(--text2)">Data loaded</span>
+          <button class="reupload-btn" onclick="document.getElementById('csv-input').click()">↑ Upload different files</button>
+        </div>
+        <input type="file" id="csv-input" accept=".csv" multiple style="display:none">
+      </div>
+    </div>
+
+    <!-- ── Estimate panel ─────────────────────────────────── -->
+    <div id="panel-est" style="display:none">
+      <div class="est-form">
+        <div class="est-row">
+          <div class="est-field">
+            <label class="est-label" for="est-prop-type">Property type</label>
+            <select class="est-input" id="est-prop-type" onchange="onEstPropChange()">
+              <option value="flat">Flat / Apartment</option>
+              <option value="terraced">Terraced</option>
+              <option value="semi" selected>Semi-detached</option>
+              <option value="detached">Detached</option>
+            </select>
+          </div>
+          <div class="est-field">
+            <label class="est-label" for="est-bedrooms">Bedrooms</label>
+            <select class="est-input" id="est-bedrooms" onchange="onEstPropChange()">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+              <option value="5">5+</option>
+            </select>
+          </div>
+        </div>
+        <div class="est-row">
+          <div class="est-field">
+            <label class="est-label" for="est-kwh">Annual consumption (kWh)</label>
+            <input type="number" class="est-input" id="est-kwh" value="3500" min="500" max="20000" step="50">
+          </div>
+          <div class="est-field">
+            <label class="est-label" for="est-rate">Current unit rate (p/kWh)</label>
+            <input type="number" class="est-input" id="est-rate" value="28.16" min="5" max="100" step="0.01">
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text3);margin:0">
+          Annual consumption is pre-filled from typical UK usage for this property type.
+          Adjust if you know your actual figure from a bill.
+        </p>
+        <button class="btn-primary" id="est-btn" onclick="doEstimateClick()">Calculate Savings →</button>
+      </div>
+    </div>
+
     <div id="upload-status"></div>
   </div>
 </div>
@@ -629,6 +701,86 @@ function getSliderParams() {
     inflPct:   document.getElementById('infl-slider').value,
     scPd:      document.getElementById('sc-slider').value,
   };
+}
+
+// ============================================================
+// ESTIMATE TAB
+// ============================================================
+const EST_SUGGESTED_KWH = {
+  flat:     {1: 1800, 2: 2400, 3: 2900},
+  terraced: {2: 2800, 3: 3200, 4: 3800},
+  semi:     {2: 3000, 3: 3500, 4: 4200},
+  detached: {3: 4200, 4: 5100, 5: 6500},
+};
+
+function switchInputTab(tab) {
+  document.getElementById('panel-csv').style.display = tab === 'csv' ? '' : 'none';
+  document.getElementById('panel-est').style.display = tab === 'est' ? '' : 'none';
+  document.getElementById('tab-csv').classList.toggle('active', tab === 'csv');
+  document.getElementById('tab-est').classList.toggle('active', tab === 'est');
+}
+
+function onEstPropChange() {
+  const prop  = document.getElementById('est-prop-type').value;
+  const beds  = parseInt(document.getElementById('est-bedrooms').value);
+  const table = EST_SUGGESTED_KWH[prop] || {};
+  const keys  = Object.keys(table).map(Number).sort((a, b) => a - b);
+  if (!keys.length) return;
+  const nearest = keys.reduce((p, c) => Math.abs(c - beds) < Math.abs(p - beds) ? c : p);
+  document.getElementById('est-kwh').value = table[nearest];
+}
+
+async function doEstimateClick() {
+  const annKwh  = parseFloat(document.getElementById('est-kwh').value);
+  const propType = document.getElementById('est-prop-type').value;
+  const unitRate = parseFloat(document.getElementById('est-rate').value);
+  const beds     = document.getElementById('est-bedrooms').value;
+  const propLabel = document.getElementById('est-prop-type').selectedOptions[0].text;
+
+  if (!annKwh || annKwh < 500) { setStatus('Please enter a valid annual consumption (≥ 500 kWh).', 'error'); return; }
+
+  const btn = document.getElementById('est-btn');
+  btn.disabled = true;
+  setStatus('⏳ Calculating estimate…', 'loading');
+
+  try {
+    const p = getSliderParams();
+    const data = await apiFetch('/api/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        annual_kwh:         annKwh,
+        property_type:      propType,
+        unit_rate_p:        unitRate,
+        tariff_key:         p.tariffKey,
+        battery_cap_kwh:    parseFloat(p.capKwh),
+        battery_cost_gbp:   parseFloat(p.costGbp),
+        max_charge_rate_kw: parseFloat(p.maxRateKw),
+        efficiency_pct:     parseFloat(p.effPct),
+        inflation_pct:      parseFloat(p.inflPct),
+        current_sc_pd:      parseFloat(p.scPd),
+      }),
+    });
+
+    sessionId  = data.session_id;
+    lastResult = data;
+
+    setStatus(`✅ Estimated from <strong>${Math.round(annKwh).toLocaleString()} kWh/yr</strong> (${beds}-bed ${propLabel}).`, 'success');
+    uploadZone.classList.add('collapsed');
+    document.getElementById('uz-label').textContent = `${beds}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
+
+    showDataSummary(data);
+    showAllSections();
+    initProjectionChart();
+    initSidebarProfileChart();
+    document.getElementById('profile-placeholder').style.display = 'none';
+    document.getElementById('profile-chart-wrap').style.display  = '';
+    renderResult(data);
+  } catch(e) {
+    setStatus('❌ ' + (e.message || 'Estimation failed.'), 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function nearestBattKwh(kwh) {
@@ -999,12 +1151,21 @@ function updateRankedTable(data) {
 // DATA SUMMARY (driven by API response)
 // ============================================================
 function showDataSummary(data) {
-  const s = data.summary;
-  const rate    = s.inferred_rate_pence !== null ? s.inferred_rate_pence / 100 : 0.2816;
-  const hasCost = s.inferred_rate_pence !== null;
-  const annBill = data.financials.ann_cost_current;
+  const s        = data.summary;
+  const isEst    = data.source === 'estimate';
+  const rate     = s.inferred_rate_pence !== null ? s.inferred_rate_pence / 100 : 0.2816;
+  const hasCost  = s.inferred_rate_pence !== null;
+  const annBill  = data.financials.ann_cost_current;
 
-  document.getElementById('sum-grid').innerHTML = `
+  document.querySelector('#s-summary .section-title').textContent =
+    isEst ? 'Estimated Profile' : 'Uploaded Data Summary';
+
+  document.getElementById('sum-grid').innerHTML = isEst ? `
+    <div class="metric"><div class="label">Profile type</div><div class="value" style="font-size:1rem">${document.getElementById('est-prop-type').selectedOptions[0].text}</div><div class="sub">${document.getElementById('est-bedrooms').value} bedrooms</div></div>
+    <div class="metric"><div class="label">Daily Average</div><div class="value">${s.daily_avg_kwh.toFixed(1)}</div><div class="sub">kWh/day</div></div>
+    <div class="metric highlight"><div class="label">Annual Consumption</div><div class="value">${Math.round(s.annual_kwh_estimate).toLocaleString()}</div><div class="sub">kWh/year</div></div>
+    <div class="metric"><div class="label">Current Unit Rate</div><div class="value">${(rate*100).toFixed(1)}p</div><div class="sub">as entered</div></div>
+    <div class="metric"><div class="label">Est. Annual Bill</div><div class="value">£${Math.round(annBill).toLocaleString()}</div><div class="sub">incl. standing charge</div></div>` : `
     <div class="metric"><div class="label">Days Loaded</div><div class="value">${s.days_analysed}</div><div class="sub">of data</div></div>
     <div class="metric"><div class="label">Daily Average</div><div class="value">${s.daily_avg_kwh.toFixed(1)}</div><div class="sub">kWh/day</div></div>
     <div class="metric"><div class="label">Annual Estimate</div><div class="value">${Math.round(s.annual_kwh_estimate).toLocaleString()}</div><div class="sub">kWh/year</div></div>
@@ -1015,14 +1176,18 @@ function showDataSummary(data) {
     </div>
     <div class="metric"><div class="label">Est. Annual Bill</div><div class="value">£${Math.round(annBill).toLocaleString()}</div><div class="sub">incl. standing charge</div></div>`;
 
-  document.getElementById('sum-note').textContent = hasCost
-    ? `Unit rate inferred from cost column: ${(rate*100).toFixed(2)}p/kWh.`
-    : `No cost column — using standard variable default (${(rate*100).toFixed(2)}p/kWh) as baseline.`;
+  document.getElementById('sum-note').textContent = isEst
+    ? `Estimated profile based on typical UK consumption for this property type. For a more accurate result, upload your actual half-hourly CSV.`
+    : (hasCost
+        ? `Unit rate inferred from cost column: ${(rate*100).toFixed(2)}p/kWh.`
+        : `No cost column — using standard variable default (${(rate*100).toFixed(2)}p/kWh) as baseline.`);
 
   document.getElementById('header-stats').style.display = '';
-  document.getElementById('annual-kwh').textContent   = Math.round(s.annual_kwh_estimate).toLocaleString() + ' kWh/yr';
-  document.getElementById('annual-cost').textContent  = 'Est. bill: £' + Math.round(annBill).toLocaleString() + '/yr';
-  document.getElementById('data-badge').textContent   = `${s.days_analysed} days uploaded · ${(rate*100).toFixed(2)}p/kWh`;
+  document.getElementById('annual-kwh').textContent  = Math.round(s.annual_kwh_estimate).toLocaleString() + ' kWh/yr';
+  document.getElementById('annual-cost').textContent = 'Est. bill: £' + Math.round(annBill).toLocaleString() + '/yr';
+  document.getElementById('data-badge').textContent  = isEst
+    ? `Estimated · ${Math.round(s.annual_kwh_estimate).toLocaleString()} kWh/yr · ${(rate*100).toFixed(2)}p/kWh`
+    : `${s.days_analysed} days uploaded · ${(rate*100).toFixed(2)}p/kWh`;
 }
 
 // ============================================================

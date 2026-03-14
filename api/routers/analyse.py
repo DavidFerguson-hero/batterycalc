@@ -16,6 +16,7 @@ from engine.simulator import run_simulation
 from engine.optimiser import build_opt_matrix
 from engine.payback import calc_payback
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
+from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 
 # In-memory session cache (replace with Redis in production)
 _session_cache: dict[str, dict] = {}
@@ -24,6 +25,19 @@ router = APIRouter(tags=["analyse"])
 
 
 # ── Pydantic models ────────────────────────────────────────────────────────────
+
+class EstimateRequest(BaseModel):
+    annual_kwh:        float = Field(..., ge=500, le=20000)
+    property_type:     str   = "semi"     # flat | terraced | semi | detached
+    unit_rate_p:       float = Field(28.16, ge=5, le=100)   # pence/kWh
+    tariff_key:        str   = "octopusGo"
+    battery_cap_kwh:   float = Field(10.0,  ge=1,   le=50)
+    battery_cost_gbp:  float = Field(6000,  ge=500, le=50000)
+    max_charge_rate_kw:float = Field(3.6,   ge=0.5, le=15)
+    efficiency_pct:    float = Field(90.0,  ge=50,  le=100)
+    inflation_pct:     float = Field(5.0,   ge=0,   le=20)
+    current_sc_pd:     float = Field(53.0,  ge=0,   le=200)
+
 
 class RecalculateRequest(BaseModel):
     session_id: str
@@ -48,6 +62,7 @@ def _build_response(
     inflation_pct: float,
     current_sc_pd: float,
     session_id: str,
+    source: str = "upload",   # "upload" | "estimate"
 ) -> dict:
     tariff = TARIFFS.get(tariff_key)
     if tariff is None:
@@ -101,6 +116,7 @@ def _build_response(
 
     return {
         "session_id": session_id,
+        "source": source,
         "summary": {
             "days_analysed": parse.days_count,
             "total_kwh": parse.total_kwh,
@@ -262,6 +278,39 @@ async def analyse(
         inflation_pct=inflation_pct,
         current_sc_pd=current_sc_pd,
         session_id=session_id,
+    )
+
+
+@router.post("/estimate")
+async def estimate(req: EstimateRequest):
+    valid_types = {"flat", "terraced", "semi", "detached"}
+    if req.property_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"property_type must be one of {valid_types}")
+
+    parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p)
+
+    cache_key = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}"
+    session_id = hashlib.sha256(cache_key.encode()).hexdigest()[:16]
+    _session_cache[session_id] = {
+        "days":                parse.days,
+        "inferred_rate":       parse.inferred_rate,
+        "days_count":          parse.days_count,
+        "total_kwh":           parse.total_kwh,
+        "daily_avg_kwh":       parse.daily_avg_kwh,
+        "annual_kwh_estimate": parse.annual_kwh_estimate,
+    }
+
+    return _build_response(
+        parse=parse,
+        tariff_key=req.tariff_key,
+        battery_cap_kwh=req.battery_cap_kwh,
+        battery_cost_gbp=req.battery_cost_gbp,
+        max_charge_rate_kw=req.max_charge_rate_kw,
+        efficiency_pct=req.efficiency_pct,
+        inflation_pct=req.inflation_pct,
+        current_sc_pd=req.current_sc_pd,
+        session_id=session_id,
+        source="estimate",
     )
 
 
