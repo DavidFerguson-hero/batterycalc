@@ -190,6 +190,12 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .profile-placeholder .ico{font-size:1.8rem;margin-bottom:.4rem}
 .text-sm{font-size:.78rem;color:var(--text2)}
 .divider{height:1px;background:var(--border);margin:.2rem 0}
+.plain-summary{font-size:1.05rem;line-height:1.8;color:var(--text1)}
+.plain-summary strong{color:#fff}
+.plain-summary .ps-highlight{display:inline-block;background:rgba(249,115,22,.13);border:1px solid rgba(249,115,22,.35);color:#f97316;font-weight:700;border-radius:6px;padding:.05rem .45rem;font-size:1rem}
+.plain-summary .ps-saving{color:#4ade80;font-weight:700}
+.plain-summary .ps-label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#7b9cbf;margin-bottom:.6rem}
+.plain-summary .ps-disclaimer{display:block;font-size:.72rem;color:#4a6080;margin-top:.85rem}
 .page-footer{font-size:.72rem;color:#64748b;background:#0a1628;
   border-top:1px solid rgba(255,255,255,0.08);padding:1.5rem;
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
@@ -480,6 +486,10 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
       ⭐ best ROI overall · outlined = current selection · click any cell to apply.
     </div>
   </div>
+</div>
+
+<div class="card hidden" id="s-plain-summary">
+  <div id="plain-summary-body"></div>
 </div>
 
 <div class="rec-grid hidden" id="s-rec">
@@ -849,6 +859,7 @@ async function runRecalculate() {
 // ============================================================
 function renderResult(data) {
   showDataSummary(data);
+  updatePlainSummary(data);
   updateSidebarProfile(data);
   updateFinancialSummary(data);
   updateProjection(data);
@@ -856,6 +867,47 @@ function renderResult(data) {
   updateBatteryRec(data);
   updateTariffRec(data);
   updateRankedTable(data);
+}
+
+// ============================================================
+// PLAIN-ENGLISH SUMMARY
+// ============================================================
+function updatePlainSummary(data) {
+  const best = (data.all_combinations || [])[0];
+  if (!best || best.total_saving <= 0) {
+    document.getElementById('s-plain-summary').classList.add('hidden');
+    return;
+  }
+
+  const batteryLabel = best.battery_kwh + ' kWh';
+  const tariffName   = best.tariff_name;
+  const cost         = '£' + best.battery_cost.toLocaleString();
+  const saving       = '£' + Math.round(best.total_saving).toLocaleString();
+  const payback      = best.payback_years !== null ? best.payback_years.toFixed(1) : null;
+  const roi          = best.roi_10yr !== null ? '£' + Math.round(best.roi_10yr).toLocaleString() : null;
+
+  const paybackSentence = payback
+    ? `paying back in <span class="ps-highlight">${payback} years</span>`
+    : `with a strong long-term return`;
+
+  const roiSentence = roi && best.roi_10yr > 0
+    ? ` — putting <span class="ps-saving">${roi}</span> back in your pocket over 10 years.`
+    : `.`;
+
+  document.getElementById('plain-summary-body').innerHTML = `
+    <div class="plain-summary">
+      <span class="ps-label">⭐ Your Best Option</span>
+      The best combination for your home is a <span class="ps-highlight">${batteryLabel} battery</span>
+      on the <span class="ps-highlight">${tariffName}</span> tariff.
+      This will cost roughly <strong>${cost}</strong> and save you around
+      <span class="ps-saving">${saving}/year</span> on your energy bills,
+      ${paybackSentence}${roiSentence}
+      <span class="ps-disclaimer">
+        Based on your usage profile. Scroll down for the full breakdown across all battery sizes and tariffs.
+      </span>
+    </div>`;
+
+  document.getElementById('s-plain-summary').classList.remove('hidden');
 }
 
 // ============================================================
@@ -1259,7 +1311,7 @@ async function handleFiles(files) {
 
 function showAllSections() {
   document.getElementById('upload-summary-wrap').classList.add('has-data');
-  ['s-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+  ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
   document.getElementById('sidebar').classList.remove('hidden');
@@ -1273,7 +1325,7 @@ function clearData() {
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  ['s-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+  ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   document.getElementById('header-stats').style.display = 'none';
