@@ -1,0 +1,38 @@
+name: Nightly Tariff Check
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC every night
+  workflow_dispatch:        # allow manual trigger from GitHub Actions UI
+
+permissions:
+  contents: write
+
+jobs:
+  check-tariffs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run tariff checker
+        run: python scripts/check_tariffs.py
+
+      - name: Commit updated log
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: nightly tariff rate check [skip ci]'
+          file_pattern: frontend/public/tariff-logs.json
+          commit_user_name: BatterySizer Bot
+          commit_user_email: bot@batterysizer.co.uk
+          commit_author: BatterySizer Bot <bot@batterysizer.co.uk>
