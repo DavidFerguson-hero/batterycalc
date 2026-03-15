@@ -219,7 +219,9 @@ export default function Home() {
             </ul>
 
             <a
-              href="mailto:hello@batterysizer.co.uk"
+              href="https://docs.google.com/forms/d/e/1FAIpQLSenxuIBuosMqjDS4BTJ9PFjJ7oUG-l_CosJoOmThEOQOQWCug/viewform?usp=publish-editor"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 border-2 border-[#f97316] text-[#f97316] hover:bg-[#f97316] hover:text-white font-semibold px-7 py-3.5 rounded-full transition-colors text-base"
             >
               Contact us for pricing
