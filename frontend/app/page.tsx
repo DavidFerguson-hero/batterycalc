@@ -252,16 +252,20 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-700/50 py-8">
+      <footer className="border-t border-slate-700/50 bg-[#0a1628] py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
           <Image
             src="/batterysizer-logo.png"
             alt="BatterySizer"
             width={160}
             height={36}
-            className="opacity-50"
+            className="opacity-40"
           />
           <p>© {new Date().getFullYear()} BatterySizer. All rights reserved.</p>
+          <div className="flex gap-5 text-xs">
+            <Link href="/calculator" className="hover:text-slate-300 transition-colors">How we calculate</Link>
+            <Link href="/calculator" className="hover:text-slate-300 transition-colors">Legal disclaimer</Link>
+          </div>
         </div>
       </footer>
     </div>

@@ -17,10 +17,11 @@ html{font-size:15px}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
 .app-header{
-  background:linear-gradient(135deg,#0a1628 0%,#162240 100%);
-  padding:.9rem 2rem;border-bottom:1px solid var(--border);
+  background:#0a1628;
+  padding:1.1rem 1.5rem;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
 }
+.app-header-inner{max-width:1152px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
 .app-header .logo{height:60px;width:260px;display:block;object-fit:contain}
 .app-header .subtitle{color:var(--text2);font-size:.82rem;margin-top:.15rem}
 .badge{display:inline-block;background:var(--bg3);border:1px solid var(--border);
@@ -189,13 +190,15 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .profile-placeholder .ico{font-size:1.8rem;margin-bottom:.4rem}
 .text-sm{font-size:.78rem;color:var(--text2)}
 .divider{height:1px;background:var(--border);margin:.2rem 0}
-.page-footer{font-size:.72rem;color:var(--text3);background:var(--bg2);
-  border-top:1px solid var(--border);padding:.7rem 2rem;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
-.footer-links{display:flex;gap:1.25rem}
-.footer-link{color:var(--accent2);text-decoration:none;font-size:.72rem;cursor:pointer;
+.page-footer{font-size:.72rem;color:#64748b;background:#0a1628;
+  border-top:1px solid rgba(255,255,255,0.08);padding:1.5rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.page-footer-inner{max-width:1152px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.footer-logo{height:36px;width:160px;object-fit:contain;opacity:.4}
+.footer-links{display:flex;gap:1.25rem;align-items:center}
+.footer-link{color:#64748b;text-decoration:none;font-size:.72rem;cursor:pointer;
   background:none;border:none;padding:0}
-.footer-link:hover{text-decoration:underline}
+.footer-link:hover{color:#94a3b8;text-decoration:underline}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
   z-index:1000;align-items:center;justify-content:center;padding:1.5rem}
 .modal-overlay.open{display:flex}
@@ -235,14 +238,16 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 <body>
 
 <header class="app-header">
-  <a href="/" style="display:block;line-height:0">
-    <img src="/batterysizer-logo.png" alt="BatterySizer" class="logo" />
-  </a>
-  <span id="data-badge" style="display:none"></span>
-  <div class="header-stat" id="header-stats" style="display:none">
-    <div class="lbl">Estimated annual consumption</div>
-    <div class="val" id="annual-kwh">—</div>
-    <div class="lbl" id="annual-cost">—</div>
+  <div class="app-header-inner">
+    <a href="/" style="display:block;line-height:0">
+      <img src="/batterysizer-logo.png" alt="BatterySizer" class="logo" />
+    </a>
+    <span id="data-badge" style="display:none"></span>
+    <div class="header-stat" id="header-stats" style="display:none">
+      <div class="lbl">Estimated annual consumption</div>
+      <div class="val" id="annual-kwh">—</div>
+      <div class="lbl" id="annual-cost">—</div>
+    </div>
   </div>
 </header>
 
@@ -517,10 +522,13 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 </div>
 
 <footer class="page-footer">
-  <span>Home Battery Storage Calculator · rates based on Q1 2026 published tariffs</span>
-  <div class="footer-links">
-    <button class="footer-link" onclick="openModal('modal-methodology')">How we calculate your recommendation</button>
-    <button class="footer-link" onclick="openModal('modal-legal')">Legal disclaimer</button>
+  <div class="page-footer-inner">
+    <img src="/batterysizer-logo.png" alt="BatterySizer" class="footer-logo" />
+    <span>© 2026 BatterySizer. All rights reserved.</span>
+    <div class="footer-links">
+      <button class="footer-link" onclick="openModal('modal-methodology')">How we calculate</button>
+      <button class="footer-link" onclick="openModal('modal-legal')">Legal disclaimer</button>
+    </div>
   </div>
 </footer>
 
