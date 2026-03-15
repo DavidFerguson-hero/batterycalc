@@ -25,6 +25,8 @@ app.add_middleware(
         "http://localhost:8080",                          # local static dev
         "https://davidferguson-hero.github.io",           # GitHub Pages
         "https://batterycalc.vercel.app",                 # Vercel
+        "https://batterysizer.co.uk",                     # Custom domain
+        "https://www.batterysizer.co.uk",                 # Custom domain (www)
     ],
     allow_methods=["*"],
     allow_headers=["*"],
