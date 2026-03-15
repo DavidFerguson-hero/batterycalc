@@ -16,6 +16,8 @@ class DayResult:
     cost_with_battery: float
     soc_profile: list[float]    # SoC (kWh) at end of each slot
     grid_profile: list[float]   # Grid import (kWh) each slot
+    export_kwh: float = 0.0
+    export_revenue: float = 0.0
 
 
 @dataclass
@@ -28,6 +30,8 @@ class SimResult:
     total_saving: float
     avg_soc_profile: list[float]
     avg_kwh_shifted_per_day: float
+    ann_export_revenue: float = 0.0
+    ann_kwh_exported: float = 0.0
 
 
 def simulate_day_full(
@@ -36,6 +40,7 @@ def simulate_day_full(
     cap_kwh: float,
     max_rate_kw: float,
     efficiency: float,          # round-trip, e.g. 0.90
+    export_rate: float = 0.0,   # £/kWh — 0 means no export
 ) -> DayResult:
     """
     Simulate one day of battery operation.
@@ -52,6 +57,8 @@ def simulate_day_full(
     cost_with_battery = 0.0
     soc_profile: list[float] = []
     grid_profile: list[float] = []
+    total_export_kwh = 0.0
+    total_export_revenue = 0.0
 
     for i in range(48):
         kwh = day_kwh[i]
@@ -65,11 +72,26 @@ def simulate_day_full(
             soc += to_add
             grid_import = kwh + to_add / efficiency    # extra draw to account for losses
         elif tariff.discharge_slots[i] and soc > min_soc:
-            disc = min(soc - min_soc, kwh, max_per_slot)
+            if export_rate > 0:
+                # Export mode: discharge as much as possible, sell surplus to grid
+                disc = min(soc - min_soc, max_per_slot)
+            else:
+                # No export: only discharge to cover consumption
+                disc = min(soc - min_soc, kwh, max_per_slot)
             soc -= disc
             grid_import = kwh - disc
 
-        cost_with_battery += max(0.0, grid_import) * rate
+        if grid_import < 0 and export_rate > 0:
+            # Battery provided more than needed — export surplus
+            export_kwh_slot = -grid_import
+            cost_with_battery += 0.0
+            cost_with_battery -= export_kwh_slot * export_rate   # revenue reduces cost
+            # Track export
+            total_export_kwh += export_kwh_slot
+            total_export_revenue += export_kwh_slot * export_rate
+        else:
+            cost_with_battery += max(0.0, grid_import) * rate
+
         soc_profile.append(soc)
         grid_profile.append(max(0.0, grid_import))
 
@@ -78,6 +100,8 @@ def simulate_day_full(
         cost_with_battery=cost_with_battery,
         soc_profile=soc_profile,
         grid_profile=grid_profile,
+        export_kwh=total_export_kwh,
+        export_revenue=total_export_revenue,
     )
 
 
@@ -89,6 +113,7 @@ def run_simulation(
     days: list[list[float]],        # each inner list = 48 half-hourly kWh values
     current_rate: float | None = None,
     current_sc_pd: float = 53.0,    # user's current standing charge in pence/day
+    export_rate: float = 0.0,
 ) -> SimResult | None:
     """
     Run the simulation across all uploaded days and annualise.
@@ -112,14 +137,18 @@ def run_simulation(
     tot_with_batt = 0.0
     kwh_shifted = 0.0
     avg_soc = [0.0] * 48
+    tot_export_kwh = 0.0
+    tot_export_revenue = 0.0
 
     for day_kwh in days:
         for i in range(48):
             tot_curr += day_kwh[i] * cur_rate
             tot_no_batt += day_kwh[i] * tariff.slot_rates[i]
 
-        result = simulate_day_full(day_kwh, tariff, cap_kwh, max_rate_kw, efficiency)
+        result = simulate_day_full(day_kwh, tariff, cap_kwh, max_rate_kw, efficiency, export_rate)
         tot_with_batt += result.cost_with_battery
+        tot_export_kwh += result.export_kwh
+        tot_export_revenue += result.export_revenue
 
         for i in range(48):
             avg_soc[i] += result.soc_profile[i]
@@ -141,4 +170,6 @@ def run_simulation(
         total_saving=ann_cost_current - ann_cost_with_battery,
         avg_soc_profile=avg_soc,
         avg_kwh_shifted_per_day=kwh_shifted / n_days,
+        ann_export_revenue=tot_export_revenue * scale,
+        ann_kwh_exported=tot_export_kwh * scale,
     )

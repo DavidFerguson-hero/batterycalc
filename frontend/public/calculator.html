@@ -239,6 +239,20 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   .sidebar{position:static;height:auto}
   .rec-grid{grid-template-columns:1fr}
 }
+.export-callout{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:.75rem 1rem;margin-top:.75rem;font-size:.78rem;color:#fbbf24;line-height:1.5}
+.export-callout strong{color:#f59e0b}
+.export-toggle-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.export-toggle{appearance:none;width:36px;height:20px;background:#253650;border-radius:10px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;border:none}
+.export-toggle:checked{background:#f59e0b}
+.export-toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s}
+.export-toggle:checked::after{left:19px}
+.export-section{border-top:1px solid rgba(255,255,255,.07);margin-top:1rem;padding-top:1rem}
+.export-inputs{display:none;margin-top:.75rem}
+.export-inputs.visible{display:block}
+.m-export{color:#f59e0b}
+.slider-label{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text2);margin-bottom:.2rem}
+.slider-val{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.1rem .45rem;font-size:.78rem;color:#f59e0b;font-weight:600}
+.slider{width:100%;accent-color:#f59e0b;cursor:pointer;margin:.15rem 0;height:4px}
 </style>
 </head>
 <body>
@@ -268,6 +282,7 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
         <option value="octopusGo" selected>Octopus Energy — Octopus Go</option>
         <option value="intelligentOctopus">Octopus Energy — Intelligent Octopus Go</option>
         <option value="octopusCosy">Octopus Energy — Octopus Cosy</option>
+        <option value="octopusFlux">Octopus Energy — Octopus Flux</option>
         <option value="economy7">Multiple Suppliers — Economy 7</option>
         <option value="eonNextDrive">E.ON — Next Drive</option>
         <option value="edfGoElectric">EDF Energy — GoElectric Overnight</option>
@@ -337,6 +352,29 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
       <input type="range" id="infl-slider" min="0" max="15" step="0.5" value="5"
              oninput="document.getElementById('infl-val').textContent=parseFloat(this.value).toFixed(1)+'%';debounceRecalc()">
       <div class="range-limits"><span>0%</span><span>15%</span></div>
+    </div>
+    <div class="export-section">
+      <div class="export-toggle-row">
+        <input type="checkbox" class="export-toggle" id="export-toggle" onchange="onExportToggle()" />
+        <label for="export-toggle" style="font-size:.82rem;font-weight:600;color:var(--text1);cursor:pointer">
+          Model grid export revenue
+        </label>
+      </div>
+      <div class="export-callout">
+        <strong>⚠️ Additional complexity applies.</strong> Grid export requires DNO approval (G98/G99 notification or full application), a compatible inverter with export capability, and a Meter Operator agreement. Savings shown are illustrative — actual revenue depends on your tariff's export rate and DNO permission.
+      </div>
+      <div class="export-inputs" id="export-inputs">
+        <label class="slider-label">
+          Export rate
+          <span class="slider-val" id="export-rate-val">7.5p/kWh</span>
+        </label>
+        <input type="range" class="slider" id="export-rate-slider"
+               min="1" max="50" step="0.5" value="7.5"
+               oninput="document.getElementById('export-rate-val').textContent=this.value+'p/kWh'; onExportRateChange()" />
+        <div class="text-sm" style="color:var(--text3);margin-top:.3rem">
+          Typical SEG: 7.5p · Octopus Flux: ~15p avg · Agile export: variable
+        </div>
+      </div>
     </div>
   </div>
 </aside>
@@ -465,6 +503,11 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
           <div class="label">Payback Period</div>
           <div class="value" id="m-payback">—</div>
           <div class="sub" id="m-payback-sub">—</div>
+        </div>
+        <div class="metric" id="m-export-card" style="display:none">
+          <div class="label">Export Revenue</div>
+          <div class="value m-export" id="m-export-revenue">—</div>
+          <div class="sub" id="m-export-sub">—</div>
         </div>
       </div>
     </div>
@@ -685,6 +728,7 @@ async function doAnalyse(files) {
   form.append('efficiency_pct',     p.effPct);
   form.append('inflation_pct',      p.inflPct);
   form.append('current_sc_pd',      p.scPd);
+  form.append('export_rate_p',      getExportRatePence());
   return apiFetch('/api/analyse', { method: 'POST', body: form });
 }
 
@@ -702,6 +746,7 @@ async function doRecalculate() {
       efficiency_pct:      parseFloat(p.effPct),
       inflation_pct:       parseFloat(p.inflPct),
       current_sc_pd:       parseFloat(p.scPd),
+      export_rate_p:       getExportRatePence(),
     }),
   });
 }
@@ -777,6 +822,7 @@ async function doEstimateClick() {
         efficiency_pct:     parseFloat(p.effPct),
         inflation_pct:      parseFloat(p.inflPct),
         current_sc_pd:      parseFloat(p.scPd),
+        export_rate_p:      getExportRatePence(),
       }),
     });
 
@@ -894,6 +940,13 @@ function updatePlainSummary(data) {
     ? ` — putting <span class="ps-saving">${roi}</span> back in your pocket over 10 years.`
     : `.`;
 
+  const exportEnabled = document.getElementById('export-toggle').checked;
+  const exportRev = (data.financials && data.financials.ann_export_revenue) || 0;
+  let exportNote = '';
+  if (exportEnabled && exportRev > 0) {
+    exportNote = ` This includes an estimated <span class="m-export"><strong>£${Math.round(exportRev).toLocaleString()}/year</strong></span> in grid export revenue — subject to DNO approval and G98/G99 compliance.`;
+  }
+
   document.getElementById('plain-summary-body').innerHTML = `
     <div class="plain-summary">
       <span class="ps-label">⭐ Your Best Option</span>
@@ -901,13 +954,34 @@ function updatePlainSummary(data) {
       on the <span class="ps-highlight">${tariffName}</span> tariff.
       This will cost roughly <strong>${cost}</strong> and save you around
       <span class="ps-saving">${saving}/year</span> on your energy bills,
-      ${paybackSentence}${roiSentence}
+      ${paybackSentence}${roiSentence}${exportNote}
       <span class="ps-disclaimer">
         Based on your usage profile. Scroll down for the full breakdown across all battery sizes and tariffs.
       </span>
     </div>`;
 
   document.getElementById('s-plain-summary').classList.remove('hidden');
+}
+
+// ============================================================
+// EXPORT TOGGLE
+// ============================================================
+function onExportToggle() {
+  const enabled = document.getElementById('export-toggle').checked;
+  const inputs = document.getElementById('export-inputs');
+  inputs.classList.toggle('visible', enabled);
+  document.getElementById('m-export-card').style.display = enabled ? '' : 'none';
+  if (sessionId) runRecalculate();
+}
+
+function onExportRateChange() {
+  if (sessionId) runRecalculate();
+}
+
+function getExportRatePence() {
+  const enabled = document.getElementById('export-toggle').checked;
+  if (!enabled) return 0;
+  return parseFloat(document.getElementById('export-rate-slider').value);
 }
 
 // ============================================================
@@ -919,6 +993,9 @@ function updateTariffInfo() {
   if (!t) return;
   document.getElementById('tariff-supplier').textContent = t.supplier || '';
   document.getElementById('tariff-desc').innerHTML = t.description || '';
+  const exportRate = t.export_rate_pence || 7.5;
+  document.getElementById('export-rate-slider').value = exportRate;
+  document.getElementById('export-rate-val').textContent = exportRate + 'p/kWh';
 }
 
 function onTariffChange() {
@@ -993,6 +1070,14 @@ function updateFinancialSummary(data) {
     pe.textContent=years.toFixed(1)+' yrs'; ps.textContent='Reasonable'; pc.className='metric warn';
   } else {
     pe.textContent=years.toFixed(1)+' yrs'; ps.textContent='Long payback'; pc.className='metric danger';
+  }
+
+  const exportRev = f.ann_export_revenue || 0;
+  const exportKwh = f.ann_kwh_exported || 0;
+  const exportCard = document.getElementById('m-export-card');
+  if (exportRev > 0 && exportCard) {
+    document.getElementById('m-export-revenue').textContent = '£' + Math.round(exportRev).toLocaleString();
+    document.getElementById('m-export-sub').textContent = Math.round(exportKwh) + ' kWh exported/yr';
   }
 }
 

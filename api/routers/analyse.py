@@ -37,6 +37,7 @@ class EstimateRequest(BaseModel):
     efficiency_pct:    float = Field(90.0,  ge=50,  le=100)
     inflation_pct:     float = Field(5.0,   ge=0,   le=20)
     current_sc_pd:     float = Field(53.0,  ge=0,   le=200)
+    export_rate_p:     float = Field(0.0,   ge=0,   le=100)
 
 
 class RecalculateRequest(BaseModel):
@@ -48,6 +49,7 @@ class RecalculateRequest(BaseModel):
     efficiency_pct: float = Field(90.0, ge=50, le=100)
     inflation_pct: float = Field(5.0, ge=0, le=20)
     current_sc_pd: float = Field(53.0, ge=0, le=200)   # pence/day
+    export_rate_p: float = Field(0.0, ge=0, le=100)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ def _build_response(
     current_sc_pd: float,
     session_id: str,
     source: str = "upload",   # "upload" | "estimate"
+    export_rate_p: float = 0.0,
 ) -> dict:
     tariff = TARIFFS.get(tariff_key)
     if tariff is None:
@@ -80,6 +83,7 @@ def _build_response(
         days=parse.days,
         current_rate=current_rate,
         current_sc_pd=current_sc_pd,
+        export_rate=export_rate_p / 100.0,
     )
     if sim is None:
         raise HTTPException(status_code=422, detail="No usable data in uploaded files.")
@@ -143,6 +147,8 @@ def _build_response(
             "total_saving": round(sim.total_saving, 2),
             "payback_years": round(pb.years, 2) if pb.years != math.inf else None,
             "roi_10yr": pb.roi_10yr,
+            "ann_export_revenue": round(sim.ann_export_revenue, 2),
+            "ann_kwh_exported": round(sim.ann_kwh_exported, 1),
         },
         "charts": {
             "soc_profile": [round(v, 3) for v in sim.avg_soc_profile],
@@ -242,6 +248,7 @@ async def analyse(
     efficiency_pct: Annotated[float, Form()] = 90.0,
     inflation_pct: Annotated[float, Form()] = 5.0,
     current_sc_pd: Annotated[float, Form()] = 53.0,
+    export_rate_p: Annotated[float, Form()] = 0.0,
 ):
     if not files:
         raise HTTPException(status_code=400, detail="At least one CSV file is required.")
@@ -278,6 +285,7 @@ async def analyse(
         inflation_pct=inflation_pct,
         current_sc_pd=current_sc_pd,
         session_id=session_id,
+        export_rate_p=export_rate_p,
     )
 
 
@@ -311,6 +319,7 @@ async def estimate(req: EstimateRequest):
         current_sc_pd=req.current_sc_pd,
         session_id=session_id,
         source="estimate",
+        export_rate_p=req.export_rate_p,
     )
 
 
@@ -343,4 +352,5 @@ async def recalculate(req: RecalculateRequest):
         inflation_pct=req.inflation_pct,
         current_sc_pd=req.current_sc_pd,
         session_id=req.session_id,
+        export_rate_p=req.export_rate_p,
     )

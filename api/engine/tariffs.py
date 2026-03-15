@@ -35,6 +35,7 @@ class Tariff:
     standing_charge: float          # £/day
     is_flat_rate: bool = False
     is_dynamic: bool = False
+    export_rate: float = 0.0        # £/kWh — 0.0 means no export
 
 
 def _make_octopus_go() -> list[float]:
@@ -91,6 +92,13 @@ def _make_scottish_power() -> list[float]:
     r[46] = r[47] = 0.10                  # 23:00–23:30
     return r
 
+def _make_octopus_flux_import() -> list[float]:
+    r = _flat(0.23)
+    for i in range(0, 10): r[i] = 0.21   # 00:00–05:00 cheap
+    r[46] = r[47] = 0.21                   # 23:00–23:30 cheap
+    for i in range(32, 38): r[i] = 0.43   # 16:00–19:00 peak
+    return r
+
 
 # Ofgem Q1 2026 standard variable — fallback when CSV has no cost column
 IMPLIED_RATE = 0.2816
@@ -118,6 +126,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((0, 10), (47, 47)),
         discharge_slots=_slots((11, 46)),
         standing_charge=0.47,
+        export_rate=0.075,
     ),
     "intelligentOctopus": Tariff(
         key="intelligentOctopus",
@@ -129,6 +138,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((0, 10), (46, 47)),
         discharge_slots=_slots((11, 45)),
         standing_charge=0.47,
+        export_rate=0.075,
     ),
     "octopusCosy": Tariff(
         key="octopusCosy",
@@ -140,6 +150,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((8, 13), (26, 31)),
         discharge_slots=_slots((32, 41)),
         standing_charge=0.47,
+        export_rate=0.075,
     ),
     "economy7": Tariff(
         key="economy7",
@@ -151,6 +162,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((1, 14)),
         discharge_slots=_slots((0, 0), (15, 47)),
         standing_charge=0.53,
+        export_rate=0.075,
     ),
     "eonNextDrive": Tariff(
         key="eonNextDrive",
@@ -162,6 +174,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((0, 13)),
         discharge_slots=_slots((14, 47)),
         standing_charge=0.53,
+        export_rate=0.085,
     ),
     "edfGoElectric": Tariff(
         key="edfGoElectric",
@@ -173,6 +186,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((0, 13)),
         discharge_slots=_slots((14, 47)),
         standing_charge=0.50,
+        export_rate=0.080,
     ),
     "edfFreePhase": Tariff(
         key="edfFreePhase",
@@ -184,6 +198,7 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((0, 11), (46, 47)),
         discharge_slots=_slots((32, 37)),
         standing_charge=0.532,
+        export_rate=0.075,
     ),
     "edfFreePhaseDynamic": Tariff(
         key="edfFreePhaseDynamic",
@@ -196,6 +211,7 @@ TARIFFS: dict[str, Tariff] = {
         discharge_slots=_slots((12, 45)),
         standing_charge=0.532,
         is_dynamic=True,
+        export_rate=0.075,
     ),
     "scottishPower": Tariff(
         key="scottishPower",
@@ -207,6 +223,19 @@ TARIFFS: dict[str, Tariff] = {
         charge_slots=_slots((0, 13), (46, 47)),
         discharge_slots=_slots((14, 45)),
         standing_charge=0.55,
+        export_rate=0.075,
+    ),
+    "octopusFlux": Tariff(
+        key="octopusFlux",
+        name="Octopus Flux",
+        supplier="Octopus Energy",
+        description="Flux Night 21p (23:00–05:00) · Day 23p · Peak 43p (16:00–19:00). Designed for battery + solar. Export: Peak 35p (16:00–19:00) · Standard 15p.",
+        color="#f59e0b",
+        slot_rates=_make_octopus_flux_import(),
+        charge_slots=_slots((0, 9), (46, 47)),       # 23:00–05:00
+        discharge_slots=_slots((32, 37)),              # 16:00–19:00
+        standing_charge=0.47,
+        export_rate=0.15,   # flat default; peak is higher but we use flat average
     ),
     "britishGasSV": Tariff(
         key="britishGasSV",
@@ -223,7 +252,7 @@ TARIFFS: dict[str, Tariff] = {
 }
 
 OPT_TARIFF_KEYS = [
-    "octopusGo", "intelligentOctopus", "octopusCosy", "economy7",
+    "octopusGo", "intelligentOctopus", "octopusCosy", "octopusFlux", "economy7",
     "eonNextDrive", "edfGoElectric", "edfFreePhase", "edfFreePhaseDynamic",
     "scottishPower",
 ]
