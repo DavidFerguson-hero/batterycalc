@@ -111,52 +111,124 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Two audience sections */}
       <section className="bg-slate-800/30 border-t border-slate-700/50 py-28">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">Built for homeowners</h2>
-          <p className="text-slate-400 text-center mb-16 text-lg">No guesswork. No sales pitch. Just accurate numbers.</p>
+        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-8">
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Real usage analysis",
-                desc: "We simulate your battery against your actual half-hourly consumption data, not averages.",
-              },
-              {
-                title: "Payback calculator",
-                desc: "See exactly how many years until your battery pays for itself, based on current energy prices.",
-              },
-              {
-                title: "Multiple battery options",
-                desc: "Compare leading home battery systems side by side to find the best fit for your home.",
-              },
-              {
-                title: "Tariff aware",
-                desc: "Supports Octopus Agile, Economy 7, and standard rates — including export tariffs for solar homes.",
-              },
-              {
-                title: "Solar compatible",
-                desc: "Have solar panels? We factor in your generation profile to maximise self-sufficiency.",
-              },
-              {
-                title: "Instant & free",
-                desc: "No account needed. Get your full recommendation in seconds, completely free.",
-              },
-            ].map(({ title, desc }) => (
-              <div key={title} className="flex gap-4 p-6 rounded-xl bg-slate-800/40 border border-slate-700/40">
-                <div className="mt-1 shrink-0 w-5 h-5 rounded-full bg-[#f97316] flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">{title}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
-                </div>
+          {/* Homeowners */}
+          <div className="bg-[#0a1628] border border-slate-700/50 rounded-2xl p-8 flex flex-col">
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-[#f97316] uppercase mb-4">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
+                For Homeowners
               </div>
-            ))}
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                Find the battery and tariff combination to save you the most money
+              </h2>
+              <p className="text-slate-400 leading-relaxed">
+                Stop guessing. See exactly which battery size and energy tariff will give you the fastest payback — based on your actual usage.
+              </p>
+            </div>
+
+            <ul className="space-y-4 mb-8 flex-1">
+              {[
+                {
+                  title: "Personalised to your home",
+                  desc: "Upload your half-hourly smart meter data or enter your annual usage — we model your real consumption, not UK averages.",
+                },
+                {
+                  title: "Compare every tariff side by side",
+                  desc: "We run your data against Octopus Go, Economy 7, Intelligent Go, and more to show you exactly which tariff maximises your savings.",
+                },
+                {
+                  title: "Clear payback timeline",
+                  desc: "See your break-even point, 10-year ROI, and annual saving in pounds — so you can make a confident buying decision.",
+                },
+              ].map(({ title, desc }) => (
+                <li key={title} className="flex gap-3">
+                  <div className="mt-1 shrink-0 w-5 h-5 rounded-full bg-[#f97316] flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-white">{title}</span>
+                    <p className="text-slate-400 text-sm leading-relaxed mt-0.5">{desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/calculator"
+              className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#ea6c0a] text-white font-semibold px-7 py-3.5 rounded-full transition-colors text-base"
+            >
+              Start for free
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
           </div>
+
+          {/* Installers */}
+          <div className="bg-[#0d1f3c] border border-[#f97316]/30 rounded-2xl p-8 flex flex-col">
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-[#f97316] uppercase mb-4">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+                </svg>
+                For Battery Installers
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                Design the best battery system for your customer
+              </h2>
+              <p className="text-slate-400 leading-relaxed">
+                Give your customers a data-backed recommendation they can trust — and close more installations with confidence.
+              </p>
+            </div>
+
+            <ul className="space-y-4 mb-8 flex-1">
+              {[
+                {
+                  title: "Instant sizing for any customer",
+                  desc: "Upload their smart meter CSV or enter annual consumption — get a full battery size and tariff recommendation in seconds, on-site or in the office.",
+                },
+                {
+                  title: "Professional-grade output",
+                  desc: "Show customers a clear breakdown of savings, payback period, and ROI across multiple battery sizes — built on real half-hourly simulation, not rule of thumb.",
+                },
+                {
+                  title: "Supports every major UK tariff",
+                  desc: "Model savings on Octopus Go, Intelligent Go, Economy 7, E.ON Drive, EDF, Scottish Power and more — so you can recommend the right system for each household.",
+                },
+              ].map(({ title, desc }) => (
+                <li key={title} className="flex gap-3">
+                  <div className="mt-1 shrink-0 w-5 h-5 rounded-full bg-[#f97316] flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-white">{title}</span>
+                    <p className="text-slate-400 text-sm leading-relaxed mt-0.5">{desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href="mailto:hello@batterysizer.co.uk"
+              className="inline-flex items-center justify-center gap-2 border-2 border-[#f97316] text-[#f97316] hover:bg-[#f97316] hover:text-white font-semibold px-7 py-3.5 rounded-full transition-colors text-base"
+            >
+              Contact us for pricing
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+          </div>
+
         </div>
       </section>
 
