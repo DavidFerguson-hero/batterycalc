@@ -57,9 +57,9 @@ def simulate_day_full(
     cost_with_battery = 0.0
     soc_profile: list[float] = []
     grid_profile: list[float] = []
-    total_export_kwh = 0.0
-    total_export_revenue = 0.0
 
+    # Self-consumption always comes first — battery only discharges to cover home load.
+    # Export is modelled separately at the end (residual SoC after the last discharge slot).
     for i in range(48):
         kwh = day_kwh[i]
         rate = tariff.slot_rates[i]
@@ -72,28 +72,28 @@ def simulate_day_full(
             soc += to_add
             grid_import = kwh + to_add / efficiency    # extra draw to account for losses
         elif tariff.discharge_slots[i] and soc > min_soc:
-            if export_rate > 0:
-                # Export mode: discharge as much as possible, sell surplus to grid
-                disc = min(soc - min_soc, max_per_slot)
-            else:
-                # No export: only discharge to cover consumption
-                disc = min(soc - min_soc, kwh, max_per_slot)
+            disc = min(soc - min_soc, kwh, max_per_slot)
             soc -= disc
             grid_import = kwh - disc
 
-        if grid_import < 0 and export_rate > 0:
-            # Battery provided more than needed — export surplus
-            export_kwh_slot = -grid_import
-            cost_with_battery += 0.0
-            cost_with_battery -= export_kwh_slot * export_rate   # revenue reduces cost
-            # Track export
-            total_export_kwh += export_kwh_slot
-            total_export_revenue += export_kwh_slot * export_rate
-        else:
-            cost_with_battery += max(0.0, grid_import) * rate
-
+        cost_with_battery += max(0.0, grid_import) * rate
         soc_profile.append(soc)
         grid_profile.append(max(0.0, grid_import))
+
+    # Export: any residual SoC above min_soc at the end of the last discharge slot.
+    # This is the only energy that can be sold without reducing self-consumption savings.
+    # Selling it earns export_rate revenue; it was charged at the cheap overnight rate.
+    total_export_kwh = 0.0
+    total_export_revenue = 0.0
+    if export_rate > 0:
+        discharge_indices = [i for i in range(48) if tariff.discharge_slots[i]]
+        if discharge_indices:
+            last_ds = discharge_indices[-1]
+            residual = max(0.0, soc_profile[last_ds] - min_soc)
+            if residual > 0:
+                total_export_kwh = residual
+                total_export_revenue = residual * export_rate
+                cost_with_battery -= total_export_revenue
 
     return DayResult(
         cost_no_battery=cost_no_battery,
