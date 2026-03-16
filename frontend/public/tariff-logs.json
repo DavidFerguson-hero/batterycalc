@@ -1,6 +1,197 @@
 {
   "runs": [
     {
+      "id": "20260316T044121Z",
+      "timestamp": "2026-03-16T04:41:21.386673+00:00",
+      "overall": "alert",
+      "summary": {
+        "total": 10,
+        "ok": 0,
+        "changed": 5,
+        "manual": 5,
+        "error": 0
+      },
+      "tariffs": {
+        "octopusGo": {
+          "key": "octopusGo",
+          "name": "Octopus Go",
+          "status": "changed",
+          "source": "Octopus Energy API",
+          "source_url": "https://api.octopus.energy/v1/products/GO-FIX-6M-26-03-05/",
+          "current_rates": {
+            "night_p": 7.0,
+            "day_p": 38.72,
+            "standing_p": 47.0
+          },
+          "found_rates": {
+            "day_p": 35.78,
+            "standing_p": 48.39,
+            "night_p": 9.5
+          },
+          "changes": [
+            "day_p: 38.72p \u2192 35.78p",
+            "night_p: 7.0p \u2192 9.5p",
+            "standing_p: 47.0p \u2192 48.39p"
+          ],
+          "product_code": "GO-FIX-6M-26-03-05",
+          "product_name": "Octopus Go 6M Fixed"
+        },
+        "intelligentOctopus": {
+          "key": "intelligentOctopus",
+          "name": "Intelligent Octopus Go",
+          "status": "changed",
+          "source": "Octopus Energy API",
+          "source_url": "https://api.octopus.energy/v1/products/INTELLI-FIX-6M-26-03-05/",
+          "current_rates": {
+            "night_p": 9.0,
+            "day_p": 38.0,
+            "standing_p": 47.0
+          },
+          "found_rates": {
+            "day_p": 35.78,
+            "standing_p": 48.39,
+            "night_p": 8.0
+          },
+          "changes": [
+            "day_p: 38.0p \u2192 35.78p",
+            "night_p: 9.0p \u2192 8.0p",
+            "standing_p: 47.0p \u2192 48.39p"
+          ],
+          "product_code": "INTELLI-FIX-6M-26-03-05",
+          "product_name": "Intelligent Octopus Go 6M Fixed"
+        },
+        "octopusCosy": {
+          "key": "octopusCosy",
+          "name": "Octopus Cosy",
+          "status": "changed",
+          "source": "Octopus Energy API",
+          "source_url": "https://api.octopus.energy/v1/products/COSY-FIX-6M-26-03-05/",
+          "current_rates": {
+            "cosy_p": 12.0,
+            "peak_p": 50.0,
+            "standard_p": 28.0,
+            "standing_p": 47.0
+          },
+          "found_rates": {
+            "standing_p": 48.39,
+            "cosy_p": 16.02,
+            "peak_p": 49.01,
+            "standard_p": 16.02
+          },
+          "changes": [
+            "cosy_p: 12.0p \u2192 16.02p",
+            "peak_p: 50.0p \u2192 49.01p",
+            "standard_p: 28.0p \u2192 16.02p",
+            "standing_p: 47.0p \u2192 48.39p"
+          ],
+          "product_code": "COSY-FIX-6M-26-03-05",
+          "product_name": "Cosy Octopus 6M Fixed"
+        },
+        "currentFlat": {
+          "key": "currentFlat",
+          "name": "Current Flat Rate (SVT)",
+          "status": "changed",
+          "source": "Ofgem Price Cap",
+          "source_url": "https://www.ofgem.gov.uk/check-if-energy-price-cap-affects-you",
+          "current_rates": {
+            "unit_p": 28.16,
+            "standing_p": 53.0
+          },
+          "found_rates": {
+            "unit_p": 24.67,
+            "standing_p": 53.0
+          },
+          "changes": [
+            "unit_p: 28.16p \u2192 24.67p"
+          ]
+        },
+        "britishGasSV": {
+          "key": "britishGasSV",
+          "name": "British Gas Standard Variable",
+          "status": "changed",
+          "source": "Ofgem Price Cap",
+          "source_url": "https://www.ofgem.gov.uk/check-if-energy-price-cap-affects-you",
+          "current_rates": {
+            "unit_p": 24.5,
+            "standing_p": 61.0
+          },
+          "found_rates": {
+            "unit_p": 24.67,
+            "standing_p": 61.0
+          },
+          "changes": [
+            "unit_p: 24.5p \u2192 24.67p"
+          ]
+        },
+        "economy7": {
+          "key": "economy7",
+          "name": "Economy 7",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.uswitch.com/gas-electricity/guides/economy-7/",
+          "current_rates": {
+            "night_p": 9.0,
+            "day_p": 33.0,
+            "standing_p": 53.0
+          },
+          "notes": "Economy 7 rates vary by region and supplier. Check comparison sites for current regional averages."
+        },
+        "eonNextDrive": {
+          "key": "eonNextDrive",
+          "name": "E.ON Next Drive",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.eonenergy.com/electric-vehicle-charging/next-drive-tariff.html",
+          "current_rates": {
+            "night_p": 8.5,
+            "day_p": 35.0,
+            "standing_p": 53.0
+          },
+          "notes": "Check E.ON tariff page \u2014 night 00:00\u201307:00, standing charge may vary."
+        },
+        "edfGoElectric": {
+          "key": "edfGoElectric",
+          "name": "EDF GoElectric Overnight",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.edfenergy.com/electric-cars/goelectric-overnight",
+          "current_rates": {
+            "night_p": 8.0,
+            "day_p": 34.0,
+            "standing_p": 50.0
+          },
+          "notes": "Check EDF GoElectric Overnight page for current night/day rates."
+        },
+        "edfFreePhase": {
+          "key": "edfFreePhase",
+          "name": "EDF FreePhase",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.edfenergy.com/for-homes/tariffs/freephase",
+          "current_rates": {
+            "night_p": 17.0,
+            "day_p": 22.1,
+            "peak_p": 38.4,
+            "standing_p": 53.2
+          },
+          "notes": "EDF FreePhase static rates \u2014 check EDF tariff page."
+        },
+        "scottishPower": {
+          "key": "scottishPower",
+          "name": "Scottish Power Smart",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.scottishpower.co.uk/energy/time-of-use-tariff",
+          "current_rates": {
+            "night_p": 10.0,
+            "day_p": 36.0,
+            "standing_p": 55.0
+          },
+          "notes": "Scottish Power Smart Tariff \u2014 night 23:00\u201307:00."
+        }
+      }
+    },
+    {
       "id": "20260315T020000Z",
       "timestamp": "2026-03-15T02:00:00+00:00",
       "overall": "ok",
@@ -20,8 +211,16 @@
           "source_url": "https://api.octopus.energy/v1/products/GO-VAR-22-10-14/",
           "product_code": "GO-VAR-22-10-14",
           "product_name": "Octopus Go",
-          "current_rates": { "night_p": 7.0, "day_p": 38.72, "standing_p": 47.0 },
-          "found_rates":   { "night_p": 7.0, "day_p": 38.72, "standing_p": 47.0 },
+          "current_rates": {
+            "night_p": 7.0,
+            "day_p": 38.72,
+            "standing_p": 47.0
+          },
+          "found_rates": {
+            "night_p": 7.0,
+            "day_p": 38.72,
+            "standing_p": 47.0
+          },
           "changes": []
         },
         "intelligentOctopus": {
@@ -32,8 +231,16 @@
           "source_url": "https://api.octopus.energy/v1/products/INTELLI-VAR-22-10-14/",
           "product_code": "INTELLI-VAR-22-10-14",
           "product_name": "Intelligent Octopus Go",
-          "current_rates": { "night_p": 9.0, "day_p": 38.0, "standing_p": 47.0 },
-          "found_rates":   { "night_p": 9.0, "day_p": 38.0, "standing_p": 47.0 },
+          "current_rates": {
+            "night_p": 9.0,
+            "day_p": 38.0,
+            "standing_p": 47.0
+          },
+          "found_rates": {
+            "night_p": 9.0,
+            "day_p": 38.0,
+            "standing_p": 47.0
+          },
           "changes": []
         },
         "octopusCosy": {
@@ -44,8 +251,18 @@
           "source_url": "https://api.octopus.energy/v1/products/COSY-22-12-08/",
           "product_code": "COSY-22-12-08",
           "product_name": "Octopus Cosy",
-          "current_rates": { "cosy_p": 12.0, "peak_p": 50.0, "standard_p": 28.0, "standing_p": 47.0 },
-          "found_rates":   { "cosy_p": 12.0, "peak_p": 50.0, "standard_p": 28.0, "standing_p": 47.0 },
+          "current_rates": {
+            "cosy_p": 12.0,
+            "peak_p": 50.0,
+            "standard_p": 28.0,
+            "standing_p": 47.0
+          },
+          "found_rates": {
+            "cosy_p": 12.0,
+            "peak_p": 50.0,
+            "standard_p": 28.0,
+            "standing_p": 47.0
+          },
           "changes": []
         },
         "currentFlat": {
@@ -53,16 +270,22 @@
           "name": "Current Flat Rate (SVT)",
           "status": "error",
           "source": "Ofgem Price Cap",
-          "error": "Could not extract unit rate from Ofgem page — check manually",
-          "current_rates": { "unit_p": 28.16, "standing_p": 53.0 }
+          "error": "Could not extract unit rate from Ofgem page \u2014 check manually",
+          "current_rates": {
+            "unit_p": 28.16,
+            "standing_p": 53.0
+          }
         },
         "britishGasSV": {
           "key": "britishGasSV",
           "name": "British Gas Standard Variable",
           "status": "error",
           "source": "Ofgem Price Cap",
-          "error": "Could not extract unit rate from Ofgem page — check manually",
-          "current_rates": { "unit_p": 24.5, "standing_p": 61.0 }
+          "error": "Could not extract unit rate from Ofgem page \u2014 check manually",
+          "current_rates": {
+            "unit_p": 24.5,
+            "standing_p": 61.0
+          }
         },
         "economy7": {
           "key": "economy7",
@@ -70,7 +293,11 @@
           "status": "manual",
           "source": "Manual verification required",
           "source_url": "https://www.uswitch.com/gas-electricity/guides/economy-7/",
-          "current_rates": { "night_p": 9.0, "day_p": 33.0, "standing_p": 53.0 },
+          "current_rates": {
+            "night_p": 9.0,
+            "day_p": 33.0,
+            "standing_p": 53.0
+          },
           "notes": "Economy 7 rates vary by region and supplier. Check comparison sites for current regional averages."
         },
         "eonNextDrive": {
@@ -79,8 +306,12 @@
           "status": "manual",
           "source": "Manual verification required",
           "source_url": "https://www.eonenergy.com/electric-vehicle-charging/next-drive-tariff.html",
-          "current_rates": { "night_p": 8.5, "day_p": 35.0, "standing_p": 53.0 },
-          "notes": "Check E.ON tariff page — night 00:00–07:00, standing charge may vary."
+          "current_rates": {
+            "night_p": 8.5,
+            "day_p": 35.0,
+            "standing_p": 53.0
+          },
+          "notes": "Check E.ON tariff page \u2014 night 00:00\u201307:00, standing charge may vary."
         },
         "edfGoElectric": {
           "key": "edfGoElectric",
@@ -88,7 +319,11 @@
           "status": "manual",
           "source": "Manual verification required",
           "source_url": "https://www.edfenergy.com/electric-cars/goelectric-overnight",
-          "current_rates": { "night_p": 8.0, "day_p": 34.0, "standing_p": 50.0 },
+          "current_rates": {
+            "night_p": 8.0,
+            "day_p": 34.0,
+            "standing_p": 50.0
+          },
           "notes": "Check EDF GoElectric Overnight page for current night/day rates."
         },
         "edfFreePhase": {
@@ -97,8 +332,13 @@
           "status": "manual",
           "source": "Manual verification required",
           "source_url": "https://www.edfenergy.com/for-homes/tariffs/freephase",
-          "current_rates": { "night_p": 17.0, "day_p": 22.1, "peak_p": 38.4, "standing_p": 53.2 },
-          "notes": "EDF FreePhase static rates — check EDF tariff page."
+          "current_rates": {
+            "night_p": 17.0,
+            "day_p": 22.1,
+            "peak_p": 38.4,
+            "standing_p": 53.2
+          },
+          "notes": "EDF FreePhase static rates \u2014 check EDF tariff page."
         },
         "scottishPower": {
           "key": "scottishPower",
@@ -106,8 +346,12 @@
           "status": "manual",
           "source": "Manual verification required",
           "source_url": "https://www.scottishpower.co.uk/energy/time-of-use-tariff",
-          "current_rates": { "night_p": 10.0, "day_p": 36.0, "standing_p": 55.0 },
-          "notes": "Scottish Power Smart Tariff — night 23:00–07:00."
+          "current_rates": {
+            "night_p": 10.0,
+            "day_p": 36.0,
+            "standing_p": 55.0
+          },
+          "notes": "Scottish Power Smart Tariff \u2014 night 23:00\u201307:00."
         }
       }
     }
