@@ -1,9 +1,50 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Free Home Battery Storage Calculator UK — BatterySizer",
+  description:
+    "Find out exactly what size home battery you need and which tariff saves you the most money. Upload your smart meter data or enter your annual usage — instant, free results with a clear payback timeline.",
+  alternates: {
+    canonical: "https://www.batterysizer.co.uk",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "BatterySizer",
+  url: "https://www.batterysizer.co.uk",
+  description:
+    "Free UK home battery storage calculator. Analyses your actual half-hourly energy consumption, compares all major UK time-of-use tariffs, and recommends the optimal battery size with a full payback and ROI calculation.",
+  applicationCategory: "UtilityApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "GBP",
+  },
+  featureList: [
+    "Half-hourly smart meter data analysis",
+    "UK tariff comparison (Octopus Go, Economy 7, Intelligent Go and more)",
+    "Battery payback period calculator",
+    "10-year ROI projection",
+    "Grid export revenue modelling",
+  ],
+  audience: {
+    "@type": "Audience",
+    audienceType: "UK homeowners considering home battery storage",
+  },
+};
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#0a1628] text-white font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <Image
@@ -24,13 +65,14 @@ export default function Home() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-28 text-center">
         <h1 className="text-5xl sm:text-6xl font-bold leading-tight tracking-tight mb-6">
-          Find the right battery size<br />
-          <span className="text-[#f97316]">for your home.</span>
+          The free home battery storage<br />
+          <span className="text-[#f97316]">calculator for UK homeowners.</span>
         </h1>
         <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-          BatterySizer analyses your actual energy usage, compares tariffs, and
-          tells you exactly what size home battery storage system will save you
-          the most money — with a clear payback timeline.
+          Find out exactly what size home battery you need and which tariff —
+          Octopus Go, Economy 7, Intelligent Go and more — will save you the
+          most money. Upload your smart meter data and get a clear payback
+          period in seconds, completely free.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
