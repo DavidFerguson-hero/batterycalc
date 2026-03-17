@@ -34,6 +34,22 @@ class SimResult:
     ann_kwh_exported: float = 0.0
 
 
+@dataclass
+class SolarResult:
+    """Additional financials when a solar profile is included."""
+    ann_generation_kwh: float
+    ann_self_consumed_kwh: float
+    ann_exported_no_batt_kwh: float
+    ann_exported_with_batt_kwh: float
+    self_consumption_pct: float         # % of solar used on-site (with battery)
+    ann_seg_income_no_batt: float
+    ann_seg_income_with_batt: float
+    ann_cost_solar_only: float          # new tariff + solar, no battery
+    ann_cost_solar_battery: float       # new tariff + solar + battery
+    saving_solar_only: float            # vs ann_cost_current
+    saving_solar_battery: float         # vs ann_cost_current
+
+
 def simulate_day_full(
     day_kwh: list[float],
     tariff: Tariff,
@@ -172,4 +188,117 @@ def run_simulation(
         avg_kwh_shifted_per_day=kwh_shifted / n_days,
         ann_export_revenue=tot_export_revenue * scale,
         ann_kwh_exported=tot_export_kwh * scale,
+    )
+
+
+# ── Solar ──────────────────────────────────────────────────────────────────────
+
+def calc_solar_impact(
+    tariff: Tariff,
+    cap_kwh: float,
+    max_rate_kw: float,
+    efficiency: float,
+    days: list[list[float]],
+    avg_solar_profile: list[float],   # 48-slot annual-avg kWh/slot
+    seg_rate: float,                  # £/kWh export rate
+    ann_cost_current: float,          # baseline from run_simulation
+    sc_new: float,                    # tariff.standing_charge * 365
+) -> SolarResult:
+    """
+    Compute annual costs and savings when solar generation is overlaid.
+
+    Dispatch priority per slot:
+      1. Solar self-consumption (load met directly from panels)
+      2. Surplus solar charges battery (free electrons, no grid draw)
+      3. Remaining battery headroom filled from cheap grid (charge slot)
+      4. Battery discharges to cover remaining load (discharge slot)
+      5. Any remaining solar surplus exported at seg_rate
+    """
+    if not days:
+        raise ValueError("No days to simulate.")
+
+    max_per_slot = max_rate_kw * 0.5
+    n_days = len(days)
+    scale  = 365.0 / n_days
+
+    tot_solar_only   = 0.0   # cost: new tariff + solar, no battery
+    tot_solar_batt   = 0.0   # cost: new tariff + solar + battery
+    tot_generation   = 0.0
+    tot_self_consumed= 0.0
+    tot_export_nb    = 0.0   # exported with no battery
+    tot_export_wb    = 0.0   # exported with battery
+
+    for day_kwh in days:
+        soc = cap_kwh * 0.30
+        min_soc = cap_kwh * 0.10
+
+        day_gen = sum(avg_solar_profile)
+        tot_generation += day_gen
+
+        for i in range(48):
+            load = day_kwh[i]
+            rate = tariff.slot_rates[i]
+            gen  = avg_solar_profile[i]
+
+            # ── Solar-only (no battery) ──────────────────────────
+            self_nb  = min(gen, load)
+            surp_nb  = gen - self_nb
+            grid_nb  = load - self_nb
+            tot_export_nb  += surp_nb
+            tot_solar_only += max(0.0, grid_nb) * rate - surp_nb * seg_rate
+
+            # ── Solar + battery ──────────────────────────────────
+            self_use = min(gen, load)
+            surplus  = gen - self_use
+            remaining = load - self_use
+            tot_self_consumed += self_use
+
+            # 2. Charge from solar surplus
+            solar_to_batt = 0.0
+            if surplus > 0 and soc < cap_kwh - 0.01:
+                solar_to_batt = min(surplus, cap_kwh - soc, max_per_slot)
+                soc     += solar_to_batt
+                surplus -= solar_to_batt
+
+            # 3. Top-up from cheap grid
+            grid_charge = 0.0
+            if tariff.charge_slots[i] and soc < cap_kwh - 0.01:
+                headroom = min(max_per_slot - solar_to_batt, cap_kwh - soc)
+                if headroom > 0.001:
+                    soc += headroom
+                    grid_charge = headroom / efficiency
+
+            # 4. Discharge to cover remaining load
+            if tariff.discharge_slots[i] and soc > min_soc:
+                disc = min(soc - min_soc, remaining, max_per_slot)
+                soc       -= disc
+                remaining -= disc
+
+            # 5. Export remaining surplus
+            export = surplus
+            tot_export_wb += export
+
+            net_grid = remaining + grid_charge
+            tot_solar_batt += max(0.0, net_grid) * rate - export * seg_rate
+
+    ann_solar_only   = tot_solar_only * scale + sc_new
+    ann_solar_batt   = tot_solar_batt * scale + sc_new
+    ann_gen          = tot_generation * scale
+    ann_self         = tot_self_consumed * scale
+    ann_exp_nb       = tot_export_nb * scale
+    ann_exp_wb       = tot_export_wb * scale
+    self_pct         = (ann_self / ann_gen * 100.0) if ann_gen > 0 else 0.0
+
+    return SolarResult(
+        ann_generation_kwh=round(ann_gen, 0),
+        ann_self_consumed_kwh=round(ann_self, 0),
+        ann_exported_no_batt_kwh=round(ann_exp_nb, 0),
+        ann_exported_with_batt_kwh=round(ann_exp_wb, 0),
+        self_consumption_pct=round(self_pct, 1),
+        ann_seg_income_no_batt=round(ann_exp_nb * seg_rate, 2),
+        ann_seg_income_with_batt=round(ann_exp_wb * seg_rate, 2),
+        ann_cost_solar_only=round(ann_solar_only, 2),
+        ann_cost_solar_battery=round(ann_solar_batt, 2),
+        saving_solar_only=round(ann_cost_current - ann_solar_only, 2),
+        saving_solar_battery=round(ann_cost_current - ann_solar_batt, 2),
     )
