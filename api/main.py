@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import analyse, tariffs, batteries
+from routers import analyse, tariffs, batteries, solar
 
 
 @asynccontextmanager
@@ -27,6 +27,7 @@ app.add_middleware(
         "https://batterycalc.vercel.app",                 # Vercel
         "https://batterysizer.co.uk",                     # Custom domain
         "https://www.batterysizer.co.uk",                 # Custom domain (www)
+        "https://dev.batterysizer.co.uk",                 # Dev subdomain
     ],
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,6 +36,7 @@ app.add_middleware(
 app.include_router(analyse.router,   prefix="/api")
 app.include_router(tariffs.router,   prefix="/api")
 app.include_router(batteries.router, prefix="/api")
+app.include_router(solar.router,     prefix="/api")
 
 
 @app.get("/health")
