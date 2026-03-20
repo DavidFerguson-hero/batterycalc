@@ -283,6 +283,41 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .slider-label{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text2);margin-bottom:.2rem}
 .slider-val{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.1rem .45rem;font-size:.78rem;color:#f59e0b;font-weight:600}
 .slider{width:100%;accent-color:#f59e0b;cursor:pointer;margin:.15rem 0;height:4px}
+/* ── Progressive disclosure ────────────────────────────────── */
+.breakdown-wrap{display:flex;flex-direction:column;gap:0}
+.breakdown-btn{display:flex;align-items:center;justify-content:space-between;
+  width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  color:var(--accent2);font-size:.9rem;font-weight:600;cursor:pointer;
+  padding:.85rem 1.1rem;transition:background .15s,border-color .15s;text-align:left}
+.breakdown-btn:hover{background:var(--bg3);border-color:var(--accent2)}
+.breakdown-btn .bd-arrow{display:inline-block;transition:transform .35s ease;margin-left:.5rem}
+.breakdown-btn.open .bd-arrow{transform:rotate(90deg)}
+.breakdown-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.breakdown-body.open{grid-template-rows:1fr}
+.breakdown-inner{overflow:hidden;display:flex;flex-direction:column;gap:1.25rem;padding-top:1.25rem}
+/* ── CTA sticky bar ─────────────────────────────────────────── */
+.cta-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);
+  padding:.75rem 1.25rem;z-index:50}
+.cta-bar-inner{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;width:100%}
+.cta-btn{padding:.5rem 1.1rem;border-radius:8px;font-size:.82rem;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--bg2);
+  color:var(--text);text-decoration:none;transition:background .15s,border-color .15s;
+  white-space:nowrap;display:inline-flex;align-items:center;gap:.35rem}
+.cta-btn:hover{background:var(--bg3);border-color:var(--accent2);color:var(--accent2)}
+.cta-btn-primary{background:var(--accent);color:#fff!important;border-color:var(--accent)}
+.cta-btn-primary:hover{background:#ea6c0a;border-color:#ea6c0a}
+.cta-share-confirm{font-size:.75rem;color:var(--green);font-weight:600;
+  opacity:0;transition:opacity .3s;white-space:nowrap}
+.cta-share-confirm.visible{opacity:1}
+.cta-email-expand{display:none;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;width:100%}
+.cta-email-expand.visible{display:flex}
+.cta-email-input{flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);padding:.4rem .7rem;font-size:.82rem;outline:none}
+.cta-email-input:focus{border-color:var(--accent2)}
+.cta-email-msg{font-size:.75rem;margin-top:.3rem;min-height:1rem}
+/* ── CSV upload secondary hint ──────────────────────────────── */
+.csv-secondary-note{font-size:.73rem;color:var(--text3);margin-bottom:.75rem;
+  padding:.45rem .75rem;background:var(--bg3);border-radius:7px;border-left:3px solid var(--border)}
 </style>
 </head>
 <body>
@@ -488,25 +523,20 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 </div>
 
 <div class="upload-summary-grid" id="upload-summary-wrap">
-  <div class="card hidden" id="s-summary">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-      <div class="section-title" style="margin-bottom:0">Uploaded Data Summary</div>
-      <button class="clear-btn" onclick="clearData()">✕ Clear Data</button>
-    </div>
-    <div class="sum-grid" id="sum-grid"></div>
-    <div class="text-sm" id="sum-note" style="margin-top:.6rem;color:var(--text3)"></div>
-  </div>
   <div class="card" id="s-upload">
     <div class="section-title">Get Your Battery Estimate</div>
 
     <!-- Tab switcher -->
     <div class="input-tabs">
-      <button class="input-tab active" id="tab-csv" onclick="switchInputTab('csv')">📁 Upload CSV</button>
-      <button class="input-tab"        id="tab-est" onclick="switchInputTab('est')">✏️ Estimate from usage</button>
+      <button class="input-tab"        id="tab-csv" onclick="switchInputTab('csv')">📁 Upload CSV</button>
+      <button class="input-tab active" id="tab-est" onclick="switchInputTab('est')">✏️ Estimate from usage</button>
     </div>
 
     <!-- ── CSV upload panel ───────────────────────────────── -->
-    <div id="panel-csv">
+    <div id="panel-csv" style="display:none">
+      <p class="csv-secondary-note">
+        For a more accurate result. Most users start with the estimate below.
+      </p>
       <p class="text-sm" style="margin-bottom:.9rem">
         Drop half-hourly CSV files exported from your energy supplier.
         One file per day <em>or</em> a single multi-day file — both work.
@@ -533,7 +563,7 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
     </div>
 
     <!-- ── Estimate panel ─────────────────────────────────── -->
-    <div id="panel-est" style="display:none">
+    <div id="panel-est">
       <div class="est-form">
         <div class="est-row">
           <div class="est-field">
@@ -578,107 +608,161 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   </div>
 </div>
 
-<div class="proj-heat-grid hidden" id="s-proj-heat">
-  <div class="left-col">
-    <div class="card" id="s-financial">
-      <div class="section-title">Financial Summary
-        <span style="font-size:.68rem;text-transform:none;letter-spacing:0;
-          color:var(--text3);font-weight:400;margin-left:.5rem">(sidebar tariff &amp; battery)</span>
-      </div>
-      <div class="metric-grid-2x2">
-        <div class="metric">
-          <div class="label">Current Annual Cost</div>
-          <div class="value" id="m-current">—</div>
-          <div class="sub">existing tariff</div>
-        </div>
-        <div class="metric highlight">
-          <div class="label">New Annual Cost</div>
-          <div class="value" id="m-combined">—</div>
-          <div class="sub">tariff + battery</div>
-        </div>
-        <div class="metric highlight">
-          <div class="label">Total Saving vs Today</div>
-          <div class="value" id="m-total-saving">—</div>
-          <div class="sub">tariff switch + battery</div>
-        </div>
-        <div class="metric" id="m-payback-card">
-          <div class="label">Payback Period</div>
-          <div class="value" id="m-payback">—</div>
-          <div class="sub" id="m-payback-sub">—</div>
-        </div>
-        <div class="metric" id="m-export-card" style="display:none">
-          <div class="label">Export Revenue</div>
-          <div class="value m-export" id="m-export-revenue">—</div>
-          <div class="sub" id="m-export-sub">—</div>
-        </div>
-      </div>
-    </div>
-    <div class="card" id="s-projection">
-      <div class="section-title">Cumulative Savings Projection (10 Years)</div>
-      <div class="chart-wrap-md"><canvas id="projChart"></canvas></div>
-      <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
-        Uses selected inflation rate. Dashed line = battery installed cost.
-      </div>
-    </div>
+<!-- ── STAGE 1: Financial summary (always visible after results) ── -->
+<div class="card hidden" id="s-financial">
+  <div class="section-title">Financial Summary
+    <span style="font-size:.68rem;text-transform:none;letter-spacing:0;
+      color:var(--text3);font-weight:400;margin-left:.5rem">(sidebar tariff &amp; battery)</span>
   </div>
-  <div class="card" id="s-heatmap">
-    <div class="section-title">Payback Period Heatmap</div>
-    <div class="hm-legend">
-      <span><span class="hm-swatch hm-best"></span>≤ 7 yrs</span>
-      <span><span class="hm-swatch hm-great"></span>7–10 yrs</span>
-      <span><span class="hm-swatch hm-good"></span>10–15 yrs</span>
-      <span><span class="hm-swatch hm-poor"></span>&gt;15 yrs</span>
-      <span><span class="hm-swatch hm-na"></span>No saving</span>
+  <div class="metric-grid-2x2">
+    <div class="metric">
+      <div class="label">Current Annual Cost</div>
+      <div class="value" id="m-current">—</div>
+      <div class="sub">existing tariff</div>
     </div>
-    <div class="heatmap-wrap"><table class="heatmap-table" id="heatmap-table"></table></div>
-    <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
-      ⭐ best ROI overall · outlined = current selection · click any cell to apply.
+    <div class="metric highlight">
+      <div class="label">New Annual Cost</div>
+      <div class="value" id="m-combined">—</div>
+      <div class="sub">tariff + battery</div>
+    </div>
+    <div class="metric highlight">
+      <div class="label">Total Saving vs Today</div>
+      <div class="value" id="m-total-saving">—</div>
+      <div class="sub">tariff switch + battery</div>
+    </div>
+    <div class="metric" id="m-payback-card">
+      <div class="label">Payback Period</div>
+      <div class="value" id="m-payback">—</div>
+      <div class="sub" id="m-payback-sub">—</div>
+    </div>
+    <div class="metric" id="m-export-card" style="display:none">
+      <div class="label">Export Revenue</div>
+      <div class="value m-export" id="m-export-revenue">—</div>
+      <div class="sub" id="m-export-sub">—</div>
     </div>
   </div>
 </div>
 
-<div class="rec-grid hidden" id="s-rec">
-  <div class="card">
-    <div class="section-title">Battery Size Recommendation</div>
-    <div class="section-sub" id="batt-rec-sub">For the selected tariff</div>
-    <table class="batt-table">
-      <thead><tr>
-        <th>Size</th><th>Cost</th><th>Saving vs Today/yr</th><th>Payback</th><th>10-yr ROI</th>
-      </tr></thead>
-      <tbody id="batt-rec-body"></tbody>
-    </table>
-    <div class="text-sm" style="margin-top:.6rem;color:var(--text3)">
-      ⭐ Best = highest 10-year ROI &nbsp;·&nbsp; ← = current slider selection. Click any row to apply.
-    </div>
-  </div>
-  <div class="card">
-    <div class="section-title">Tariff Recommendation</div>
-    <div class="section-sub" id="tariff-rec-sub">For the selected battery size</div>
-    <div id="tariff-rec-body"></div>
-    <div class="text-sm" style="margin-top:.4rem;color:var(--text3)">Click any row to select that tariff.</div>
-  </div>
-</div>
-
-<div class="card hidden" id="s-table">
-  <div class="section-title">All Combinations Ranked by 10-Year ROI</div>
-  <div style="overflow-x:auto">
-    <table class="cmp-table">
-      <thead><tr>
-        <th>#</th><th>Tariff</th><th>Battery</th><th>Cost</th>
-        <th>Saving vs Today/yr</th><th>Battery-Only Saving/yr</th>
-        <th>Payback</th><th>10-yr ROI</th>
-      </tr></thead>
-      <tbody id="full-table-body"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Solar Impact card — hidden until /api/solar called -->
+<!-- ── Solar Impact card — always visible when /api/solar called ── -->
 <div class="card solar-card hidden" id="s-solar">
   <div class="section-title">☀️ Solar Impact</div>
   <div class="solar-metric-grid" id="solar-metric-grid"></div>
   <div class="solar-payback-grid" id="solar-payback-grid"></div>
   <div class="solar-note" id="solar-note"></div>
+</div>
+
+<!-- ── CTA sticky bar (visible after results) ─────────────────── -->
+<div class="cta-bar hidden" id="cta-bar">
+  <div class="cta-bar-inner">
+    <!-- Email capture -->
+    <div>
+      <button class="cta-btn" onclick="openEmailCapture()">📧 Email me my results</button>
+      <div class="cta-email-expand" id="cta-email-form">
+        <input type="email" class="cta-email-input" id="cta-email-input" placeholder="your@email.com" />
+        <button class="cta-btn cta-btn-primary" onclick="submitEmailCapture()">Send</button>
+        <button class="cta-btn" onclick="closeEmailCapture()" style="background:transparent">Cancel</button>
+      </div>
+      <div class="cta-email-msg" id="cta-email-msg"></div>
+    </div>
+    <!-- Share -->
+    <div style="display:flex;align-items:center;gap:.5rem">
+      <button class="cta-btn" onclick="shareResults()">🔗 Share results</button>
+      <span class="cta-share-confirm" id="cta-share-confirm">✓ Link copied!</span>
+    </div>
+    <!-- Find installer -->
+    <a class="cta-btn cta-btn-primary"
+       href="https://mcscertified.com/find-an-installer/"
+       target="_blank" rel="noopener noreferrer">
+      🏠 Find an installer →
+    </a>
+  </div>
+</div>
+
+<!-- ── STAGE 2: Full breakdown (collapsed by default) ─────────── -->
+<div class="breakdown-wrap hidden" id="breakdown-wrap">
+  <button class="breakdown-btn" id="breakdown-btn" onclick="toggleBreakdown()">
+    See full breakdown <span class="bd-arrow">›</span>
+  </button>
+  <div class="breakdown-body" id="breakdown-body">
+    <div class="breakdown-inner">
+
+      <!-- Data / profile summary stats -->
+      <div class="card hidden" id="s-summary">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div class="section-title" style="margin-bottom:0">Uploaded Data Summary</div>
+          <button class="clear-btn" onclick="clearData()">✕ Clear Data</button>
+        </div>
+        <div class="sum-grid" id="sum-grid"></div>
+        <div class="text-sm" id="sum-note" style="margin-top:.6rem;color:var(--text3)"></div>
+      </div>
+
+      <!-- Projection + heatmap -->
+      <div class="proj-heat-grid" id="s-proj-heat">
+        <div class="left-col">
+          <div class="card" id="s-projection">
+            <div class="section-title">Cumulative Savings Projection (10 Years)</div>
+            <div class="chart-wrap-md"><canvas id="projChart"></canvas></div>
+            <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
+              Uses selected inflation rate. Dashed line = battery installed cost.
+            </div>
+          </div>
+        </div>
+        <div class="card" id="s-heatmap">
+          <div class="section-title">Payback Period Heatmap</div>
+          <div class="hm-legend">
+            <span><span class="hm-swatch hm-best"></span>≤ 7 yrs</span>
+            <span><span class="hm-swatch hm-great"></span>7–10 yrs</span>
+            <span><span class="hm-swatch hm-good"></span>10–15 yrs</span>
+            <span><span class="hm-swatch hm-poor"></span>&gt;15 yrs</span>
+            <span><span class="hm-swatch hm-na"></span>No saving</span>
+          </div>
+          <div class="heatmap-wrap"><table class="heatmap-table" id="heatmap-table"></table></div>
+          <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
+            ⭐ best ROI overall · outlined = current selection · click any cell to apply.
+          </div>
+        </div>
+      </div>
+
+      <!-- Battery + tariff recs -->
+      <div class="rec-grid" id="s-rec">
+        <div class="card">
+          <div class="section-title">Battery Size Recommendation</div>
+          <div class="section-sub" id="batt-rec-sub">For the selected tariff</div>
+          <table class="batt-table">
+            <thead><tr>
+              <th>Size</th><th>Cost</th><th>Saving vs Today/yr</th><th>Payback</th><th>10-yr ROI</th>
+            </tr></thead>
+            <tbody id="batt-rec-body"></tbody>
+          </table>
+          <div class="text-sm" style="margin-top:.6rem;color:var(--text3)">
+            ⭐ Best = highest 10-year ROI &nbsp;·&nbsp; ← = current slider selection. Click any row to apply.
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">Tariff Recommendation</div>
+          <div class="section-sub" id="tariff-rec-sub">For the selected battery size</div>
+          <div id="tariff-rec-body"></div>
+          <div class="text-sm" style="margin-top:.4rem;color:var(--text3)">Click any row to select that tariff.</div>
+        </div>
+      </div>
+
+      <!-- Full ranked table -->
+      <div class="card" id="s-table">
+        <div class="section-title">All Combinations Ranked by 10-Year ROI</div>
+        <div style="overflow-x:auto">
+          <table class="cmp-table">
+            <thead><tr>
+              <th>#</th><th>Tariff</th><th>Battery</th><th>Cost</th>
+              <th>Saving vs Today/yr</th><th>Battery-Only Saving/yr</th>
+              <th>Payback</th><th>10-yr ROI</th>
+            </tr></thead>
+            <tbody id="full-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 </main>
@@ -1078,7 +1162,87 @@ function updatePlainSummary(data) {
 // ============================================================
 // SOLAR
 // ============================================================
-let solarData = null;   // last solar result from /api/solar
+let solarData      = null;   // last solar result from /api/solar
+let breakdownOpen  = false;  // remembers expanded state across recalculates
+
+// ============================================================
+// PROGRESSIVE DISCLOSURE — breakdown expander
+// ============================================================
+function toggleBreakdown() {
+  breakdownOpen = !breakdownOpen;
+  document.getElementById('breakdown-body').classList.toggle('open', breakdownOpen);
+  document.getElementById('breakdown-btn').classList.toggle('open', breakdownOpen);
+  document.getElementById('breakdown-btn').firstChild.textContent =
+    breakdownOpen ? 'Hide breakdown ' : 'See full breakdown ';
+}
+
+// ============================================================
+// CTA BAR — email capture, share, installer
+// ============================================================
+function openEmailCapture() {
+  document.getElementById('cta-email-form').classList.add('visible');
+  document.getElementById('cta-email-input').focus();
+  document.getElementById('cta-email-msg').textContent = '';
+}
+
+function closeEmailCapture() {
+  document.getElementById('cta-email-form').classList.remove('visible');
+  document.getElementById('cta-email-input').value = '';
+  document.getElementById('cta-email-msg').textContent = '';
+}
+
+async function submitEmailCapture() {
+  const email = document.getElementById('cta-email-input').value.trim();
+  const msgEl = document.getElementById('cta-email-msg');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  if (!sessionId) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'No results to send yet.';
+    return;
+  }
+  msgEl.style.color = 'var(--text3)';
+  msgEl.textContent = '⏳ Sending…';
+  try {
+    await apiFetch('/api/sessions/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, email }),
+    });
+    msgEl.style.color = 'var(--green)';
+    msgEl.textContent = '✅ Check your inbox — results on their way!';
+    document.getElementById('cta-email-form').classList.remove('visible');
+    document.getElementById('cta-email-input').value = '';
+  } catch(e) {
+    // Endpoint not yet live — graceful fallback
+    msgEl.style.color = 'var(--text3)';
+    msgEl.textContent = '📬 Email delivery coming soon. Save this page to return later.';
+  }
+}
+
+function shareResults() {
+  const url = window.location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => _flashShareConfirm());
+  } else {
+    // Fallback for non-https or older browsers
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    _flashShareConfirm();
+  }
+}
+
+function _flashShareConfirm() {
+  const el = document.getElementById('cta-share-confirm');
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 2500);
+}
 
 function onSolarToggle() {
   const on = document.getElementById('solar-toggle').checked;
@@ -1660,9 +1824,18 @@ async function handleFiles(files) {
 
 function showAllSections() {
   document.getElementById('upload-summary-wrap').classList.add('has-data');
-  ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+  // Stage 1: always-visible cards
+  ['s-plain-summary', 's-financial', 's-summary'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
+  // CTA bar + breakdown expander
+  document.getElementById('cta-bar').classList.remove('hidden');
+  document.getElementById('breakdown-wrap').classList.remove('hidden');
+  // Restore breakdown open state if it was open before recalculate
+  if (breakdownOpen) {
+    document.getElementById('breakdown-body').classList.add('open');
+    document.getElementById('breakdown-btn').classList.add('open');
+  }
   // s-solar stays hidden until /api/solar is called
   document.getElementById('sidebar').classList.remove('hidden');
   document.getElementById('page-layout').classList.remove('no-sidebar');
@@ -1675,9 +1848,17 @@ function clearData() {
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table', 's-solar'].forEach(id => {
+  // Hide Stage 1 cards
+  ['s-plain-summary', 's-financial', 's-summary', 's-solar'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
+  // Hide CTA bar and collapse breakdown
+  document.getElementById('cta-bar').classList.add('hidden');
+  document.getElementById('breakdown-wrap').classList.add('hidden');
+  document.getElementById('breakdown-body').classList.remove('open');
+  document.getElementById('breakdown-btn').classList.remove('open');
+  breakdownOpen = false;
+  closeEmailCapture();
   // Reset solar sidebar
   document.getElementById('solar-toggle').checked = false;
   document.getElementById('solar-inputs').classList.remove('visible');
