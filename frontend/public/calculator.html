@@ -250,6 +250,36 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .export-inputs{display:none;margin-top:.75rem}
 .export-inputs.visible{display:block}
 .m-export{color:#f59e0b}
+/* ── Solar ─────────────────────────────────────────────────────── */
+.solar-section{border-top:1px solid rgba(255,255,255,.07);margin-top:1rem;padding-top:1rem}
+.solar-toggle-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.solar-toggle{appearance:none;width:36px;height:20px;background:#253650;border-radius:10px;
+  position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;border:none}
+.solar-toggle:checked{background:#f59e0b}
+.solar-toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;
+  background:#fff;border-radius:50%;transition:left .2s}
+.solar-toggle:checked::after{left:19px}
+.solar-inputs{display:none;margin-top:.75rem}
+.solar-inputs.visible{display:flex;flex-direction:column;gap:.65rem}
+.solar-sub-toggle{display:flex;gap:.4rem;margin-bottom:.2rem}
+.solar-sub-btn{flex:1;padding:.35rem .5rem;font-size:.75rem;font-weight:600;border-radius:6px;
+  background:transparent;border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.solar-sub-btn.active{background:rgba(245,158,11,.15);border-color:#f59e0b;color:#f59e0b}
+.solar-postcode{background:var(--bg3);border:1px solid var(--border);border-radius:7px;
+  padding:.45rem .65rem;font-size:.82rem;color:var(--text1);width:100%;box-sizing:border-box}
+.solar-postcode:focus{border-color:#f59e0b}
+.solar-postcode::placeholder{text-transform:none;color:var(--text3)}
+.btn-solar{background:#f59e0b;color:#000;border:none;border-radius:8px;padding:.55rem 1rem;
+  font-size:.82rem;font-weight:700;cursor:pointer;width:100%;margin-top:.25rem}
+.btn-solar:hover{background:#fbbf24}
+.btn-solar:disabled{opacity:.5;cursor:not-allowed}
+.solar-card{border-color:rgba(245,158,11,.4)!important}
+.solar-card .section-title{color:#f59e0b}
+.solar-metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:.65rem}
+.m-solar{color:#f59e0b!important}
+.solar-note{font-size:.72rem;color:var(--text3);margin-top:.6rem;line-height:1.5}
+.solar-payback-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:.65rem;margin-top:.75rem}
+.solar-status{font-size:.75rem;margin-top:.5rem}
 .slider-label{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text2);margin-bottom:.2rem}
 .slider-val{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.1rem .45rem;font-size:.78rem;color:#f59e0b;font-weight:600}
 .slider{width:100%;accent-color:#f59e0b;cursor:pointer;margin:.15rem 0;height:4px}
@@ -374,6 +404,78 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
         <div class="text-sm" style="color:var(--text3);margin-top:.3rem">
           Typical SEG: 7.5p · Octopus Flux: ~15p avg · Agile export: variable
         </div>
+      </div>
+    </div>
+
+    <!-- ── Solar section ──────────────────────────────────────── -->
+    <div class="solar-section">
+      <div class="solar-toggle-row">
+        <input type="checkbox" class="solar-toggle" id="solar-toggle" onchange="onSolarToggle()" />
+        <label for="solar-toggle" style="font-size:.82rem;font-weight:600;color:var(--text1);cursor:pointer">
+          ☀️ Model solar panels
+        </label>
+      </div>
+
+      <div class="solar-inputs" id="solar-inputs">
+        <!-- Existing / new sub-toggle -->
+        <div class="solar-sub-toggle">
+          <button class="solar-sub-btn active" id="solar-btn-existing" onclick="setSolarStatus('existing')">Existing panels</button>
+          <button class="solar-sub-btn"        id="solar-btn-new"      onclick="setSolarStatus('new')">New install</button>
+        </div>
+
+        <!-- Postcode -->
+        <div>
+          <div class="slider-label"><span>Property postcode</span></div>
+          <input type="text" class="solar-postcode" id="solar-postcode" placeholder="e.g. SW1A 1AA" maxlength="9">
+        </div>
+
+        <!-- Panel capacity -->
+        <div>
+          <label class="slider-label">Panel capacity <span class="slider-val" id="kwp-val">4.0 kWp</span></label>
+          <input type="range" class="slider" id="kwp-slider" min="1" max="16" step="0.5" value="4"
+                 oninput="document.getElementById('kwp-val').textContent=parseFloat(this.value).toFixed(1)+' kWp'">
+          <div class="range-limits"><span>1 kWp</span><span>16 kWp</span></div>
+        </div>
+
+        <!-- Orientation -->
+        <div>
+          <div class="slider-label"><span>Roof orientation</span></div>
+          <select class="est-input" id="solar-orientation" style="margin-top:.15rem">
+            <option value="south">South (best)</option>
+            <option value="south_east">South-East</option>
+            <option value="south_west">South-West</option>
+            <option value="east">East</option>
+            <option value="west">West</option>
+            <option value="north">North</option>
+          </select>
+        </div>
+
+        <!-- Tilt -->
+        <div>
+          <label class="slider-label">Roof tilt <span class="slider-val" id="tilt-val">35°</span></label>
+          <input type="range" class="slider" id="tilt-slider" min="10" max="60" step="5" value="35"
+                 oninput="document.getElementById('tilt-val').textContent=this.value+'°'">
+          <div class="range-limits"><span>10°</span><span>60°</span></div>
+        </div>
+
+        <!-- SEG rate -->
+        <div>
+          <label class="slider-label">Export (SEG) rate <span class="slider-val" id="solar-seg-val">15.0p</span></label>
+          <input type="range" class="slider" id="solar-seg-slider" min="1" max="30" step="0.5" value="15"
+                 oninput="document.getElementById('solar-seg-val').textContent=parseFloat(this.value).toFixed(1)+'p'">
+          <div class="range-limits"><span>1p</span><span>30p</span></div>
+        </div>
+
+        <!-- New install cost (hidden for existing) -->
+        <div id="solar-cost-row" style="display:none">
+          <label class="slider-label">Panel install cost <span class="slider-val" id="solar-cost-val">£8,000</span></label>
+          <input type="range" class="slider" id="solar-cost-slider" min="2000" max="20000" step="500" value="8000"
+                 oninput="document.getElementById('solar-cost-val').textContent='£'+Number(this.value).toLocaleString()">
+          <div class="range-limits"><span>£2k</span><span>£20k</span></div>
+        </div>
+
+        <button class="btn-solar" id="solar-calc-btn" onclick="doFetchSolar()">☀️ Calculate with solar</button>
+        <div class="solar-status" id="solar-status"></div>
       </div>
     </div>
   </div>
@@ -571,6 +673,14 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   </div>
 </div>
 
+<!-- Solar Impact card — hidden until /api/solar called -->
+<div class="card solar-card hidden" id="s-solar">
+  <div class="section-title">☀️ Solar Impact</div>
+  <div class="solar-metric-grid" id="solar-metric-grid"></div>
+  <div class="solar-payback-grid" id="solar-payback-grid"></div>
+  <div class="solar-note" id="solar-note"></div>
+</div>
+
 </main>
 </div>
 
@@ -606,7 +716,7 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
         <li>The simulation resets battery state each day — no carry-over between days.</li>
         <li>Battery degradation (~2%/yr) is not modelled.</li>
         <li>Seasonal variation: your uploaded period is assumed representative of the full year.</li>
-        <li>Solar generation and export tariffs are not included.</li>
+        <li>Solar modelling uses PVGIS 2023 weather data; actual output varies with shading and soiling.</li>
         <li>Tariff rates are indicative Q1 2026 published rates.</li>
       </ul>
     </div>
@@ -908,6 +1018,8 @@ function renderResult(data) {
   updatePlainSummary(data);
   updateSidebarProfile(data);
   updateFinancialSummary(data);
+  // If solar data present, overlay solar-enhanced figures on the financial tiles
+  if (data.solar) renderFinancialSummary(data.financials, data.solar);
   updateProjection(data);
   updateHeatmap(data);
   updateBatteryRec(data);
@@ -961,6 +1073,158 @@ function updatePlainSummary(data) {
     </div>`;
 
   document.getElementById('s-plain-summary').classList.remove('hidden');
+}
+
+// ============================================================
+// SOLAR
+// ============================================================
+let solarData = null;   // last solar result from /api/solar
+
+function onSolarToggle() {
+  const on = document.getElementById('solar-toggle').checked;
+  const inputs = document.getElementById('solar-inputs');
+  inputs.classList.toggle('visible', on);
+  if (!on) {
+    solarData = null;
+    document.getElementById('s-solar').classList.add('hidden');
+    if (lastResult) renderFinancialSummary(lastResult.financials, null);
+  }
+}
+
+function setSolarStatus(status) {
+  document.getElementById('solar-btn-existing').classList.toggle('active', status === 'existing');
+  document.getElementById('solar-btn-new').classList.toggle('active', status === 'new');
+  document.getElementById('solar-cost-row').style.display = status === 'new' ? '' : 'none';
+}
+
+function setSolarStatusMsg(msg, type) {
+  const el = document.getElementById('solar-status');
+  el.className = 'solar-status ' + (type === 'error' ? 'bad' : type === 'loading' ? 'neutral' : 'good');
+  el.innerHTML = msg;
+}
+
+async function doFetchSolar() {
+  if (!sessionId) { setSolarStatusMsg('Upload or estimate your consumption first.', 'error'); return; }
+  const postcode = document.getElementById('solar-postcode').value.trim();
+  if (!postcode) { setSolarStatusMsg('Enter your postcode.', 'error'); return; }
+
+  const btn = document.getElementById('solar-calc-btn');
+  btn.disabled = true;
+  setSolarStatusMsg('⏳ Fetching solar data from PVGIS…', 'loading');
+
+  const isNew = document.getElementById('solar-btn-new').classList.contains('active');
+  const p     = getSliderParams();
+
+  try {
+    const data = await apiFetch('/api/solar', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id:          sessionId,
+        postcode:            postcode,
+        panel_kwp:           parseFloat(document.getElementById('kwp-slider').value),
+        orientation:         document.getElementById('solar-orientation').value,
+        tilt_deg:            parseFloat(document.getElementById('tilt-slider').value),
+        seg_rate_p:          parseFloat(document.getElementById('solar-seg-slider').value),
+        panel_cost_gbp:      isNew ? parseFloat(document.getElementById('solar-cost-slider').value) : 0,
+        tariff_key:          p.tariffKey,
+        battery_cap_kwh:     parseFloat(p.capKwh),
+        battery_cost_gbp:    parseFloat(p.costGbp),
+        max_charge_rate_kw:  parseFloat(p.maxRateKw),
+        efficiency_pct:      parseFloat(p.effPct),
+        inflation_pct:       parseFloat(p.inflPct),
+        current_sc_pd:       parseFloat(p.scPd),
+        export_rate_p:       getExportRatePence(),
+      }),
+    });
+
+    solarData  = data.solar;
+    lastResult = data;
+    renderResult(data);
+    renderSolarCard(data.solar);
+    setSolarStatusMsg('✅ Solar data loaded (' + data.solar.annual_generation_kwh.toLocaleString() + ' kWh/yr estimated)', 'success');
+  } catch(e) {
+    setSolarStatusMsg('❌ ' + (e.message || 'Solar fetch failed.'), 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSolarCard(s) {
+  document.getElementById('s-solar').classList.remove('hidden');
+
+  const fmt    = v => v !== null && v !== undefined ? '£' + Math.round(v).toLocaleString() : '—';
+  const fmtKwh = v => v !== null && v !== undefined ? Math.round(v).toLocaleString() + ' kWh' : '—';
+
+  document.getElementById('solar-metric-grid').innerHTML = `
+    <div class="metric"><div class="label">Annual Generation</div>
+      <div class="value m-solar">${fmtKwh(s.annual_generation_kwh)}</div>
+      <div class="sub">${parseFloat(document.getElementById('kwp-slider').value).toFixed(1)} kWp system</div></div>
+    <div class="metric"><div class="label">Self-Consumed</div>
+      <div class="value">${fmtKwh(s.annual_self_consumed_kwh)}</div>
+      <div class="sub">${s.self_consumption_pct}% of generation</div></div>
+    <div class="metric highlight"><div class="label">Saving — Solar Only</div>
+      <div class="value m-solar">${fmt(s.saving_solar_only)}<span style="font-size:.7rem;font-weight:400">/yr</span></div>
+      <div class="sub">vs current, no battery</div></div>
+    <div class="metric highlight"><div class="label">Saving — Solar + Battery</div>
+      <div class="value m-solar">${fmt(s.saving_solar_battery)}<span style="font-size:.7rem;font-weight:400">/yr</span></div>
+      <div class="sub">vs current bill</div></div>
+    <div class="metric"><div class="label">SEG Export Income</div>
+      <div class="value">${fmt(s.seg_income_with_batt)}<span style="font-size:.7rem;font-weight:400">/yr</span></div>
+      <div class="sub">${Math.round(s.annual_exported_with_batt_kwh).toLocaleString()} kWh exported</div></div>
+    <div class="metric"><div class="label">Battery Adds Extra</div>
+      <div class="value">${fmt(s.incremental_battery_saving)}<span style="font-size:.7rem;font-weight:400">/yr</span></div>
+      <div class="sub">on top of solar alone</div></div>`;
+
+  const paybackHtml = [
+    s.payback_battery_years !== null
+      ? `<div class="metric"><div class="label">Battery Payback</div>
+           <div class="value">${s.payback_battery_years.toFixed(1)} yrs</div>
+           <div class="sub">based on incremental saving</div></div>` : '',
+    s.payback_panels_years !== null
+      ? `<div class="metric"><div class="label">Panel Payback</div>
+           <div class="value">${s.payback_panels_years.toFixed(1)} yrs</div>
+           <div class="sub">solar saving only</div></div>` : '',
+    s.payback_combined_years !== null
+      ? `<div class="metric"><div class="label">Combined Payback</div>
+           <div class="value">${s.payback_combined_years.toFixed(1)} yrs</div>
+           <div class="sub">panels + battery total</div></div>` : '',
+  ].join('');
+  document.getElementById('solar-payback-grid').innerHTML = paybackHtml;
+
+  document.getElementById('solar-note').textContent =
+    `Generation estimated from PVGIS (2023 weather data) for ${s.location.lat.toFixed(2)}°N, ` +
+    `${Math.abs(s.location.lon).toFixed(2)}°${s.location.lon < 0 ? 'W' : 'E'} — ` +
+    `${s.orientation.replace('_',' ')} facing, ${s.tilt_deg}° tilt. ` +
+    `Results are indicative; actual output depends on shading, soiling and system losses.`;
+}
+
+function renderFinancialSummary(fin, solar) {
+  const totalSaving = solar ? solar.saving_solar_battery : fin.total_saving;
+  const newCost     = solar ? solar.ann_cost_solar_battery : fin.ann_cost_with_battery;
+  const paybackYrs  = fin.payback_years;
+
+  document.getElementById('m-current').textContent      = '£' + Math.round(fin.ann_cost_current).toLocaleString();
+  document.getElementById('m-combined').textContent     = '£' + Math.round(newCost).toLocaleString();
+  document.getElementById('m-combined').closest('.metric').querySelector('.sub').textContent =
+    solar ? 'tariff + battery + solar' : 'tariff + battery';
+
+  const savEl = document.getElementById('m-total-saving');
+  savEl.textContent = totalSaving >= 0
+    ? '£' + Math.round(totalSaving).toLocaleString()
+    : '−£' + Math.round(Math.abs(totalSaving)).toLocaleString();
+  savEl.closest('.metric').querySelector('.sub').textContent =
+    solar ? 'solar + tariff switch + battery' : 'tariff switch + battery';
+
+  if (paybackYrs !== null) {
+    document.getElementById('m-payback').textContent     = paybackYrs.toFixed(1) + ' yrs';
+    document.getElementById('m-payback-sub').textContent = 'battery only payback';
+    const card = document.getElementById('m-payback-card');
+    card.className = 'metric ' + (paybackYrs <= 8 ? 'highlight' : paybackYrs <= 12 ? '' : 'warn');
+  } else {
+    document.getElementById('m-payback').textContent     = '—';
+    document.getElementById('m-payback-sub').textContent = 'no positive saving';
+  }
 }
 
 // ============================================================
@@ -1399,20 +1663,25 @@ function showAllSections() {
   ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
+  // s-solar stays hidden until /api/solar is called
   document.getElementById('sidebar').classList.remove('hidden');
   document.getElementById('page-layout').classList.remove('no-sidebar');
 }
 
 function clearData() {
-  sessionId = null; lastResult = null;
+  sessionId = null; lastResult = null; solarData = null;
   setStatus('', '');
   document.getElementById('upload-status').className = '';
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+  ['s-summary', 's-plain-summary', 's-rec', 's-proj-heat', 's-table', 's-solar'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
+  // Reset solar sidebar
+  document.getElementById('solar-toggle').checked = false;
+  document.getElementById('solar-inputs').classList.remove('visible');
+  document.getElementById('solar-status').textContent = '';
   document.getElementById('header-stats').style.display = 'none';
   document.getElementById('data-badge').textContent = 'No data loaded — upload your CSV to get started';
   document.getElementById('profile-chart-wrap').style.display = 'none';
