@@ -251,6 +251,13 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .export-inputs.visible{display:block}
 .m-export{color:#f59e0b}
 /* ── Solar ─────────────────────────────────────────────────────── */
+/* ── Solar quick question (inside input card) ───────────── */
+.siq-section{border-top:1px solid var(--border);margin-top:.9rem;padding-top:.85rem}
+.siq-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.siq-check{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.siq-lbl{font-size:.88rem;font-weight:600;color:var(--text);cursor:pointer}
+.siq-fields{margin-top:.7rem;display:flex;flex-direction:column;gap:.7rem}
+.siq-hint{font-size:.72rem;color:var(--text3);margin-top:.15rem}
 .solar-section{border-top:1px solid rgba(255,255,255,.07);margin-top:1rem;padding-top:1rem}
 .solar-toggle-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
 .solar-toggle{appearance:none;width:36px;height:20px;background:#253650;border-radius:10px;
@@ -601,6 +608,30 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
           Adjust if you know your actual figure from a bill.
         </p>
         <button class="btn-primary" id="est-btn" onclick="doEstimateClick()">Calculate Savings →</button>
+      </div>
+    </div>
+
+    <!-- ── Solar quick question (shared by both tabs) ──── -->
+    <div class="siq-section">
+      <div class="siq-row">
+        <input type="checkbox" class="siq-check" id="siq-toggle" onchange="onSiqToggle()" />
+        <label class="siq-lbl" for="siq-toggle">☀️ I have solar panels</label>
+      </div>
+      <div id="siq-fields" style="display:none">
+        <div class="est-row">
+          <div class="est-field">
+            <label class="est-label">Property postcode</label>
+            <input type="text" class="est-input" id="siq-postcode" placeholder="e.g. SW1A 1AA" maxlength="9">
+          </div>
+          <div class="est-field">
+            <label class="est-label">System size — <span id="siq-kwp-val">4.0 kWp</span></label>
+            <input type="range" id="siq-kwp" min="1" max="16" step="0.5" value="4"
+                   style="width:100%;accent-color:var(--accent);cursor:pointer;margin:.25rem 0;height:4px"
+                   oninput="document.getElementById('siq-kwp-val').textContent=parseFloat(this.value).toFixed(1)+' kWp'">
+            <div class="range-limits"><span>1 kWp</span><span>16 kWp</span></div>
+          </div>
+        </div>
+        <p class="siq-hint">South-facing, 35° tilt assumed. Adjust orientation and tilt in the sidebar after calculating.</p>
       </div>
     </div>
 
@@ -1023,7 +1054,6 @@ async function doEstimateClick() {
     sessionId  = data.session_id;
     lastResult = data;
 
-    setStatus(`✅ Estimated from <strong>${Math.round(annKwh).toLocaleString()} kWh/yr</strong> (${beds}-bed ${propLabel}).`, 'success');
     uploadZone.classList.add('collapsed');
     document.getElementById('uz-label').textContent = `${beds}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
 
@@ -1034,6 +1064,13 @@ async function doEstimateClick() {
     document.getElementById('profile-placeholder').style.display = 'none';
     document.getElementById('profile-chart-wrap').style.display  = '';
     renderResult(data);
+
+    // Chain solar if the quick question is enabled
+    if (document.getElementById('siq-toggle').checked && document.getElementById('siq-postcode').value.trim()) {
+      await runSolarFromSiq();
+    } else {
+      setStatus(`✅ Estimated from <strong>${Math.round(annKwh).toLocaleString()} kWh/yr</strong> (${beds}-bed ${propLabel}).`, 'success');
+    }
   } catch(e) {
     setStatus('❌ ' + (e.message || 'Estimation failed.'), 'error');
   } finally {
@@ -1244,10 +1281,75 @@ function _flashShareConfirm() {
   setTimeout(() => el.classList.remove('visible'), 2500);
 }
 
+// ============================================================
+// SOLAR QUICK QUESTION (input card) — syncs to sidebar
+// ============================================================
+function onSiqToggle() {
+  const on = document.getElementById('siq-toggle').checked;
+  document.getElementById('siq-fields').style.display = on ? '' : 'none';
+  // Keep sidebar solar toggle in sync
+  document.getElementById('solar-toggle').checked = on;
+  document.getElementById('solar-inputs').classList.toggle('visible', on);
+  if (!on) {
+    solarData = null;
+    document.getElementById('s-solar').classList.add('hidden');
+    if (lastResult) renderFinancialSummary(lastResult.financials, null);
+  }
+}
+
+// Called after estimate/CSV analysis if siq-toggle is checked
+async function runSolarFromSiq() {
+  const postcode = document.getElementById('siq-postcode').value.trim();
+  const kwp      = parseFloat(document.getElementById('siq-kwp').value);
+  if (!postcode) return;
+  // Sync values to sidebar controls
+  document.getElementById('solar-postcode').value = postcode;
+  document.getElementById('kwp-slider').value     = kwp;
+  document.getElementById('kwp-val').textContent  = kwp.toFixed(1) + ' kWp';
+  document.getElementById('solar-toggle').checked = true;
+  document.getElementById('solar-inputs').classList.add('visible');
+  setStatus('⏳ Fetching solar data from PVGIS…', 'loading');
+  const p = getSliderParams();
+  try {
+    const data = await apiFetch('/api/solar', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id:         sessionId,
+        postcode,
+        panel_kwp:          kwp,
+        orientation:        document.getElementById('solar-orientation').value,
+        tilt_deg:           parseFloat(document.getElementById('tilt-slider').value),
+        seg_rate_p:         parseFloat(document.getElementById('solar-seg-slider').value),
+        panel_cost_gbp:     0,
+        tariff_key:         p.tariffKey,
+        battery_cap_kwh:    parseFloat(p.capKwh),
+        battery_cost_gbp:   parseFloat(p.costGbp),
+        max_charge_rate_kw: parseFloat(p.maxRateKw),
+        efficiency_pct:     parseFloat(p.effPct),
+        inflation_pct:      parseFloat(p.inflPct),
+        current_sc_pd:      parseFloat(p.scPd),
+        export_rate_p:      getExportRatePence(),
+      }),
+    });
+    solarData  = data.solar;
+    lastResult = data;
+    renderResult(data);
+    renderSolarCard(data.solar);
+    setSolarStatusMsg('✅ ' + Math.round(data.solar.annual_generation_kwh).toLocaleString() + ' kWh/yr estimated', 'success');
+    setStatus('✅ Solar-enhanced results ready.', 'success');
+  } catch(e) {
+    setStatus('⚠️ Solar data unavailable — showing battery-only results. (' + (e.message || '') + ')', 'error');
+  }
+}
+
 function onSolarToggle() {
   const on = document.getElementById('solar-toggle').checked;
   const inputs = document.getElementById('solar-inputs');
   inputs.classList.toggle('visible', on);
+  // Keep quick-question toggle in sync
+  document.getElementById('siq-toggle').checked = on;
+  document.getElementById('siq-fields').style.display = on ? '' : 'none';
   if (!on) {
     solarData = null;
     document.getElementById('s-solar').classList.add('hidden');
@@ -1805,7 +1907,6 @@ async function handleFiles(files) {
     sessionId  = data.session_id;
     lastResult = data;
 
-    setStatus(`✅ <strong>${data.summary.days_analysed} day${data.summary.days_analysed > 1 ? 's' : ''}</strong> analysed.`, 'success');
     uploadZone.classList.add('collapsed');
     document.getElementById('uz-label').textContent =
       `${data.summary.days_analysed} days loaded`;
@@ -1817,6 +1918,13 @@ async function handleFiles(files) {
     document.getElementById('profile-placeholder').style.display = 'none';
     document.getElementById('profile-chart-wrap').style.display  = '';
     renderResult(data);
+
+    // Chain solar if the quick question is enabled
+    if (document.getElementById('siq-toggle').checked && document.getElementById('siq-postcode').value.trim()) {
+      await runSolarFromSiq();
+    } else {
+      setStatus(`✅ <strong>${data.summary.days_analysed} day${data.summary.days_analysed > 1 ? 's' : ''}</strong> analysed.`, 'success');
+    }
   } catch(e) {
     setStatus('❌ ' + e.message, 'error');
   }
@@ -1859,6 +1967,9 @@ function clearData() {
   document.getElementById('breakdown-btn').classList.remove('open');
   breakdownOpen = false;
   closeEmailCapture();
+  // Reset solar quick question
+  document.getElementById('siq-toggle').checked = false;
+  document.getElementById('siq-fields').style.display = 'none';
   // Reset solar sidebar
   document.getElementById('solar-toggle').checked = false;
   document.getElementById('solar-inputs').classList.remove('visible');
