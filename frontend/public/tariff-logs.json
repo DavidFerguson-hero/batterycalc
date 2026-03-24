@@ -1,6 +1,159 @@
 {
   "runs": [
     {
+      "id": "20260324T042119Z",
+      "timestamp": "2026-03-24T04:21:19.294031+00:00",
+      "overall": "alert",
+      "summary": {
+        "total": 10,
+        "ok": 0,
+        "changed": 2,
+        "manual": 5,
+        "error": 3
+      },
+      "tariffs": {
+        "octopusGo": {
+          "key": "octopusGo",
+          "name": "Octopus Go",
+          "status": "error",
+          "source": "Octopus Energy API",
+          "error": "type NoneType doesn't define __round__ method\nTraceback (most recent call last):\n  File \"/home/runner/work/batterycalc/batterycalc/scripts/check_tariffs.py\", line 196, in check_octopus_go\n    rates = _octopus_product_rates(code)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/batterycalc/batterycalc/scripts/check_tariffs.py\", line 142, in _octopus_product_rates\n    \"day_p\":       round(dd.get(\"standard_unit_rate_inc_vat\", 0), 2),\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: type NoneType doesn't define __round__ method\n",
+          "current_rates": {
+            "night_p": 7.0,
+            "day_p": 38.72,
+            "standing_p": 47.0
+          }
+        },
+        "intelligentOctopus": {
+          "key": "intelligentOctopus",
+          "name": "Intelligent Octopus Go",
+          "status": "error",
+          "source": "Octopus Energy API",
+          "error": "type NoneType doesn't define __round__ method",
+          "current_rates": {
+            "night_p": 9.0,
+            "day_p": 38.0,
+            "standing_p": 47.0
+          }
+        },
+        "octopusCosy": {
+          "key": "octopusCosy",
+          "name": "Octopus Cosy",
+          "status": "error",
+          "source": "Octopus Energy API",
+          "error": "type NoneType doesn't define __round__ method",
+          "current_rates": {
+            "cosy_p": 12.0,
+            "peak_p": 50.0,
+            "standard_p": 28.0,
+            "standing_p": 47.0
+          }
+        },
+        "currentFlat": {
+          "key": "currentFlat",
+          "name": "Current Flat Rate (SVT)",
+          "status": "changed",
+          "source": "Ofgem Price Cap",
+          "source_url": "https://www.ofgem.gov.uk/check-if-energy-price-cap-affects-you",
+          "current_rates": {
+            "unit_p": 28.16,
+            "standing_p": 53.0
+          },
+          "found_rates": {
+            "unit_p": 24.67,
+            "standing_p": 53.0
+          },
+          "changes": [
+            "unit_p: 28.16p \u2192 24.67p"
+          ]
+        },
+        "britishGasSV": {
+          "key": "britishGasSV",
+          "name": "British Gas Standard Variable",
+          "status": "changed",
+          "source": "Ofgem Price Cap",
+          "source_url": "https://www.ofgem.gov.uk/check-if-energy-price-cap-affects-you",
+          "current_rates": {
+            "unit_p": 24.5,
+            "standing_p": 61.0
+          },
+          "found_rates": {
+            "unit_p": 24.67,
+            "standing_p": 61.0
+          },
+          "changes": [
+            "unit_p: 24.5p \u2192 24.67p"
+          ]
+        },
+        "economy7": {
+          "key": "economy7",
+          "name": "Economy 7",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.uswitch.com/gas-electricity/guides/economy-7/",
+          "current_rates": {
+            "night_p": 9.0,
+            "day_p": 33.0,
+            "standing_p": 53.0
+          },
+          "notes": "Economy 7 rates vary by region and supplier. Check comparison sites for current regional averages."
+        },
+        "eonNextDrive": {
+          "key": "eonNextDrive",
+          "name": "E.ON Next Drive",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.eonenergy.com/electric-vehicle-charging/next-drive-tariff.html",
+          "current_rates": {
+            "night_p": 8.5,
+            "day_p": 35.0,
+            "standing_p": 53.0
+          },
+          "notes": "Check E.ON tariff page \u2014 night 00:00\u201307:00, standing charge may vary."
+        },
+        "edfGoElectric": {
+          "key": "edfGoElectric",
+          "name": "EDF GoElectric Overnight",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.edfenergy.com/electric-cars/goelectric-overnight",
+          "current_rates": {
+            "night_p": 8.0,
+            "day_p": 34.0,
+            "standing_p": 50.0
+          },
+          "notes": "Check EDF GoElectric Overnight page for current night/day rates."
+        },
+        "edfFreePhase": {
+          "key": "edfFreePhase",
+          "name": "EDF FreePhase",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.edfenergy.com/for-homes/tariffs/freephase",
+          "current_rates": {
+            "night_p": 17.0,
+            "day_p": 22.1,
+            "peak_p": 38.4,
+            "standing_p": 53.2
+          },
+          "notes": "EDF FreePhase static rates \u2014 check EDF tariff page."
+        },
+        "scottishPower": {
+          "key": "scottishPower",
+          "name": "Scottish Power Smart",
+          "status": "manual",
+          "source": "Manual verification required",
+          "source_url": "https://www.scottishpower.co.uk/energy/time-of-use-tariff",
+          "current_rates": {
+            "night_p": 10.0,
+            "day_p": 36.0,
+            "standing_p": 55.0
+          },
+          "notes": "Scottish Power Smart Tariff \u2014 night 23:00\u201307:00."
+        }
+      }
+    },
+    {
       "id": "20260323T042958Z",
       "timestamp": "2026-03-23T04:29:58.935612+00:00",
       "overall": "alert",
