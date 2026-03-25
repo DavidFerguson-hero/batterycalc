@@ -658,11 +658,6 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
       </button>
 
     </div>
-    <div class="csv-link-row">
-      <button class="csv-link-btn" onclick="showCSVStep()">
-        📁 I have a smart meter CSV file — use that instead
-      </button>
-    </div>
   </div>
 
   <!-- ── STEP 1: Mode-specific form ─────────────────────── -->
@@ -781,11 +776,16 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
     <button class="btn-primary" id="main-calc-btn" onclick="doMainCalculate()" style="margin-top:1rem">
       Calculate →
     </button>
+    <div class="csv-link-row">
+      <button class="csv-link-btn" onclick="showCSVStep()">
+        📁 Have a smart meter CSV export? Use that instead for more accuracy
+      </button>
+    </div>
   </div>
 
   <!-- ── STEP CSV: Smart meter upload ────────────────────── -->
   <div id="step-csv" style="display:none">
-    <button class="back-btn" onclick="showModeSelect()">← Back</button>
+    <button class="back-btn" onclick="showFormStep()">← Back</button>
     <p class="text-sm" style="margin-bottom:.9rem">
       Drop half-hourly CSV files exported from your energy supplier.
       One file per day <em>or</em> a single multi-day file — both work.
@@ -1406,6 +1406,12 @@ function updateCalcBtnLabel() {
 function showModeSelect() {
   document.getElementById('step-mode').style.display = '';
   document.getElementById('step-form').style.display = 'none';
+  document.getElementById('step-csv').style.display  = 'none';
+}
+
+function showFormStep() {
+  document.getElementById('step-mode').style.display = 'none';
+  document.getElementById('step-form').style.display = '';
   document.getElementById('step-csv').style.display  = 'none';
 }
 
