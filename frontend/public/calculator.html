@@ -1184,77 +1184,12 @@ function switchInputTab(tab) {
 }
 
 function onEstPropChange() {
-  const prop  = document.getElementById('est-prop-type').value;
-  const beds  = parseInt(document.getElementById('est-bedrooms').value);
-  const table = EST_SUGGESTED_KWH[prop] || {};
-  const keys  = Object.keys(table).map(Number).sort((a, b) => a - b);
-  if (!keys.length) return;
-  const nearest = keys.reduce((p, c) => Math.abs(c - beds) < Math.abs(p - beds) ? c : p);
-  const kwh = table[nearest];
-  document.getElementById('est-kwh').value = kwh;
-  // Keep slider and display in sync
-  const slider = document.getElementById('est-kwh-slider');
-  if (slider) { slider.value = kwh; document.getElementById('kwh-display').textContent = kwh.toLocaleString(); }
+  // Legacy no-op — property selection now handled by selectProp() / selectBeds()
 }
 
 async function doEstimateClick() {
-  const annKwh  = parseFloat(document.getElementById('est-kwh').value);
-  const propType = document.getElementById('est-prop-type').value;
-  const unitRate = parseFloat(document.getElementById('est-rate').value);
-  const beds     = document.getElementById('est-bedrooms').value;
-  const propLabel = document.getElementById('est-prop-type').selectedOptions[0].text;
-
-  if (!annKwh || annKwh < 500) { setStatus('Please enter a valid annual consumption (≥ 500 kWh).', 'error'); return; }
-
-  const btn = document.getElementById('est-btn');
-  btn.disabled = true;
-  setStatus('⏳ Calculating estimate…', 'loading');
-
-  try {
-    const p = getSliderParams();
-    const data = await apiFetch('/api/estimate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        annual_kwh:         annKwh,
-        property_type:      propType,
-        unit_rate_p:        unitRate,
-        tariff_key:         p.tariffKey,
-        battery_cap_kwh:    parseFloat(p.capKwh),
-        battery_cost_gbp:   parseFloat(p.costGbp),
-        max_charge_rate_kw: parseFloat(p.maxRateKw),
-        efficiency_pct:     parseFloat(p.effPct),
-        inflation_pct:      parseFloat(p.inflPct),
-        current_sc_pd:      parseFloat(p.scPd),
-        export_rate_p:      getExportRatePence(),
-      }),
-    });
-
-    sessionId  = data.session_id;
-    lastResult = data;
-
-    uploadZone.classList.add('collapsed');
-    document.getElementById('uz-label').textContent = `${beds}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
-
-    showDataSummary(data);
-    showAllSections();
-    initProjectionChart();
-    initSidebarProfileChart();
-    document.getElementById('profile-placeholder').style.display = 'none';
-    document.getElementById('profile-chart-wrap').style.display  = '';
-    renderResult(data);
-
-    // Chain solar if the quick question is enabled
-    if (document.getElementById('siq-toggle').checked && document.getElementById('siq-postcode').value.trim()) {
-      await runSolarFromSiq();
-    } else {
-      setStatus(`✅ Estimated from <strong>${Math.round(annKwh).toLocaleString()} kWh/yr</strong> (${beds}-bed ${propLabel}).`, 'success');
-    }
-  } catch(e) {
-    setStatus('❌ ' + (e.message || 'Estimation failed.'), 'error');
-  } finally {
-    btn.disabled = false;
-  }
+  // Legacy entry point — delegate to the new unified calculate handler
+  return doMainCalculate();
 }
 
 function nearestBattKwh(kwh) {
@@ -1685,52 +1620,25 @@ function _flashShareConfirm() {
 // VISUAL INPUT PICKERS
 // ============================================================
 function selectPropType(val) {
-  document.querySelectorAll('.prop-btn').forEach(b =>
-    b.classList.toggle('selected', b.dataset.val === val));
-  document.getElementById('est-prop-type').value = val;
-  onEstPropChange();
+  // Legacy alias — route to new handler
+  selectProp(val);
 }
 
-function selectBeds(n) {
-  document.querySelectorAll('.beds-btn').forEach((b, i) =>
-    b.classList.toggle('selected', (i + 1) === n));
-  document.getElementById('est-bedrooms').value = n >= 5 ? 5 : n;
-  onEstPropChange();
-}
+// selectBeds() is defined above in the journey section — no legacy override needed
 
 function onKwhSlider(val) {
-  const n = parseInt(val);
-  document.getElementById('kwh-display').textContent = n.toLocaleString();
-  document.getElementById('est-kwh').value = n;
+  // Legacy no-op — energy use now controlled by #energy-slider
 }
 
-function onSiqCardClick() {
-  const toggle = document.getElementById('siq-toggle');
-  toggle.checked = !toggle.checked;
-  onSiqToggle();
-}
+// onSiqCardClick / onSiqToggle removed — solar captured via new journey mode selector
 
-// ============================================================
-// SOLAR QUICK QUESTION (input card) — syncs to sidebar
-// ============================================================
-function onSiqToggle() {
-  const on = document.getElementById('siq-toggle').checked;
-  document.getElementById('siq-fields').style.display = on ? '' : 'none';
-  document.getElementById('siq-card').classList.toggle('active', on);
-  // Keep sidebar solar toggle in sync
-  document.getElementById('solar-toggle').checked = on;
-  document.getElementById('solar-inputs').classList.toggle('visible', on);
-  if (!on) {
-    solarData = null;
-    document.getElementById('s-solar').classList.add('hidden');
-    if (lastResult) renderFinancialSummary(lastResult.financials, null);
-  }
-}
+// runSolarFromSiq removed — solar now handled by runSolarFromForm() via journey mode selector
 
-// Called after estimate/CSV analysis if siq-toggle is checked
 async function runSolarFromSiq() {
-  const postcode = document.getElementById('siq-postcode').value.trim();
-  const kwp      = parseFloat(document.getElementById('siq-kwp').value);
+  // Legacy alias — delegate to the new handler
+  return runSolarFromForm();
+  const postcode = ''; // unreachable
+  const kwp      = 0;
   if (!postcode) return;
   // Sync values to sidebar controls
   document.getElementById('solar-postcode').value = postcode;
@@ -1775,11 +1683,7 @@ async function runSolarFromSiq() {
 
 function onSolarToggle() {
   const on = document.getElementById('solar-toggle').checked;
-  const inputs = document.getElementById('solar-inputs');
-  inputs.classList.toggle('visible', on);
-  // Keep quick-question toggle in sync
-  document.getElementById('siq-toggle').checked = on;
-  document.getElementById('siq-fields').style.display = on ? '' : 'none';
+  document.getElementById('solar-inputs').classList.toggle('visible', on);
   if (!on) {
     solarData = null;
     document.getElementById('s-solar').classList.add('hidden');
@@ -2265,8 +2169,11 @@ function showDataSummary(data) {
   document.querySelector('#s-summary .section-title').textContent =
     isEst ? 'Estimated Profile' : 'Uploaded Data Summary';
 
+  const _propLabels = {flat:'Flat',terraced:'Terraced',semi:'Semi-detached',detached:'Detached'};
+  const _propDisplay = _propLabels[selectedPropType] || selectedPropType;
+  const _bedsDisplay = selectedBeds >= 5 ? '5+' : selectedBeds;
   document.getElementById('sum-grid').innerHTML = isEst ? `
-    <div class="metric"><div class="label">Profile type</div><div class="value" style="font-size:1rem">${document.getElementById('est-prop-type').selectedOptions[0].text}</div><div class="sub">${document.getElementById('est-bedrooms').value} bedrooms</div></div>
+    <div class="metric"><div class="label">Profile type</div><div class="value" style="font-size:1rem">${_propDisplay}</div><div class="sub">${_bedsDisplay} bedrooms</div></div>
     <div class="metric"><div class="label">Daily Average</div><div class="value">${s.daily_avg_kwh.toFixed(1)}</div><div class="sub">kWh/day</div></div>
     <div class="metric highlight"><div class="label">Annual Consumption</div><div class="value">${Math.round(s.annual_kwh_estimate).toLocaleString()}</div><div class="sub">kWh/year</div></div>
     <div class="metric"><div class="label">Current Unit Rate</div><div class="value">${(rate*100).toFixed(1)}p</div><div class="sub">as entered</div></div>
@@ -2350,12 +2257,7 @@ async function handleFiles(files) {
     document.getElementById('profile-chart-wrap').style.display  = '';
     renderResult(data);
 
-    // Chain solar if the quick question is enabled
-    if (document.getElementById('siq-toggle').checked && document.getElementById('siq-postcode').value.trim()) {
-      await runSolarFromSiq();
-    } else {
-      setStatus(`✅ <strong>${data.summary.days_analysed} day${data.summary.days_analysed > 1 ? 's' : ''}</strong> analysed.`, 'success');
-    }
+    setStatus(`✅ <strong>${data.summary.days_analysed} day${data.summary.days_analysed > 1 ? 's' : ''}</strong> analysed.`, 'success');
   } catch(e) {
     setStatus('❌ ' + e.message, 'error');
   }
@@ -2398,10 +2300,6 @@ function clearData() {
   document.getElementById('breakdown-btn').classList.remove('open');
   breakdownOpen = false;
   closeEmailCapture();
-  // Reset solar quick question
-  document.getElementById('siq-toggle').checked = false;
-  document.getElementById('siq-fields').style.display = 'none';
-  document.getElementById('siq-card').classList.remove('active');
   // Reset solar sidebar
   document.getElementById('solar-toggle').checked = false;
   document.getElementById('solar-inputs').classList.remove('visible');
