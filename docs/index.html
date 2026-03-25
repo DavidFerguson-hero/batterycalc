@@ -1637,48 +1637,6 @@ function onKwhSlider(val) {
 async function runSolarFromSiq() {
   // Legacy alias — delegate to the new handler
   return runSolarFromForm();
-  const postcode = ''; // unreachable
-  const kwp      = 0;
-  if (!postcode) return;
-  // Sync values to sidebar controls
-  document.getElementById('solar-postcode').value = postcode;
-  document.getElementById('kwp-slider').value     = kwp;
-  document.getElementById('kwp-val').textContent  = kwp.toFixed(1) + ' kWp';
-  document.getElementById('solar-toggle').checked = true;
-  document.getElementById('solar-inputs').classList.add('visible');
-  setStatus('⏳ Fetching solar data from PVGIS…', 'loading');
-  const p = getSliderParams();
-  try {
-    const data = await apiFetch('/api/solar', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id:         sessionId,
-        postcode,
-        panel_kwp:          kwp,
-        orientation:        document.getElementById('solar-orientation').value,
-        tilt_deg:           parseFloat(document.getElementById('tilt-slider').value),
-        seg_rate_p:         parseFloat(document.getElementById('solar-seg-slider').value),
-        panel_cost_gbp:     0,
-        tariff_key:         p.tariffKey,
-        battery_cap_kwh:    parseFloat(p.capKwh),
-        battery_cost_gbp:   parseFloat(p.costGbp),
-        max_charge_rate_kw: parseFloat(p.maxRateKw),
-        efficiency_pct:     parseFloat(p.effPct),
-        inflation_pct:      parseFloat(p.inflPct),
-        current_sc_pd:      parseFloat(p.scPd),
-        export_rate_p:      getExportRatePence(),
-      }),
-    });
-    solarData  = data.solar;
-    lastResult = data;
-    renderResult(data);
-    renderSolarCard(data.solar);
-    setSolarStatusMsg('✅ ' + Math.round(data.solar.annual_generation_kwh).toLocaleString() + ' kWh/yr estimated', 'success');
-    setStatus('✅ Solar-enhanced results ready.', 'success');
-  } catch(e) {
-    setStatus('⚠️ Solar data unavailable — showing battery-only results. (' + (e.message || '') + ')', 'error');
-  }
 }
 
 function onSolarToggle() {
