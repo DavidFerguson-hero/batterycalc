@@ -709,9 +709,6 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 
 <main class="main-content">
 
-<div class="card hidden" id="s-plain-summary">
-  <div id="plain-summary-body"></div>
-</div>
 
 <div class="upload-summary-grid" id="upload-summary-wrap">
   <div class="card" id="s-upload">
@@ -1773,14 +1770,10 @@ function drawEnergyFlowChart({ key, label, flows }) {
 }
 
 // ============================================================
-// PLAIN-ENGLISH SUMMARY
+// PLAIN-ENGLISH SUMMARY (removed — kept stub to avoid broken calls)
 // ============================================================
 function updatePlainSummary(data) {
-  const best = (data.all_combinations || [])[0];
-  if (!best || best.total_saving <= 0) {
-    document.getElementById('s-plain-summary').classList.add('hidden');
-    return;
-  }
+  return;
 
   const batteryLabel = best.battery_kwh + ' kWh';
   const tariffName   = best.tariff_name;
@@ -2911,7 +2904,7 @@ async function handleFiles(files) {
 function showAllSections() {
   document.getElementById('upload-summary-wrap').classList.add('has-data');
   // Stage 1: always-visible cards
-  ['s-plain-summary', 's-financial', 's-summary'].forEach(id => {
+  ['s-financial', 's-summary'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
   // s-scenarios is shown only by renderScenarioComparison() (estimate path)
@@ -2926,7 +2919,7 @@ function clearData() {
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  ['s-summary', 's-plain-summary', 's-scenarios', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+  ['s-summary', 's-scenarios', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   // Hide CTA bar and collapse breakdown
