@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from engine.csv_parser import parse_csv_bytes, merge_parse_results, ParseResult
-from engine.simulator import run_simulation
+from engine.simulator import run_simulation, calc_day_flows
 from engine.optimiser import build_opt_matrix
 from engine.payback import calc_payback
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
@@ -29,6 +29,28 @@ SEG_EXPORT_RATE       = 0.075    # 7.5p/kWh — Smart Export Guarantee typical
 FLUX_EXPORT_RATE      = 0.15     # 15p/kWh — Octopus Flux average export rate
 SOLAR_SC_SOLO         = 0.35     # Self-consumption without battery (~35%)
 SOLAR_SC_WITH_BATT    = 0.65     # Self-consumption with 10 kWh battery (~65%)
+
+# Annual-average half-hourly solar generation profile for a south-facing system
+# at 52.6°N (UK midlands), modelled as a Gaussian centred on 13:00 BST.
+# Normalised: sum = 1.0.  Multiply by (annual_gen_kwh / 365) for absolute kWh/slot.
+UK_SOLAR_PROFILE_NORM: list[float] = [
+    # 00:00–06:00 (slots 0–12) — dark
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    # 06:30 (slot 13) — dawn
+    0.0066,
+    # 07:00–09:30 (slots 14–19)
+    0.0093, 0.0129, 0.0172, 0.0225, 0.0285, 0.0350,
+    # 10:00–12:30 (slots 20–25)
+    0.0420, 0.0490, 0.0555, 0.0611, 0.0655, 0.0683,
+    # 13:00–13:30 (slots 26–27) — peak
+    0.0692, 0.0683,
+    # 14:00–16:30 (slots 28–33)
+    0.0655, 0.0611, 0.0555, 0.0490, 0.0420, 0.0350,
+    # 17:00–18:30 (slots 34–37)
+    0.0285, 0.0225, 0.0172, 0.0129,
+    # 19:00–23:30 (slots 38–47) — dark
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+]
 
 router = APIRouter(tags=["analyse"])
 
@@ -257,7 +279,12 @@ def _session_key(data: bytes) -> str:
 
 # ── Solar scenario helpers ──────────────────────────────────────────────────
 
-def _solar_only_scenario(unit_rate: float, inflation_pct: float) -> dict:
+def _solar_only_scenario(
+    unit_rate: float,
+    inflation_pct: float,
+    avg_day_kwh: list[float],
+    solar_profile: list[float],
+) -> dict:
     """4 kWp solar, SEG export, no battery."""
     gen           = SOLAR_KWP * SOLAR_GEN_PER_KWP           # 3 400 kWh
     self_consumed = gen * SOLAR_SC_SOLO                      # 1 190 kWh
@@ -266,6 +293,18 @@ def _solar_only_scenario(unit_rate: float, inflation_pct: float) -> dict:
     export_rev    = exported * SEG_EXPORT_RATE
     total_saving  = import_saving + export_rev
     pb = calc_payback(SOLAR_INSTALLED_COST, total_saving, inflation_pct)
+
+    # Per-slot flows for the energy flow chart (no battery — use dummy flat-rate tariff)
+    from engine.tariffs import Tariff as _Tariff
+    _flat = _Tariff(
+        key="flat", name="flat",
+        slot_rates=[unit_rate] * 48,
+        charge_slots=[False] * 48,
+        discharge_slots=[False] * 48,
+        standing_charge=0.0,
+    )
+    daily_flows = calc_day_flows(avg_day_kwh, _flat, 0.0, 3.6, 0.9, solar_profile)
+
     return {
         "label":          "Solar Only",
         "icon":           "☀️",
@@ -275,17 +314,26 @@ def _solar_only_scenario(unit_rate: float, inflation_pct: float) -> dict:
         "payback_years":  round(pb.years, 1) if pb.years != math.inf else None,
         "roi_10yr":       round(pb.roi_10yr, 0),
         "cumulative":     pb.cumulative,
+        "daily_flows":    daily_flows,
         "breakdown": {
-            "import_saving":    round(import_saving, 0),
-            "export_revenue":   round(export_rev, 0),
+            "import_saving":     round(import_saving, 0),
+            "export_revenue":    round(export_rev, 0),
             "kwh_self_consumed": round(self_consumed, 0),
-            "kwh_exported":     round(exported, 0),
-            "export_rate_p":    SEG_EXPORT_RATE * 100,
+            "kwh_exported":      round(exported, 0),
+            "export_rate_p":     SEG_EXPORT_RATE * 100,
         },
     }
 
 
-def _solar_battery_scenario(matrix: dict, unit_rate: float, inflation_pct: float) -> dict:
+def _solar_battery_scenario(
+    matrix: dict,
+    unit_rate: float,
+    inflation_pct: float,
+    avg_day_kwh: list[float],
+    solar_profile: list[float],
+    efficiency: float,
+    max_rate_kw: float,
+) -> dict:
     """
     4 kWp solar + best battery on Octopus Flux.
 
@@ -322,6 +370,11 @@ def _solar_battery_scenario(matrix: dict, unit_rate: float, inflation_pct: float
     total_cost   = SOLAR_INSTALLED_COST + batt_cost
     pb = calc_payback(total_cost, total_saving, inflation_pct)
 
+    flux_tariff  = TARIFFS["octopusFlux"]
+    daily_flows  = calc_day_flows(
+        avg_day_kwh, flux_tariff, batt_kwh, max_rate_kw, efficiency, solar_profile
+    )
+
     return {
         "label":          "Solar + Battery",
         "icon":           "⚡",
@@ -331,6 +384,7 @@ def _solar_battery_scenario(matrix: dict, unit_rate: float, inflation_pct: float
         "payback_years":  round(pb.years, 1) if pb.years != math.inf else None,
         "roi_10yr":       round(pb.roi_10yr, 0),
         "cumulative":     pb.cumulative,
+        "daily_flows":    daily_flows,
         "breakdown": {
             "flux_battery_saving":  round(flux_saving, 0),
             "solar_import_saving":  round(solar_import_saving, 0),
@@ -538,9 +592,27 @@ async def compare_scenarios(req: CompareRequest):
             "cumulative": [], "breakdown": {},
         }
 
+    # ── Build solar profile and representative average day ───────────────────
+    solar_daily_kwh = SOLAR_KWP * SOLAR_GEN_PER_KWP / 365.0
+    solar_profile   = [v * solar_daily_kwh for v in UK_SOLAR_PROFILE_NORM]
+    avg_day_kwh     = parse.days[0]   # synthetic profile: all 35 days identical
+
+    # Battery-only flows — use best tariff, no solar
+    if best_batt:
+        batt_tariff = TARIFFS.get(best_batt["tariff_key"], TARIFFS["octopusGo"])
+        battery_scenario["daily_flows"] = calc_day_flows(
+            avg_day_kwh, batt_tariff,
+            best_batt["battery_kwh"], req.max_charge_rate_kw, efficiency, None,
+        )
+
     # ── Solar-only and Solar+battery scenarios ───────────────────────────────
-    solar_scenario = _solar_only_scenario(unit_rate, req.inflation_pct)
-    sb_scenario    = _solar_battery_scenario(matrix, unit_rate, req.inflation_pct)
+    solar_scenario = _solar_only_scenario(
+        unit_rate, req.inflation_pct, avg_day_kwh, solar_profile,
+    )
+    sb_scenario = _solar_battery_scenario(
+        matrix, unit_rate, req.inflation_pct, avg_day_kwh, solar_profile,
+        efficiency, req.max_charge_rate_kw,
+    )
 
     scenarios = {
         "battery":       battery_scenario,

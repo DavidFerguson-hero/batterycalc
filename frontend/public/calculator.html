@@ -457,6 +457,19 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   background:var(--bg3);border-radius:7px;padding:.4rem .75rem;
   border-left:3px solid var(--accent);line-height:1.5}
 
+/* ── Energy flow chart ────────────────────────────────────────────────── */
+.ef-tab-bar{display:flex;gap:.35rem;margin-bottom:.75rem;flex-wrap:wrap}
+.ef-tab{background:var(--bg3);border:1px solid var(--border);border-radius:20px;
+  padding:.25rem .85rem;font-size:.72rem;font-weight:600;color:var(--text2);
+  cursor:pointer;transition:background .15s,border-color .15s,color .15s;font-family:inherit}
+.ef-tab.active{background:rgba(249,115,22,.12);border-color:var(--accent);color:var(--accent)}
+.ef-legend{display:flex;flex-wrap:wrap;gap:.5rem .9rem;margin-bottom:.5rem}
+.ef-key{font-size:.68rem;color:var(--text2);display:flex;align-items:center;gap:.3rem}
+.ef-key::before{content:'';width:10px;height:10px;border-radius:2px;
+  background:var(--c);display:inline-block;flex-shrink:0}
+.ef-annotation{font-size:.72rem;color:var(--text3);margin-top:.6rem;line-height:1.6;
+  border-top:1px solid var(--border);padding-top:.6rem}
+
 /* ── Scenario comparison (estimate journey) ────────────────────────────── */
 .compare-summary-bar{background:rgba(249,115,22,.05);border:1px solid rgba(249,115,22,.28);
   border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.1rem}
@@ -915,6 +928,24 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
     🔋 Battery savings are modelled from your consumption profile.
     Upload your half-hourly smart meter CSV for exact battery figures.
   </div>
+</div>
+
+<div class="card hidden" id="s-energy-flow">
+  <div class="section-title" style="margin-bottom:.75rem">Typical Day Energy Flow</div>
+  <div class="ef-tab-bar" id="ef-tab-bar"></div>
+  <div class="ef-legend">
+    <span class="ef-key" style="--c:#f59e0b">Solar generation</span>
+    <span class="ef-key" style="--c:#84cc16">Solar → home</span>
+    <span class="ef-key" style="--c:#22c55e">Solar → export</span>
+    <span class="ef-key" style="--c:#6366f1">Solar → battery</span>
+    <span class="ef-key" style="--c:#3b82f6">Grid → battery</span>
+    <span class="ef-key" style="--c:#14b8a6">Battery → home</span>
+    <span class="ef-key" style="--c:#f97316">Grid → home</span>
+  </div>
+  <div style="position:relative;height:300px;margin-top:.5rem">
+    <canvas id="energyFlowChart"></canvas>
+  </div>
+  <div class="ef-annotation" id="ef-annotation"></div>
 </div>
 
 <div class="proj-heat-grid hidden" id="s-proj-heat">
@@ -1589,6 +1620,156 @@ function renderScenarioComparison(data) {
   }
 
   document.getElementById('s-scenarios').classList.remove('hidden');
+
+  // Energy flow chart
+  const flowScenarios = Object.entries(scenarios)
+    .filter(([, s]) => s && s.daily_flows)
+    .map(([key, s]) => ({ key, label: s.label, icon: s.icon, flows: s.daily_flows }));
+  if (flowScenarios.length) renderEnergyFlowSection(flowScenarios, best_scenario);
+}
+
+// ============================================================
+// ENERGY FLOW CHART
+// ============================================================
+let _efChart = null;
+let _efScenarios = [];
+
+function renderEnergyFlowSection(scenarioList, defaultKey) {
+  _efScenarios = scenarioList;
+  const tabBar = document.getElementById('ef-tab-bar');
+  tabBar.innerHTML = scenarioList.map(s =>
+    `<button class="ef-tab${s.key === defaultKey ? ' active' : ''}"
+       onclick="switchEfTab('${s.key}')">${s.icon} ${s.label}</button>`
+  ).join('');
+  document.getElementById('s-energy-flow').classList.remove('hidden');
+  const active = scenarioList.find(s => s.key === defaultKey) || scenarioList[0];
+  drawEnergyFlowChart(active);
+}
+
+function switchEfTab(key) {
+  document.querySelectorAll('.ef-tab').forEach(b =>
+    b.classList.toggle('active', b.textContent.trim().includes(
+      _efScenarios.find(s => s.key === key)?.label || ''
+    ))
+  );
+  const s = _efScenarios.find(s => s.key === key);
+  if (s) drawEnergyFlowChart(s);
+}
+
+function drawEnergyFlowChart({ key, label, flows }) {
+  const labels = Array.from({length: 48}, (_, i) => {
+    const h = String(Math.floor(i / 2)).padStart(2, '0');
+    const m = i % 2 === 0 ? '00' : '30';
+    return i % 4 === 0 ? `${h}:${m}` : '';
+  });
+
+  // Positive stacks: how load is met (upward)
+  const selfConsumed = flows.self_consumed;
+  const fromBattery  = flows.from_battery;
+  const gridToLoad   = flows.grid_to_load;
+
+  // Negative stacks: where surplus goes (downward)
+  const exported     = flows.exported.map(v => -v);
+  const solarToBatt  = flows.solar_to_batt.map(v => -v);
+  const gridToBatt   = flows.grid_to_batt.map(v => -v);
+
+  // Solar generation line
+  const solarGen = flows.solar_gen;
+
+  // SoC % on secondary axis
+  const soc = flows.soc_profile;
+  const socMax = Math.max(...soc, 1);
+  const socPct = soc.map(v => (v / socMax) * 100);
+
+  const datasets = [
+    { label: 'Solar → home',    data: selfConsumed, backgroundColor: '#84cc16', stack: 'pos' },
+    { label: 'Battery → home',  data: fromBattery,  backgroundColor: '#14b8a6', stack: 'pos' },
+    { label: 'Grid → home',     data: gridToLoad,   backgroundColor: '#f97316', stack: 'pos' },
+    { label: 'Solar → export',  data: exported,     backgroundColor: '#22c55e', stack: 'neg' },
+    { label: 'Solar → battery', data: solarToBatt,  backgroundColor: '#6366f1', stack: 'neg' },
+    { label: 'Grid → battery',  data: gridToBatt,   backgroundColor: '#3b82f6', stack: 'neg' },
+    {
+      label: 'Solar generation', data: solarGen, type: 'line',
+      borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.12)',
+      borderWidth: 2, pointRadius: 0, fill: true, tension: 0.4,
+      yAxisID: 'y',
+    },
+  ];
+
+  // Only add SoC line if battery present
+  if (socMax > 0.5) {
+    datasets.push({
+      label: 'Battery SoC', data: socPct, type: 'line',
+      borderColor: 'rgba(148,163,184,.5)', borderDash: [4, 3],
+      borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.4,
+      yAxisID: 'soc',
+    });
+  }
+
+  const ctx = document.getElementById('energyFlowChart').getContext('2d');
+  if (_efChart) _efChart.destroy();
+  _efChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 300 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = Math.abs(ctx.parsed.y);
+              if (v < 0.001) return null;
+              return ` ${ctx.dataset.label}: ${(v * 1000).toFixed(0)} Wh`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: 'rgba(37,54,80,.4)', lineWidth: 0.5 },
+          ticks: { color: '#5c78a0', font: { size: 10 } },
+        },
+        y: {
+          stacked: true,
+          grid: { color: 'rgba(37,54,80,.5)' },
+          ticks: {
+            color: '#5c78a0', font: { size: 10 },
+            callback: v => v === 0 ? '0' : (Math.abs(v) * 1000).toFixed(0) + ' Wh',
+          },
+          title: { display: true, text: 'Energy (Wh per 30 min)', color: '#5c78a0', font: { size: 10 } },
+        },
+        soc: {
+          display: socMax > 0.5,
+          position: 'right', min: 0, max: 100,
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#5c78a0', font: { size: 10 }, callback: v => v + '%' },
+          title: { display: true, text: 'Battery SoC', color: '#5c78a0', font: { size: 10 } },
+        },
+      },
+    },
+  });
+
+  // Annotation summary
+  const totalLoad   = flows.grid_to_load.reduce((a,b)=>a+b,0) + flows.from_battery.reduce((a,b)=>a+b,0) + flows.self_consumed.reduce((a,b)=>a+b,0);
+  const totalSolar  = flows.solar_gen.reduce((a,b)=>a+b,0);
+  const totalExport = flows.exported.reduce((a,b)=>a+b,0);
+  const totalImport = flows.grid_to_load.reduce((a,b)=>a+b,0) + flows.grid_to_batt.reduce((a,b)=>a+b,0);
+  const scPct = totalSolar > 0 ? Math.round(flows.self_consumed.reduce((a,b)=>a+b,0) / totalSolar * 100) : 0;
+
+  const fmt = kwh => (kwh * 1000).toFixed(0) + ' Wh';
+  document.getElementById('ef-annotation').innerHTML =
+    `Average day · <strong style="color:var(--text)">${fmt(totalLoad)}</strong> consumed · ` +
+    (totalSolar > 0
+      ? `<strong style="color:#f59e0b">${fmt(totalSolar)}</strong> generated · ` +
+        `<strong style="color:#84cc16">${scPct}% self-consumed</strong> · ` +
+        `<strong style="color:#22c55e">${fmt(totalExport)}</strong> exported · `
+      : '') +
+    `<strong style="color:#f97316">${fmt(totalImport)}</strong> imported from grid.` +
+    ` Positive bars = how your home is powered. Negative bars = where generation/storage goes.`;
 }
 
 // ============================================================

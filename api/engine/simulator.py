@@ -191,6 +191,103 @@ def run_simulation(
     )
 
 
+# ── Per-slot energy flow ───────────────────────────────────────────────────────
+
+def calc_day_flows(
+    day_kwh: list[float],
+    tariff: Tariff,
+    cap_kwh: float,
+    max_rate_kw: float,
+    efficiency: float,
+    solar_profile: list[float] | None = None,
+) -> dict:
+    """
+    Simulate one representative day and return per-slot energy flow arrays (kWh).
+
+    Dispatch priority (mirrors calc_solar_impact):
+      1. Solar self-consumption
+      2. Solar surplus → battery
+      3. Cheap-slot grid top-up → battery
+      4. Battery discharge → remaining load
+      5. Remaining solar surplus → export
+      6. Remaining load → grid
+
+    Returns dict of 48-element lists:
+      solar_gen, self_consumed, solar_to_batt, grid_to_batt,
+      from_battery, grid_to_load, exported, soc_profile
+    """
+    max_per_slot = max_rate_kw * 0.5
+    has_batt = cap_kwh >= 1.0
+    min_soc  = cap_kwh * 0.10 if has_batt else 0.0
+    soc      = cap_kwh * 0.30 if has_batt else 0.0
+
+    solar_gen    = [0.0] * 48
+    self_consumed= [0.0] * 48
+    solar_to_batt= [0.0] * 48
+    grid_to_batt = [0.0] * 48
+    from_battery = [0.0] * 48
+    grid_to_load = [0.0] * 48
+    exported     = [0.0] * 48
+    soc_out      = [0.0] * 48
+
+    for i in range(48):
+        load = day_kwh[i]
+        gen  = solar_profile[i] if solar_profile else 0.0
+        solar_gen[i] = gen
+
+        # 1. Solar self-consumption
+        sc = min(gen, load)
+        self_consumed[i] = sc
+        surplus   = gen - sc
+        remaining = load - sc
+
+        # 2. Solar surplus → battery
+        stb = 0.0
+        if has_batt and surplus > 0 and soc < cap_kwh - 0.01:
+            stb = min(surplus, cap_kwh - soc, max_per_slot)
+            soc     += stb
+            surplus -= stb
+        solar_to_batt[i] = stb
+
+        # 3. Cheap-slot grid top-up → battery (grid draw, not stored kWh)
+        gtb = 0.0
+        if has_batt and tariff.charge_slots[i] and soc < cap_kwh - 0.01:
+            headroom = min(max_per_slot - stb, cap_kwh - soc)
+            if headroom > 0.001:
+                soc += headroom
+                gtb  = headroom / efficiency
+        grid_to_batt[i] = gtb
+
+        # 4. Battery discharge → remaining load
+        fb = 0.0
+        if has_batt and tariff.discharge_slots[i] and soc > min_soc:
+            disc = min(soc - min_soc, remaining, max_per_slot)
+            soc       -= disc
+            remaining -= disc
+            fb         = disc
+        from_battery[i] = fb
+
+        # 5. Remaining solar surplus → export
+        exported[i] = surplus
+
+        # 6. Remaining load from grid
+        grid_to_load[i] = max(0.0, remaining)
+
+        soc_out[i] = soc
+
+    r4 = lambda lst: [round(v, 4) for v in lst]
+    return {
+        "solar_gen":    r4(solar_gen),
+        "self_consumed":r4(self_consumed),
+        "solar_to_batt":r4(solar_to_batt),
+        "grid_to_batt": r4(grid_to_batt),
+        "from_battery": r4(from_battery),
+        "grid_to_load": r4(grid_to_load),
+        "exported":     r4(exported),
+        "soc_profile":  r4(soc_out),
+    }
+
+
 # ── Solar ──────────────────────────────────────────────────────────────────────
 
 def calc_solar_impact(
