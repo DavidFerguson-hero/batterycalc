@@ -1733,28 +1733,40 @@ function applyEpcProperty(prop) {
 
 function renderEpcResult(prop, inline = false) {
   const propLabels = {flat:'Flat',terraced:'Terraced',semi:'Semi-detached',detached:'Detached'};
-  const confNote = prop.confidence === 'high'
-    ? 'kWh matched from BEIS lookup table'
-    : prop.confidence === 'medium'
-    ? 'kWh estimated from nearest property size'
-    : 'kWh estimated from floor area';
 
-  const ratingPill = prop.epc_rating
+  let confNote;
+  if (prop.confidence === 'high' && prop.energy_per_m2) {
+    confNote = `kWh derived from EPC intensity (${Math.round(prop.energy_per_m2)} kWh/m²/yr × ${Math.round(prop.floor_area_m2)}m²), normalised to BEIS actuals`;
+  } else if (prop.confidence === 'high') {
+    confNote = 'kWh matched from BEIS metered data (property type + bedrooms)';
+  } else if (prop.confidence === 'medium') {
+    confNote = 'kWh estimated from nearest property size in BEIS data';
+  } else {
+    confNote = 'kWh estimated from floor area';
+  }
+
+  const ratingPill   = prop.epc_rating
     ? `<span class="epc-pill">EPC <span class="epc-pill-val epc-pill-rating">${prop.epc_rating}</span></span>`
     : '';
-  const solarPill  = prop.has_solar ? `<span class="epc-pill">☀️ Solar PV</span>` : '';
-  const gasPill    = `<span class="epc-pill">${prop.has_gas ? '🔥 Gas' : '⚡ No mains gas'}</span>`;
-  const beds       = Math.min(Math.max(1, prop.bedrooms), 5);
+  const intensityPill = prop.energy_per_m2
+    ? `<span class="epc-pill"><span class="epc-pill-val">${Math.round(prop.energy_per_m2)}</span> kWh/m²/yr</span>`
+    : '';
+  const areaPill     = prop.floor_area_m2
+    ? `<span class="epc-pill"><span class="epc-pill-val">${Math.round(prop.floor_area_m2)}</span> m²</span>`
+    : '';
+  const solarPill    = prop.has_solar ? `<span class="epc-pill">☀️ Solar PV</span>` : '';
+  const gasPill      = `<span class="epc-pill">${prop.has_gas ? '🔥 Gas' : '⚡ No mains gas'}</span>`;
+  const beds         = Math.min(Math.max(1, prop.bedrooms), 5);
 
   const html = `<div class="epc-result-success" style="${inline ? 'margin-top:.6rem' : ''}">
     <div class="epc-result-pills">
       ${ratingPill}
       <span class="epc-pill">${propLabels[prop.property_type] || prop.property_type}</span>
       <span class="epc-pill"><span class="epc-pill-val">${beds}</span> bed${beds !== 1 ? 's' : ''}</span>
-      <span class="epc-pill">~<span class="epc-pill-val">${prop.annual_kwh.toLocaleString()}</span> kWh/yr</span>
-      ${gasPill}${solarPill}
+      ${intensityPill}${areaPill}${gasPill}${solarPill}
+      <span class="epc-pill">→ <span class="epc-pill-val">~${prop.annual_kwh.toLocaleString()} kWh/yr</span> electricity</span>
     </div>
-    <div class="epc-result-note">Pre-filled from EPC · ${confNote}</div>
+    <div class="epc-result-note">${confNote}</div>
     <div class="epc-result-override">Adjust any values below before calculating.</div>
   </div>
   ${prop.has_solar && currentMode === 'nothing' ? `
