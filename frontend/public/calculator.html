@@ -1437,8 +1437,8 @@ function renderScenarioComparison(data) {
           and paying back in <span class="csb-num">${bPayback}</span>${roiText}.
         </div>
         <div class="csb-disclaimer">
-          Estimates based on typical UK usage for a ${document.getElementById('est-bedrooms').value}-bed
-          ${document.getElementById('est-prop-type').selectedOptions[0].text.toLowerCase()}.
+          Estimates based on typical UK usage for a ${selectedBeds >= 5 ? '5+' : selectedBeds}-bed
+          ${{flat:'flat',terraced:'terraced',semi:'semi-detached',detached:'detached'}[selectedPropType] || 'home'}.
           Solar output assumes a south-facing 4 kWp roof.
           Scroll down for a full battery-only breakdown across all tariffs and sizes.
         </div>
@@ -1517,10 +1517,9 @@ const MODE_LABELS = {
 function selectMode(mode) {
   currentMode = mode;
   document.getElementById('step-mode-badge').textContent = MODE_LABELS[mode];
-  document.getElementById('explore-section').style.display  = mode === 'nothing' ? '' : 'none';
+  document.getElementById('explore-section').style.display  = 'none';
   const needsSolar = mode === 'solar' || mode === 'solar_battery';
   document.getElementById('solar-fields-section').style.display = needsSolar ? '' : 'none';
-  if (mode === 'nothing') selectExplore('battery');
   document.getElementById('step-mode').style.display = 'none';
   document.getElementById('step-form').style.display = '';
   document.getElementById('step-csv').style.display  = 'none';
@@ -1621,6 +1620,53 @@ async function doMainCalculate() {
 
   try {
     const p = getSliderParams();
+
+    if (currentMode === 'nothing') {
+      // "Starting fresh" — call /api/compare to get all three scenarios at once
+      const cmpData = await apiFetch('/api/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          annual_kwh:         annKwh,
+          property_type:      selectedPropType,
+          unit_rate_p:        unitRate,
+          inflation_pct:      parseFloat(p.inflPct),
+          current_sc_pd:      parseFloat(p.scPd),
+          efficiency_pct:     parseFloat(p.effPct),
+          max_charge_rate_kw: parseFloat(p.maxRateKw),
+        }),
+      });
+
+      const fr = cmpData.full_result;
+      sessionId  = cmpData.session_id;
+      lastResult = fr;
+
+      // Sync sidebar controls to the best result
+      if (fr && fr.selected) {
+        const sel = fr.selected;
+        const tariffSel = document.getElementById('tariff-select');
+        if (tariffSel) tariffSel.value = sel.tariff_key || tariffSel.value;
+        const capSlider = document.getElementById('cap-slider');
+        if (capSlider && sel.battery_cap_kwh) capSlider.value = sel.battery_cap_kwh;
+      }
+
+      const bedsLabel = selectedBeds >= 5 ? '5+' : selectedBeds;
+      const propLabel = {flat:'flat',terraced:'terraced',semi:'semi-detached',detached:'detached'}[selectedPropType] || '';
+      document.getElementById('uz-label').textContent =
+        `${bedsLabel}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
+
+      showDataSummary(fr);
+      showAllSections();
+      initProjectionChart();
+      initSidebarProfileChart();
+      document.getElementById('profile-placeholder').style.display = 'none';
+      document.getElementById('profile-chart-wrap').style.display  = '';
+      renderScenarioComparison(cmpData);
+      renderResult(fr);
+      setStatus('', '');
+      return;
+    }
+
     const data = await apiFetch('/api/estimate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1657,8 +1703,7 @@ async function doMainCalculate() {
     setStatus('', '');
 
     // Chain solar if mode requires it
-    const needsSolar = currentMode === 'solar' || currentMode === 'solar_battery' ||
-      (currentMode === 'nothing' && (currentExplore === 'solar' || currentExplore === 'both'));
+    const needsSolar = currentMode === 'solar' || currentMode === 'solar_battery';
 
     if (needsSolar) {
       const postcode = document.getElementById('new-solar-postcode').value.trim();
