@@ -337,6 +337,45 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .slider-val{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.1rem .45rem;font-size:.78rem;color:#f59e0b;font-weight:600}
 .slider{width:100%;accent-color:#f59e0b;cursor:pointer;margin:.15rem 0;height:4px}
 
+/* ── EPC postcode lookup card ─────────────────────────────────────────── */
+.epc-lookup-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+  padding:1rem 1.1rem;margin-bottom:1.1rem}
+.epc-lookup-header{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem}
+.epc-lookup-icon{font-size:1.6rem;line-height:1;flex-shrink:0;margin-top:.1rem}
+.epc-lookup-title{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.3}
+.epc-lookup-sub{font-size:.72rem;color:var(--text2);margin-top:.15rem;line-height:1.4}
+.epc-lookup-row{display:flex;gap:.5rem}
+.epc-postcode-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:.5rem .75rem;font-size:.9rem;font-family:inherit;
+  outline:none;transition:border-color .2s;text-transform:uppercase;letter-spacing:.05em}
+.epc-postcode-input:focus{border-color:var(--accent2)}
+.epc-postcode-input::placeholder{text-transform:none;letter-spacing:0;color:var(--text3)}
+.epc-lookup-btn{
+  background:var(--accent);color:#fff;border:none;border-radius:8px;
+  padding:.5rem 1rem;font-size:.85rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;transition:background .15s;font-family:inherit}
+.epc-lookup-btn:hover{background:#ea6c0a}
+.epc-lookup-btn:disabled{opacity:.5;cursor:not-allowed}
+.epc-result-success{
+  margin-top:.75rem;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);
+  border-radius:8px;padding:.65rem .9rem}
+.epc-result-pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.45rem}
+.epc-pill{display:inline-flex;align-items:center;gap:.3rem;
+  background:var(--bg);border:1px solid var(--border);border-radius:20px;
+  padding:.15rem .6rem;font-size:.7rem;font-weight:600;color:var(--text2)}
+.epc-pill-val{color:var(--text);font-weight:700}
+.epc-pill-rating{color:var(--green)}
+.epc-result-note{font-size:.7rem;color:var(--text3);line-height:1.4}
+.epc-result-override{font-size:.7rem;color:var(--text3);margin-top:.3rem}
+.epc-result-error{
+  margin-top:.75rem;background:rgba(255,71,87,.07);border:1px solid rgba(255,71,87,.2);
+  border-radius:8px;padding:.5rem .8rem;font-size:.78rem;color:var(--red)}
+.epc-result-notfound{
+  margin-top:.75rem;background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;padding:.5rem .8rem;font-size:.78rem;color:var(--text2)}
+
 /* ── Step 0: Mode selection ────────────────────────────────────────────── */
 .mode-select-heading{
   font-size:1.2rem;font-weight:800;color:var(--text);letter-spacing:-.01em;margin-bottom:1.1rem}
@@ -688,6 +727,26 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   <div id="step-form" style="display:none">
     <button class="back-btn" onclick="showModeSelect()">← Change starting point</button>
     <div class="step-mode-badge" id="step-mode-badge"></div>
+
+    <!-- EPC postcode lookup -->
+    <div class="epc-lookup-card" id="epc-lookup-card">
+      <div class="epc-lookup-header">
+        <span class="epc-lookup-icon">🏠</span>
+        <div>
+          <div class="epc-lookup-title">Auto-fill from your EPC</div>
+          <div class="epc-lookup-sub">Enter your postcode to pre-fill your property details instantly</div>
+        </div>
+      </div>
+      <div class="epc-lookup-row">
+        <input type="text" id="epc-postcode" class="epc-postcode-input"
+               placeholder="e.g. SW1A 1AA" maxlength="9"
+               onkeydown="if(event.key==='Enter')doEpcLookup()">
+        <button class="epc-lookup-btn" id="epc-lookup-btn" onclick="doEpcLookup()">
+          Look up →
+        </button>
+      </div>
+      <div id="epc-result" style="display:none"></div>
+    </div>
 
     <!-- Property type -->
     <div class="form-section-label">Property type</div>
@@ -1589,6 +1648,86 @@ const MODE_LABELS = {
 
 // ============================================================
 // JOURNEY — mode selection, property, explore
+// ============================================================
+// EPC LOOKUP
+// ============================================================
+async function doEpcLookup() {
+  const input = document.getElementById('epc-postcode');
+  const btn   = document.getElementById('epc-lookup-btn');
+  const result = document.getElementById('epc-result');
+  const postcode = input.value.trim();
+  if (!postcode) { input.focus(); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Looking up…';
+  result.style.display = 'none';
+
+  try {
+    const data = await apiFetch(`/api/epc/lookup?postcode=${encodeURIComponent(postcode)}`);
+
+    if (!data.found) {
+      result.innerHTML = `<div class="epc-result-notfound">
+        No EPC record found for <strong>${postcode.toUpperCase()}</strong>.
+        Not all properties have an EPC — please fill in the details below manually.
+      </div>`;
+      result.style.display = '';
+      return;
+    }
+
+    // Apply to form
+    selectProp(data.property_type);
+    const beds = Math.min(Math.max(1, data.bedrooms), 5);
+    selectBeds(beds);
+    const slider = document.getElementById('energy-slider');
+    slider.value = data.annual_kwh;
+    onEnergySlider();
+
+    // Build result pills
+    const propLabels = {flat:'Flat',terraced:'Terraced',semi:'Semi-detached',detached:'Detached'};
+    const confNote = data.confidence === 'high'
+      ? 'kWh matched from BEIS lookup table'
+      : data.confidence === 'medium'
+      ? 'kWh estimated from nearest property size'
+      : 'kWh estimated from floor area';
+
+    const ratingPill = data.epc_rating
+      ? `<span class="epc-pill">EPC rating <span class="epc-pill-val epc-pill-rating">${data.epc_rating}</span></span>`
+      : '';
+    const solarPill = data.has_solar
+      ? `<span class="epc-pill">☀️ <span class="epc-pill-val">Solar PV detected</span></span>`
+      : '';
+    const gasPill = `<span class="epc-pill">${data.has_gas ? '🔥 Gas' : '⚡ No mains gas'}</span>`;
+
+    result.innerHTML = `<div class="epc-result-success">
+      <div class="epc-result-pills">
+        ${ratingPill}
+        <span class="epc-pill">${propLabels[data.property_type] || data.property_type}</span>
+        <span class="epc-pill"><span class="epc-pill-val">${beds}</span> bed${beds !== 1 ? 's' : ''}</span>
+        <span class="epc-pill">~<span class="epc-pill-val">${data.annual_kwh.toLocaleString()}</span> kWh/yr</span>
+        ${gasPill}${solarPill}
+      </div>
+      <div class="epc-result-note">Form pre-filled from your EPC · ${confNote}</div>
+      <div class="epc-result-override">You can adjust any values below before calculating.</div>
+    </div>`;
+    result.style.display = '';
+
+    // If solar detected and mode is 'nothing', nudge mode to solar
+    if (data.has_solar && currentMode === 'nothing') {
+      result.innerHTML += `<div class="epc-result-notfound" style="margin-top:.5rem">
+        ☀️ Your EPC shows solar panels. Switch to <strong>I have solar panels</strong>
+        above for a more accurate result.
+      </div>`;
+    }
+
+  } catch(e) {
+    result.innerHTML = `<div class="epc-result-error">Could not look up EPC: ${e.message || 'unknown error'}</div>`;
+    result.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Look up →';
+  }
+}
+
 // ============================================================
 function selectMode(mode) {
   currentMode = mode;
