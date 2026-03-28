@@ -298,6 +298,7 @@ def _solar_only_scenario(
     from engine.tariffs import Tariff as _Tariff
     _flat = _Tariff(
         key="flat", name="flat",
+        supplier="", description="", color="",
         slot_rates=[unit_rate] * 48,
         charge_slots=[False] * 48,
         discharge_slots=[False] * 48,
