@@ -5,7 +5,7 @@ POST /api/recalculate — re-run with new slider params against cached days
 from __future__ import annotations
 import math
 import hashlib
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
@@ -72,13 +72,19 @@ class EstimateRequest(BaseModel):
 
 
 class CompareRequest(BaseModel):
-    annual_kwh:         float = Field(..., ge=500, le=20000)
-    property_type:      str   = "semi"
-    unit_rate_p:        float = Field(28.16, ge=5, le=100)
-    inflation_pct:      float = Field(5.0,   ge=0, le=20)
-    current_sc_pd:      float = Field(53.0,  ge=0, le=200)
-    efficiency_pct:     float = Field(90.0,  ge=50, le=100)
-    max_charge_rate_kw: float = Field(3.6,   ge=0.5, le=15)
+    annual_kwh:               float = Field(..., ge=500, le=20000)
+    property_type:            str   = "semi"
+    unit_rate_p:              float = Field(28.16, ge=5, le=100)
+    inflation_pct:            float = Field(5.0,   ge=0, le=20)
+    current_sc_pd:            float = Field(53.0,  ge=0, le=200)
+    efficiency_pct:           float = Field(90.0,  ge=50, le=100)
+    max_charge_rate_kw:       float = Field(3.6,   ge=0.5, le=15)
+    # Optional sidebar overrides
+    battery_cap_kwh_override: Optional[float] = Field(None, ge=1, le=50)
+    battery_cost_gbp_override:Optional[float] = Field(None, ge=500, le=50000)
+    tariff_key_override:      Optional[str]   = None
+    solar_kwp:                float        = Field(4.0,  ge=0.5, le=30)
+    solar_installed_cost:     float        = Field(8000.0, ge=500, le=50000)
 
 
 class RecalculateRequest(BaseModel):
@@ -284,15 +290,17 @@ def _solar_only_scenario(
     inflation_pct: float,
     avg_day_kwh: list[float],
     solar_profile: list[float],
+    solar_kwp: float = SOLAR_KWP,
+    installed_cost: float = SOLAR_INSTALLED_COST,
 ) -> dict:
-    """4 kWp solar, SEG export, no battery."""
-    gen           = SOLAR_KWP * SOLAR_GEN_PER_KWP           # 3 400 kWh
-    self_consumed = gen * SOLAR_SC_SOLO                      # 1 190 kWh
-    exported      = gen * (1 - SOLAR_SC_SOLO)               # 2 210 kWh
+    """Solar-only scenario, SEG export, no battery."""
+    gen           = solar_kwp * SOLAR_GEN_PER_KWP
+    self_consumed = gen * SOLAR_SC_SOLO
+    exported      = gen * (1 - SOLAR_SC_SOLO)
     import_saving = self_consumed * unit_rate
     export_rev    = exported * SEG_EXPORT_RATE
     total_saving  = import_saving + export_rev
-    pb = calc_payback(SOLAR_INSTALLED_COST, total_saving, inflation_pct)
+    pb = calc_payback(installed_cost, total_saving, inflation_pct)
 
     # Per-slot flows for the energy flow chart (no battery — use dummy flat-rate tariff)
     from engine.tariffs import Tariff as _Tariff
@@ -309,9 +317,9 @@ def _solar_only_scenario(
     return {
         "label":          "Solar Only",
         "icon":           "☀️",
-        "tech":           f"4 kWp solar system · SEG export at {int(SEG_EXPORT_RATE*100)}p/kWh",
+        "tech":           f"{solar_kwp:.1f} kWp solar · SEG at {int(SEG_EXPORT_RATE*100)}p/kWh",
         "annual_saving":  round(total_saving, 0),
-        "installed_cost": SOLAR_INSTALLED_COST,
+        "installed_cost": installed_cost,
         "payback_years":  round(pb.years, 1) if pb.years != math.inf else None,
         "roi_10yr":       round(pb.roi_10yr, 0),
         "cumulative":     pb.cumulative,
@@ -334,16 +342,18 @@ def _solar_battery_scenario(
     solar_profile: list[float],
     efficiency: float,
     max_rate_kw: float,
+    solar_kwp: float = SOLAR_KWP,
+    solar_installed_cost: float = SOLAR_INSTALLED_COST,
 ) -> dict:
     """
-    4 kWp solar + best battery on Octopus Flux.
+    Solar + best battery on Octopus Flux.
 
     Solar contribution (higher self-consumption, Flux export rate) is added on top
     of the Flux+battery baseline from the simulation matrix.  This avoids
     double-counting because the simulator runs battery-only (no solar).
     """
     import math as _math
-    gen = SOLAR_KWP * SOLAR_GEN_PER_KWP  # 3 400 kWh
+    gen = solar_kwp * SOLAR_GEN_PER_KWP
 
     # Best Flux + battery combo from matrix
     flux_rows = matrix.get("octopusFlux", [])
@@ -368,7 +378,7 @@ def _solar_battery_scenario(
     solar_extra         = solar_import_saving + solar_export_rev
 
     total_saving = flux_saving + solar_extra
-    total_cost   = SOLAR_INSTALLED_COST + batt_cost
+    total_cost   = solar_installed_cost + batt_cost
     pb = calc_payback(total_cost, total_saving, inflation_pct)
 
     flux_tariff  = TARIFFS["octopusFlux"]
@@ -379,7 +389,7 @@ def _solar_battery_scenario(
     return {
         "label":          "Solar + Battery",
         "icon":           "⚡",
-        "tech":           f"4 kWp solar + {batt_kwh} kWh battery · Octopus Flux",
+        "tech":           f"{solar_kwp:.1f} kWp solar + {batt_kwh} kWh battery · Octopus Flux",
         "annual_saving":  round(total_saving, 0),
         "installed_cost": round(total_cost, 0),
         "payback_years":  round(pb.years, 1) if pb.years != math.inf else None,
@@ -563,7 +573,37 @@ async def compare_scenarios(req: CompareRequest):
 
     # ── Battery-only: best combo from matrix ────────────────────────────────
     all_combos = _all_combinations(matrix)
-    best_batt  = all_combos[0] if all_combos and all_combos[0]["total_saving"] > 0 else None
+
+    # Apply sidebar overrides
+    if req.battery_cap_kwh_override or req.tariff_key_override:
+        candidates = all_combos or []
+        if req.battery_cap_kwh_override:
+            # Filter to within 2.5 kWh of requested size; take the best tariff for that size
+            near = [c for c in candidates if abs(c['battery_kwh'] - req.battery_cap_kwh_override) <= 2.5]
+            if near:
+                if req.tariff_key_override:
+                    tariff_near = [c for c in near if c['tariff_key'] == req.tariff_key_override]
+                    candidates = tariff_near or near
+                else:
+                    candidates = near
+        elif req.tariff_key_override:
+            tariff_cands = [c for c in candidates if c['tariff_key'] == req.tariff_key_override]
+            if tariff_cands:
+                candidates = tariff_cands
+        override_best = candidates[0] if candidates else (all_combos[0] if all_combos else None)
+    else:
+        override_best = all_combos[0] if all_combos else None
+
+    best_batt = override_best if (override_best and override_best['total_saving'] > 0) else None
+
+    # Recalculate payback with override cost if supplied
+    if best_batt and req.battery_cost_gbp_override:
+        pb_override = calc_payback(req.battery_cost_gbp_override, best_batt['total_saving'], req.inflation_pct)
+        best_batt = {**best_batt,
+                     'battery_cost': req.battery_cost_gbp_override,
+                     'payback_years': round(pb_override.years, 1) if pb_override.years != math.inf else None,
+                     'roi_10yr': round(pb_override.roi_10yr, 0),
+                     'cumulative_savings': pb_override.cumulative}
 
     if best_batt:
         battery_scenario = {
@@ -594,7 +634,7 @@ async def compare_scenarios(req: CompareRequest):
         }
 
     # ── Build solar profile and representative average day ───────────────────
-    solar_daily_kwh = SOLAR_KWP * SOLAR_GEN_PER_KWP / 365.0
+    solar_daily_kwh = req.solar_kwp * SOLAR_GEN_PER_KWP / 365.0
     solar_profile   = [v * solar_daily_kwh for v in UK_SOLAR_PROFILE_NORM]
     avg_day_kwh     = parse.days[0]   # synthetic profile: all 35 days identical
 
@@ -609,10 +649,12 @@ async def compare_scenarios(req: CompareRequest):
     # ── Solar-only and Solar+battery scenarios ───────────────────────────────
     solar_scenario = _solar_only_scenario(
         unit_rate, req.inflation_pct, avg_day_kwh, solar_profile,
+        solar_kwp=req.solar_kwp, installed_cost=req.solar_installed_cost,
     )
     sb_scenario = _solar_battery_scenario(
         matrix, unit_rate, req.inflation_pct, avg_day_kwh, solar_profile,
         efficiency, req.max_charge_rate_kw,
+        solar_kwp=req.solar_kwp, solar_installed_cost=req.solar_installed_cost,
     )
 
     scenarios = {
