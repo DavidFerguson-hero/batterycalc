@@ -336,98 +336,46 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .slider-label{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text2);margin-bottom:.2rem}
 .slider-val{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.1rem .45rem;font-size:.78rem;color:#f59e0b;font-weight:600}
 .slider{width:100%;accent-color:#f59e0b;cursor:pointer;margin:.15rem 0;height:4px}
-/* ── Progressive disclosure ────────────────────────────────── */
-.breakdown-wrap{display:flex;flex-direction:column;gap:0}
-.breakdown-btn{display:flex;align-items:center;justify-content:space-between;
-  width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;
-  color:var(--accent2);font-size:.9rem;font-weight:600;cursor:pointer;
-  padding:.85rem 1.1rem;transition:background .15s,border-color .15s;text-align:left}
-.breakdown-btn:hover{background:var(--bg3);border-color:var(--accent2)}
-.breakdown-btn .bd-arrow{display:inline-block;transition:transform .35s ease;margin-left:.5rem}
-.breakdown-btn.open .bd-arrow{transform:rotate(90deg)}
-.breakdown-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
-.breakdown-body.open{grid-template-rows:1fr}
-.breakdown-inner{overflow:hidden;display:flex;flex-direction:column;gap:1.25rem;padding-top:1.25rem}
-/* ── CTA sticky bar ─────────────────────────────────────────── */
-.cta-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);
-  padding:.75rem 1.25rem;z-index:50}
-.cta-bar-inner{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;width:100%}
-.cta-btn{padding:.5rem 1.1rem;border-radius:8px;font-size:.82rem;font-weight:600;
-  cursor:pointer;border:1px solid var(--border);background:var(--bg2);
-  color:var(--text);text-decoration:none;transition:background .15s,border-color .15s;
-  white-space:nowrap;display:inline-flex;align-items:center;gap:.35rem}
-.cta-btn:hover{background:var(--bg3);border-color:var(--accent2);color:var(--accent2)}
-.cta-btn-primary{background:var(--accent);color:#fff!important;border-color:var(--accent)}
-.cta-btn-primary:hover{background:#ea6c0a;border-color:#ea6c0a}
-.cta-share-confirm{font-size:.75rem;color:var(--green);font-weight:600;
-  opacity:0;transition:opacity .3s;white-space:nowrap}
-.cta-share-confirm.visible{opacity:1}
-.cta-email-expand{display:none;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;width:100%}
-.cta-email-expand.visible{display:flex}
-.cta-email-input{flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:7px;color:var(--text);padding:.4rem .7rem;font-size:.82rem;outline:none}
-.cta-email-input:focus{border-color:var(--accent2)}
-.cta-email-msg{font-size:.75rem;margin-top:.3rem;min-height:1rem}
-/* ── CSV upload secondary hint ──────────────────────────────── */
-.csv-secondary-note{font-size:.73rem;color:var(--text3);margin-bottom:.75rem;
-  padding:.45rem .75rem;background:var(--bg3);border-radius:7px;border-left:3px solid var(--border)}
-/* ── Mode selection cards ───────────────────────────────────── */
-.mode-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:.75rem 0 .5rem}
-.mode-card{background:var(--bg3);border:2px solid var(--border);border-radius:12px;
-  padding:1.1rem .75rem;cursor:pointer;text-align:center;transition:border-color .2s,background .2s,transform .15s;
-  display:flex;flex-direction:column;align-items:center;gap:.35rem;width:100%}
-.mode-card:hover{border-color:var(--accent2);background:rgba(61,139,255,.07);transform:translateY(-2px)}
-.mode-card.selected{border-color:var(--accent);background:rgba(249,115,22,.08)}
-.mode-icon{font-size:2rem;line-height:1.1;display:block}
-.mode-title{font-weight:700;font-size:.85rem;color:var(--text);line-height:1.3}
-.mode-sub{font-size:.7rem;color:var(--text2);line-height:1.4}
-/* ── Property type cards ───────────────────────────────────── */
-.prop-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:.35rem 0}
-.prop-card{background:var(--bg3);border:2px solid var(--border);border-radius:10px;
-  padding:.65rem .4rem;cursor:pointer;text-align:center;transition:all .2s;width:100%}
-.prop-card:hover{border-color:var(--accent2)}
-.prop-card.selected{border-color:var(--accent);background:rgba(249,115,22,.08)}
-.prop-card-icon{font-size:1.75rem;display:block;margin-bottom:.25rem;line-height:1}
-.prop-card-label{font-size:.7rem;font-weight:600;color:var(--text2);line-height:1.2}
-.prop-card.selected .prop-card-label{color:var(--accent)}
-/* ── Bedroom chips ─────────────────────────────────────────── */
-.bedroom-chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.35rem 0}
-.bed-chip{padding:.28rem .75rem;border-radius:20px;border:1px solid var(--border);
-  background:var(--bg3);font-size:.8rem;cursor:pointer;transition:all .15s;color:var(--text2)}
-.bed-chip:hover{border-color:var(--accent2);color:var(--text)}
-.bed-chip.selected{background:rgba(249,115,22,.1);border-color:var(--accent);color:var(--accent);font-weight:700}
-/* ── Energy slider ─────────────────────────────────────────── */
-.energy-display{font-size:1.4rem;font-weight:700;color:var(--accent);line-height:1}
-.energy-callout{font-size:.78rem;color:var(--text3);margin-top:.3rem}
-.energy-callout strong{color:var(--text2)}
-/* ── Explore toggle (nothing mode) ────────────────────────── */
-.explore-toggle{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.35rem 0}
-.explore-btn{background:var(--bg3);border:2px solid var(--border);border-radius:9px;
-  padding:.6rem .4rem;cursor:pointer;text-align:center;transition:all .2s;
-  color:var(--text2);font-size:.8rem;font-weight:600;line-height:1.3;width:100%}
-.explore-btn:hover{border-color:var(--accent2);color:var(--text)}
-.explore-btn.selected{border-color:var(--accent);background:rgba(249,115,22,.08);color:var(--accent)}
-/* ── Solar form section ────────────────────────────────────── */
-.solar-form-section{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.25);
-  border-radius:10px;padding:.85rem;margin:.75rem 0 0}
-.solar-form-title{font-size:.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;
-  letter-spacing:.07em;margin-bottom:.7rem;display:flex;align-items:center;gap:.4rem}
-/* ── Step navigation ───────────────────────────────────────── */
-.back-btn{background:none;border:none;color:var(--accent2);cursor:pointer;
-  font-size:.78rem;font-weight:600;padding:0;margin-bottom:.7rem;
-  display:inline-flex;align-items:center;gap:.3rem}
-.back-btn:hover{color:var(--text)}
-.step-mode-badge{display:inline-flex;align-items:center;gap:.4rem;
-  background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);
-  border-radius:20px;padding:.2rem .8rem;font-size:.73rem;color:var(--accent);font-weight:600;margin-bottom:.8rem}
-.form-section-label{font-size:.67rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.08em;color:var(--text3);margin:1rem 0 .35rem}
-.form-section-label:first-child{margin-top:0}
-/* ── CSV link ──────────────────────────────────────────────── */
-.csv-link-row{text-align:center;margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--border)}
-.csv-link-btn{background:none;border:none;color:var(--text3);cursor:pointer;
-  font-size:.75rem;text-decoration:underline;transition:color .15s}
-.csv-link-btn:hover{color:var(--accent2)}
+
+/* ── Scenario comparison (estimate journey) ────────────────────────────── */
+.compare-summary-bar{background:rgba(249,115,22,.05);border:1px solid rgba(249,115,22,.28);
+  border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.1rem}
+.csb-label{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--accent);margin-bottom:.35rem}
+.csb-text{font-size:.97rem;line-height:1.75;color:var(--text)}
+.csb-text strong{color:#fff}
+.csb-num{color:var(--green);font-weight:700}
+.csb-opt{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.28);
+  color:#f97316;font-weight:700;border-radius:5px;padding:.05rem .4rem;white-space:nowrap}
+.csb-disclaimer{font-size:.7rem;color:var(--text3);margin-top:.5rem;line-height:1.5}
+.scenario-compare-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+@media(max-width:720px){.scenario-compare-grid{grid-template-columns:1fr}}
+.scenario-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+  padding:1.1rem;display:flex;flex-direction:column;gap:.35rem;position:relative;
+  transition:border-color .2s}
+.scenario-card.is-best{border-color:var(--accent);background:rgba(249,115,22,.04)}
+.sc-best-badge{position:absolute;top:-.6rem;left:1rem;background:var(--accent);color:#000;
+  border-radius:10px;padding:.12rem .7rem;font-size:.63rem;font-weight:700;letter-spacing:.03em}
+.sc-icon{font-size:1.75rem;line-height:1;margin-bottom:.1rem}
+.sc-label{font-size:.82rem;font-weight:700;color:var(--text);margin-top:.1rem}
+.sc-tech{font-size:.7rem;color:var(--text3);line-height:1.4;margin-bottom:.25rem}
+.sc-saving{font-size:2rem;font-weight:700;color:var(--green);line-height:1}
+.sc-saving-lbl{font-size:.67rem;color:var(--text2);margin-bottom:.2rem}
+.sc-divider{height:1px;background:var(--border);margin:.25rem 0}
+.sc-metric{display:flex;justify-content:space-between;align-items:center;
+  padding:.28rem 0;border-top:1px solid rgba(37,54,80,.55);font-size:.75rem}
+.sc-metric:first-child{border-top:none}
+.sc-mk{color:var(--text2)}
+.sc-mv{font-weight:600;color:var(--text)}
+.sc-breakdown{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:.6rem .75rem;margin-top:.45rem}
+.sc-br-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--text3);margin-bottom:.3rem}
+.sc-br-row{display:flex;justify-content:space-between;align-items:center;
+  font-size:.7rem;padding:.12rem 0}
+.sc-bk{color:var(--text3)}
+.sc-bv{font-weight:600;color:var(--green)}
+.sc-bv.accent{color:var(--accent2)}
 </style>
 </head>
 <body>
@@ -815,11 +763,59 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 </div>
 </div>
 
-<!-- ── STAGE 1: Financial summary (always visible after results) ── -->
-<div class="card hidden" id="s-financial">
-  <div class="section-title">Financial Summary
-    <span style="font-size:.68rem;text-transform:none;letter-spacing:0;
-      color:var(--text3);font-weight:400;margin-left:.5rem">(sidebar tariff &amp; battery)</span>
+<div class="card hidden" id="s-scenarios">
+  <div class="section-title" style="margin-bottom:.6rem">Your Options at a Glance</div>
+  <div id="scenario-summary-bar"></div>
+  <div class="scenario-compare-grid" id="scenario-grid"></div>
+  <div class="text-sm" style="margin-top:.85rem;color:var(--text3);line-height:1.55;border-top:1px solid var(--border);padding-top:.75rem">
+    ☀️ Solar figures are estimates based on a typical 4 kWp south-facing UK roof (~3,400 kWh/year generated).
+    🔋 Battery savings are modelled from your consumption profile.
+    Upload your half-hourly smart meter CSV for exact battery figures.
+  </div>
+</div>
+
+<div class="proj-heat-grid hidden" id="s-proj-heat">
+  <div class="left-col">
+    <div class="card" id="s-financial">
+      <div class="section-title">Financial Summary
+        <span style="font-size:.68rem;text-transform:none;letter-spacing:0;
+          color:var(--text3);font-weight:400;margin-left:.5rem">(sidebar tariff &amp; battery)</span>
+      </div>
+      <div class="metric-grid-2x2">
+        <div class="metric">
+          <div class="label">Current Annual Cost</div>
+          <div class="value" id="m-current">—</div>
+          <div class="sub">existing tariff</div>
+        </div>
+        <div class="metric highlight">
+          <div class="label">New Annual Cost</div>
+          <div class="value" id="m-combined">—</div>
+          <div class="sub">tariff + battery</div>
+        </div>
+        <div class="metric highlight">
+          <div class="label">Total Saving vs Today</div>
+          <div class="value" id="m-total-saving">—</div>
+          <div class="sub">tariff switch + battery</div>
+        </div>
+        <div class="metric" id="m-payback-card">
+          <div class="label">Payback Period</div>
+          <div class="value" id="m-payback">—</div>
+          <div class="sub" id="m-payback-sub">—</div>
+        </div>
+        <div class="metric" id="m-export-card" style="display:none">
+          <div class="label">Export Revenue</div>
+          <div class="value m-export" id="m-export-revenue">—</div>
+          <div class="sub" id="m-export-sub">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="s-projection">
+      <div class="section-title">Cumulative Savings Projection (10 Years)</div>
+      <div class="chart-wrap-md"><canvas id="projChart"></canvas></div>
+      <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
+        Uses selected inflation rate. Dashed line = battery installed cost.
+      </div>
+    </div>
   </div>
   <div class="metric-grid-2x2">
     <div class="metric">
@@ -1188,8 +1184,65 @@ function onEstPropChange() {
 }
 
 async function doEstimateClick() {
-  // Legacy entry point — delegate to the new unified calculate handler
-  return doMainCalculate();
+  const annKwh   = parseFloat(document.getElementById('est-kwh').value);
+  const propType = document.getElementById('est-prop-type').value;
+  const unitRate = parseFloat(document.getElementById('est-rate').value);
+  const beds     = document.getElementById('est-bedrooms').value;
+  const propLabel = document.getElementById('est-prop-type').selectedOptions[0].text;
+
+  if (!annKwh || annKwh < 500) { setStatus('Please enter a valid annual consumption (≥ 500 kWh).', 'error'); return; }
+
+  const btn = document.getElementById('est-btn');
+  btn.disabled = true;
+  setStatus('⏳ Calculating all scenarios…', 'loading');
+
+  try {
+    const p = getSliderParams();
+    const data = await apiFetch('/api/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        annual_kwh:         annKwh,
+        property_type:      propType,
+        unit_rate_p:        unitRate,
+        inflation_pct:      parseFloat(p.inflPct),
+        current_sc_pd:      parseFloat(p.scPd),
+        efficiency_pct:     parseFloat(p.effPct),
+        max_charge_rate_kw: parseFloat(p.maxRateKw),
+      }),
+    });
+
+    const fr = data.full_result;
+    sessionId  = data.session_id;
+    lastResult = fr;
+
+    // Sync sidebar to the best battery tariff & size auto-selected by the backend
+    if (fr.selected) {
+      document.getElementById('tariff-select').value = fr.selected.tariff_key;
+      document.getElementById('cap-slider').value    = fr.selected.battery_cap_kwh;
+      document.getElementById('cap-val').textContent = fr.selected.battery_cap_kwh + ' kWh';
+      document.getElementById('cost-slider').value   = fr.selected.battery_cost_gbp;
+      document.getElementById('cost-val').textContent = '£' + Number(fr.selected.battery_cost_gbp).toLocaleString();
+      updateTariffInfo();
+    }
+
+    setStatus(`✅ Estimated from <strong>${Math.round(annKwh).toLocaleString()} kWh/yr</strong> (${beds}-bed ${propLabel}).`, 'success');
+    uploadZone.classList.add('collapsed');
+    document.getElementById('uz-label').textContent = `${beds}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
+
+    showDataSummary(fr);
+    showAllSections();
+    initProjectionChart();
+    initSidebarProfileChart();
+    document.getElementById('profile-placeholder').style.display = 'none';
+    document.getElementById('profile-chart-wrap').style.display  = '';
+    renderScenarioComparison(data);
+    renderResult(fr);
+  } catch(e) {
+    setStatus('❌ ' + (e.message || 'Estimation failed.'), 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function nearestBattKwh(kwh) {
@@ -1260,6 +1313,139 @@ function renderResult(data) {
   updateBatteryRec(data);
   updateTariffRec(data);
   updateRankedTable(data);
+}
+
+// ============================================================
+// SCENARIO COMPARISON (estimate journey — battery / solar / both)
+// ============================================================
+function renderScenarioComparison(data) {
+  const { scenarios, best_scenario } = data;
+  const grid       = document.getElementById('scenario-grid');
+  const summaryBar = document.getElementById('scenario-summary-bar');
+  if (!scenarios || !grid) return;
+
+  const fmt    = v => '£' + Math.round(Math.abs(v || 0)).toLocaleString();
+  const fmtS   = v => (v >= 0 ? '+£' : '-£') + Math.round(Math.abs(v || 0)).toLocaleString();
+  const pbCls  = y => y === null || y === undefined ? 'na' : y <= 8 ? 'good' : y <= 12 ? 'neutral' : 'bad';
+  const roiCls = r => (r || 0) > 0 ? 'good' : 'bad';
+
+  grid.innerHTML = '';
+
+  const ORDER = ['battery', 'solar', 'solar_battery'];
+  for (const key of ORDER) {
+    const s = scenarios[key];
+    if (!s || !s.label) continue;
+
+    const isBest  = key === best_scenario;
+    const saving  = s.annual_saving  || 0;
+    const payback = s.payback_years;
+    const roi     = s.roi_10yr;
+    const cost    = s.installed_cost || 0;
+    const bd      = s.breakdown      || {};
+
+    // Breakdown section — different rows per scenario type
+    let bdRows = '';
+    if (key === 'battery') {
+      bdRows = `
+        <div class="sc-br-row">
+          <span class="sc-bk">Time-of-use tariff saving</span>
+          <span class="sc-bv">+${fmt(bd.tariff_switch_saving)}/yr</span>
+        </div>
+        <div class="sc-br-row">
+          <span class="sc-bk">Battery arbitrage</span>
+          <span class="sc-bv">+${fmt(bd.battery_arbitrage)}/yr</span>
+        </div>
+        <div class="sc-br-row">
+          <span class="sc-bk">Best tariff</span>
+          <span class="sc-bv accent">${bd.best_tariff || '—'}</span>
+        </div>`;
+    } else if (key === 'solar') {
+      bdRows = `
+        <div class="sc-br-row">
+          <span class="sc-bk">Grid import saving</span>
+          <span class="sc-bv">+${fmt(bd.import_saving)}/yr</span>
+        </div>
+        <div class="sc-br-row">
+          <span class="sc-bk">SEG export revenue</span>
+          <span class="sc-bv">+${fmt(bd.export_revenue)}/yr</span>
+        </div>
+        <div class="sc-br-row">
+          <span class="sc-bk">Units exported/yr</span>
+          <span class="sc-bv" style="color:var(--text2)">${Math.round(bd.kwh_exported || 0).toLocaleString()} kWh</span>
+        </div>`;
+    } else if (key === 'solar_battery') {
+      bdRows = `
+        <div class="sc-br-row">
+          <span class="sc-bk">Flux + battery</span>
+          <span class="sc-bv">+${fmt(bd.flux_battery_saving)}/yr</span>
+        </div>
+        <div class="sc-br-row">
+          <span class="sc-bk">Solar self-consumption</span>
+          <span class="sc-bv">+${fmt(bd.solar_import_saving)}/yr</span>
+        </div>
+        <div class="sc-br-row">
+          <span class="sc-bk">Solar export (Flux rate)</span>
+          <span class="sc-bv">+${fmt(bd.solar_export_revenue)}/yr</span>
+        </div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'scenario-card' + (isBest ? ' is-best' : '');
+    card.innerHTML = `
+      ${isBest ? '<div class="sc-best-badge">⭐ Best for your home</div>' : ''}
+      <div class="sc-icon">${s.icon || '📊'}</div>
+      <div class="sc-label">${s.label}</div>
+      <div class="sc-tech">${s.tech || ''}</div>
+      <div class="sc-saving ${saving > 0 ? 'good' : 'bad'}">${fmt(saving)}</div>
+      <div class="sc-saving-lbl">estimated saving / year</div>
+      <div class="sc-divider"></div>
+      <div class="sc-metric">
+        <span class="sc-mk">Installed cost</span>
+        <span class="sc-mv">${fmt(cost)}</span>
+      </div>
+      <div class="sc-metric">
+        <span class="sc-mk">Payback period</span>
+        <span class="sc-mv ${pbCls(payback)}">${payback != null ? payback.toFixed(1) + ' years' : 'N/A'}</span>
+      </div>
+      <div class="sc-metric">
+        <span class="sc-mk">10-year return</span>
+        <span class="sc-mv ${roiCls(roi)}">${roi != null ? fmtS(roi) : 'N/A'}</span>
+      </div>
+      <div class="sc-breakdown">
+        <div class="sc-br-title">How the saving breaks down</div>
+        ${bdRows}
+      </div>`;
+    grid.appendChild(card);
+  }
+
+  // Summary bar
+  const best = scenarios[best_scenario];
+  if (best) {
+    const bSaving  = Math.round(best.annual_saving || 0);
+    const bPayback = best.payback_years != null ? best.payback_years.toFixed(1) + ' years' : 'N/A';
+    const bRoi     = best.roi_10yr;
+    const roiText  = bRoi != null && bRoi > 0
+      ? ` and putting <span class="csb-num">+£${Math.round(bRoi).toLocaleString()}</span> back in your pocket over 10 years`
+      : '';
+    summaryBar.innerHTML = `
+      <div class="compare-summary-bar">
+        <div class="csb-label">⭐ Best Option for Your Home</div>
+        <div class="csb-text">
+          <span class="csb-opt">${best.label}</span>
+          (${best.tech}) is the strongest investment for your usage profile —
+          saving around <span class="csb-num">£${bSaving.toLocaleString()}/year</span>
+          and paying back in <span class="csb-num">${bPayback}</span>${roiText}.
+        </div>
+        <div class="csb-disclaimer">
+          Estimates based on typical UK usage for a ${document.getElementById('est-bedrooms').value}-bed
+          ${document.getElementById('est-prop-type').selectedOptions[0].text.toLowerCase()}.
+          Solar output assumes a south-facing 4 kWp roof.
+          Scroll down for a full battery-only breakdown across all tariffs and sizes.
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('s-scenarios').classList.remove('hidden');
 }
 
 // ============================================================
@@ -2233,15 +2419,7 @@ function showAllSections() {
   ['s-plain-summary', 's-financial', 's-summary'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
-  // CTA bar + breakdown expander
-  document.getElementById('cta-bar').classList.remove('hidden');
-  document.getElementById('breakdown-wrap').classList.remove('hidden');
-  // Restore breakdown open state if it was open before recalculate
-  if (breakdownOpen) {
-    document.getElementById('breakdown-body').classList.add('open');
-    document.getElementById('breakdown-btn').classList.add('open');
-  }
-  // s-solar stays hidden until /api/solar is called
+  // s-scenarios is shown only by renderScenarioComparison() (estimate path)
   document.getElementById('sidebar').classList.remove('hidden');
   document.getElementById('page-layout').classList.remove('no-sidebar');
 }
@@ -2253,8 +2431,7 @@ function clearData() {
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  // Hide Stage 1 cards
-  ['s-plain-summary', 's-financial', 's-summary', 's-solar'].forEach(id => {
+  ['s-summary', 's-plain-summary', 's-scenarios', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   // Hide CTA bar and collapse breakdown

@@ -21,6 +21,15 @@ from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 # In-memory session cache (replace with Redis in production)
 _session_cache: dict[str, dict] = {}
 
+# ── Solar estimation constants ──────────────────────────────────────────────
+SOLAR_KWP             = 4.0      # Standard residential system (kWp)
+SOLAR_GEN_PER_KWP     = 850.0    # kWh/kWp/year — UK annual average
+SOLAR_INSTALLED_COST  = 6000.0   # £ — typical 4 kWp fully installed (inc. 5% VAT)
+SEG_EXPORT_RATE       = 0.075    # 7.5p/kWh — Smart Export Guarantee typical
+FLUX_EXPORT_RATE      = 0.15     # 15p/kWh — Octopus Flux average export rate
+SOLAR_SC_SOLO         = 0.35     # Self-consumption without battery (~35%)
+SOLAR_SC_WITH_BATT    = 0.65     # Self-consumption with 10 kWh battery (~65%)
+
 router = APIRouter(tags=["analyse"])
 
 
@@ -38,6 +47,16 @@ class EstimateRequest(BaseModel):
     inflation_pct:     float = Field(5.0,   ge=0,   le=20)
     current_sc_pd:     float = Field(53.0,  ge=0,   le=200)
     export_rate_p:     float = Field(0.0,   ge=0,   le=100)
+
+
+class CompareRequest(BaseModel):
+    annual_kwh:         float = Field(..., ge=500, le=20000)
+    property_type:      str   = "semi"
+    unit_rate_p:        float = Field(28.16, ge=5, le=100)
+    inflation_pct:      float = Field(5.0,   ge=0, le=20)
+    current_sc_pd:      float = Field(53.0,  ge=0, le=200)
+    efficiency_pct:     float = Field(90.0,  ge=50, le=100)
+    max_charge_rate_kw: float = Field(3.6,   ge=0.5, le=15)
 
 
 class RecalculateRequest(BaseModel):
@@ -236,6 +255,95 @@ def _session_key(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:16]
 
 
+# ── Solar scenario helpers ──────────────────────────────────────────────────
+
+def _solar_only_scenario(unit_rate: float, inflation_pct: float) -> dict:
+    """4 kWp solar, SEG export, no battery."""
+    gen           = SOLAR_KWP * SOLAR_GEN_PER_KWP           # 3 400 kWh
+    self_consumed = gen * SOLAR_SC_SOLO                      # 1 190 kWh
+    exported      = gen * (1 - SOLAR_SC_SOLO)               # 2 210 kWh
+    import_saving = self_consumed * unit_rate
+    export_rev    = exported * SEG_EXPORT_RATE
+    total_saving  = import_saving + export_rev
+    pb = calc_payback(SOLAR_INSTALLED_COST, total_saving, inflation_pct)
+    return {
+        "label":          "Solar Only",
+        "icon":           "☀️",
+        "tech":           f"4 kWp solar system · SEG export at {int(SEG_EXPORT_RATE*100)}p/kWh",
+        "annual_saving":  round(total_saving, 0),
+        "installed_cost": SOLAR_INSTALLED_COST,
+        "payback_years":  round(pb.years, 1) if pb.years != math.inf else None,
+        "roi_10yr":       round(pb.roi_10yr, 0),
+        "cumulative":     pb.cumulative,
+        "breakdown": {
+            "import_saving":    round(import_saving, 0),
+            "export_revenue":   round(export_rev, 0),
+            "kwh_self_consumed": round(self_consumed, 0),
+            "kwh_exported":     round(exported, 0),
+            "export_rate_p":    SEG_EXPORT_RATE * 100,
+        },
+    }
+
+
+def _solar_battery_scenario(matrix: dict, unit_rate: float, inflation_pct: float) -> dict:
+    """
+    4 kWp solar + best battery on Octopus Flux.
+
+    Solar contribution (higher self-consumption, Flux export rate) is added on top
+    of the Flux+battery baseline from the simulation matrix.  This avoids
+    double-counting because the simulator runs battery-only (no solar).
+    """
+    import math as _math
+    gen = SOLAR_KWP * SOLAR_GEN_PER_KWP  # 3 400 kWh
+
+    # Best Flux + battery combo from matrix
+    flux_rows = matrix.get("octopusFlux", [])
+    if flux_rows:
+        best_flux = max(flux_rows, key=lambda r: r["roi_10yr"])
+    else:
+        all_rows = [r for rows in matrix.values() for r in rows]
+        best_flux = max(all_rows, key=lambda r: r["roi_10yr"]) if all_rows else None
+
+    if not best_flux:
+        return {}
+
+    batt_kwh  = best_flux["battery_kwh"]
+    batt_cost = best_flux["battery_cost"]
+    flux_saving = best_flux["total_saving"]   # tariff switch + battery arbitrage (no solar)
+
+    # Additional solar saving on top of Flux+battery baseline
+    sb_self     = gen * SOLAR_SC_WITH_BATT
+    sb_exported = gen * (1 - SOLAR_SC_WITH_BATT)
+    solar_import_saving = sb_self * unit_rate          # avoid importing at user's current rate
+    solar_export_rev    = sb_exported * FLUX_EXPORT_RATE
+    solar_extra         = solar_import_saving + solar_export_rev
+
+    total_saving = flux_saving + solar_extra
+    total_cost   = SOLAR_INSTALLED_COST + batt_cost
+    pb = calc_payback(total_cost, total_saving, inflation_pct)
+
+    return {
+        "label":          "Solar + Battery",
+        "icon":           "⚡",
+        "tech":           f"4 kWp solar + {batt_kwh} kWh battery · Octopus Flux",
+        "annual_saving":  round(total_saving, 0),
+        "installed_cost": round(total_cost, 0),
+        "payback_years":  round(pb.years, 1) if pb.years != math.inf else None,
+        "roi_10yr":       round(pb.roi_10yr, 0),
+        "cumulative":     pb.cumulative,
+        "breakdown": {
+            "flux_battery_saving":  round(flux_saving, 0),
+            "solar_import_saving":  round(solar_import_saving, 0),
+            "solar_export_revenue": round(solar_export_rev, 0),
+            "kwh_self_consumed":    round(sb_self, 0),
+            "kwh_exported":         round(sb_exported, 0),
+            "export_rate_p":        FLUX_EXPORT_RATE * 100,
+            "battery_kwh":          batt_kwh,
+            "best_tariff":          "Octopus Flux",
+        },
+    }
+
+
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
 @router.post("/analyse")
@@ -354,3 +462,121 @@ async def recalculate(req: RecalculateRequest):
         session_id=req.session_id,
         export_rate_p=req.export_rate_p,
     )
+
+
+@router.post("/compare")
+async def compare_scenarios(req: CompareRequest):
+    """
+    Returns three scenario estimates side-by-side for the 'starting fresh' journey:
+      battery_only   — best TOU tariff + best battery from optimisation matrix
+      solar_only     — 4 kWp solar with SEG export (no battery)
+      solar_battery  — 4 kWp solar + best battery on Octopus Flux
+
+    Solar figures use UK-average generation estimates (not half-hourly simulation).
+    Also returns full_result (standard estimate payload) for the drill-down sections.
+    """
+    valid_types = {"flat", "terraced", "semi", "detached"}
+    if req.property_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"property_type must be one of {valid_types}")
+
+    parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p)
+    unit_rate = parse.inferred_rate if parse.inferred_rate else IMPLIED_RATE
+
+    cache_key  = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}"
+    session_id = hashlib.sha256(cache_key.encode()).hexdigest()[:16]
+    _session_cache[session_id] = {
+        "days":                parse.days,
+        "inferred_rate":       parse.inferred_rate,
+        "days_count":          parse.days_count,
+        "total_kwh":           parse.total_kwh,
+        "daily_avg_kwh":       parse.daily_avg_kwh,
+        "annual_kwh_estimate": parse.annual_kwh_estimate,
+    }
+
+    efficiency = req.efficiency_pct / 100.0
+
+    matrix = build_opt_matrix(
+        days=parse.days,
+        current_rate=parse.inferred_rate,
+        max_rate_kw=req.max_charge_rate_kw,
+        efficiency=efficiency,
+        selected_cap_kwh=10.0,
+        selected_cost_gbp=6000.0,
+        inflation_pct=req.inflation_pct,
+        current_sc_pd=req.current_sc_pd,
+    )
+
+    # ── Battery-only: best combo from matrix ────────────────────────────────
+    all_combos = _all_combinations(matrix)
+    best_batt  = all_combos[0] if all_combos and all_combos[0]["total_saving"] > 0 else None
+
+    if best_batt:
+        battery_scenario = {
+            "label":          "Battery Only",
+            "icon":           "🔋",
+            "tech":           f"{best_batt['battery_label']} · {best_batt['tariff_name']}",
+            "annual_saving":  round(best_batt["total_saving"], 0),
+            "installed_cost": best_batt["battery_cost"],
+            "payback_years":  best_batt["payback_years"],
+            "roi_10yr":       round(best_batt["roi_10yr"], 0),
+            "cumulative":     best_batt.get("cumulative_savings", []),
+            "breakdown": {
+                "tariff_switch_saving": round(best_batt["saving_tariff_switch"], 0),
+                "battery_arbitrage":    round(best_batt["saving_battery_only"], 0),
+                "export_revenue":       0,
+                "battery_kwh":          best_batt["battery_kwh"],
+                "best_tariff":          best_batt["tariff_name"],
+                "best_tariff_key":      best_batt["tariff_key"],
+            },
+        }
+    else:
+        battery_scenario = {
+            "label": "Battery Only", "icon": "🔋",
+            "tech": "No saving found for current profile",
+            "annual_saving": 0, "installed_cost": 6000,
+            "payback_years": None, "roi_10yr": -6000,
+            "cumulative": [], "breakdown": {},
+        }
+
+    # ── Solar-only and Solar+battery scenarios ───────────────────────────────
+    solar_scenario = _solar_only_scenario(unit_rate, req.inflation_pct)
+    sb_scenario    = _solar_battery_scenario(matrix, unit_rate, req.inflation_pct)
+
+    scenarios = {
+        "battery":       battery_scenario,
+        "solar":         solar_scenario,
+        "solar_battery": sb_scenario,
+    }
+    best_key = max(
+        scenarios,
+        key=lambda k: scenarios[k].get("roi_10yr", -math.inf)
+        if scenarios[k].get("roi_10yr") is not None else -math.inf,
+    )
+
+    # ── Full estimate result for drill-down sections ─────────────────────────
+    best_tariff_key = (
+        best_batt["tariff_key"] if best_batt else "octopusGo"
+    )
+    best_batt_kwh = best_batt["battery_kwh"] if best_batt else 10.0
+    best_batt_cost = best_batt["battery_cost"] if best_batt else 6000.0
+
+    full_result = _build_response(
+        parse=parse,
+        tariff_key=best_tariff_key,
+        battery_cap_kwh=best_batt_kwh,
+        battery_cost_gbp=best_batt_cost,
+        max_charge_rate_kw=req.max_charge_rate_kw,
+        efficiency_pct=req.efficiency_pct,
+        inflation_pct=req.inflation_pct,
+        current_sc_pd=req.current_sc_pd,
+        session_id=session_id,
+        source="estimate",
+        export_rate_p=0.0,
+    )
+
+    return {
+        "session_id":    session_id,
+        "best_scenario": best_key,
+        "scenarios":     scenarios,
+        "full_result":   full_result,
+    }
