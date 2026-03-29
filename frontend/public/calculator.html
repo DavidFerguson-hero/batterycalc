@@ -915,49 +915,8 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   <div class="ef-annotation" id="ef-annotation"></div>
 </div>
 
-<div class="proj-heat-grid hidden" id="s-proj-heat">
-  <div class="left-col">
-    <div class="card" id="s-financial">
-      <div class="section-title">Financial Summary
-        <span style="font-size:.68rem;text-transform:none;letter-spacing:0;
-          color:var(--text3);font-weight:400;margin-left:.5rem">(sidebar tariff &amp; battery)</span>
-      </div>
-      <div class="metric-grid-2x2">
-        <div class="metric">
-          <div class="label">Current Annual Cost</div>
-          <div class="value" id="m-current">—</div>
-          <div class="sub">existing tariff</div>
-        </div>
-        <div class="metric highlight">
-          <div class="label">New Annual Cost</div>
-          <div class="value" id="m-combined">—</div>
-          <div class="sub">tariff + battery</div>
-        </div>
-        <div class="metric highlight">
-          <div class="label">Total Saving vs Today</div>
-          <div class="value" id="m-total-saving">—</div>
-          <div class="sub">tariff switch + battery</div>
-        </div>
-        <div class="metric" id="m-payback-card">
-          <div class="label">Payback Period</div>
-          <div class="value" id="m-payback">—</div>
-          <div class="sub" id="m-payback-sub">—</div>
-        </div>
-        <div class="metric" id="m-export-card" style="display:none">
-          <div class="label">Export Revenue</div>
-          <div class="value m-export" id="m-export-revenue">—</div>
-          <div class="sub" id="m-export-sub">—</div>
-        </div>
-      </div>
-    </div>
-    <div class="card" id="s-projection">
-      <div class="section-title">Cumulative Savings Projection (10 Years)</div>
-      <div class="chart-wrap-md"><canvas id="projChart"></canvas></div>
-      <div class="text-sm" style="margin-top:.5rem;color:var(--text3)">
-        Uses selected inflation rate. Dashed line = battery installed cost.
-      </div>
-    </div>
-  </div>
+<div class="card hidden" id="s-financial">
+  <div class="section-title">Financial Summary</div>
   <div class="metric-grid-2x2">
     <div class="metric">
       <div class="label">Current Annual Cost</div>
@@ -2996,11 +2955,13 @@ async function handleFiles(files) {
 
 function showAllSections() {
   document.getElementById('upload-summary-wrap').classList.add('has-data');
-  // Stage 1: always-visible cards
+  // Show financial summary + CTA + expandable breakdown
   ['s-financial', 's-summary'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
-  // s-scenarios is shown only by renderScenarioComparison() (estimate path)
+  document.getElementById('cta-bar').classList.remove('hidden');
+  document.getElementById('breakdown-wrap').classList.remove('hidden');
+  // s-scenarios shown only by renderScenarioComparison() (nothing mode)
   document.getElementById('sidebar').classList.remove('hidden');
   document.getElementById('page-layout').classList.remove('no-sidebar');
 }
@@ -3012,7 +2973,7 @@ function clearData() {
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  ['s-summary', 's-scenarios', 's-rec', 's-proj-heat', 's-table'].forEach(id => {
+  ['s-summary', 's-scenarios', 's-financial', 's-solar', 's-rec', 's-table'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   // Hide CTA bar and collapse breakdown
