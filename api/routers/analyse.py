@@ -17,6 +17,7 @@ from engine.optimiser import build_opt_matrix
 from engine.payback import calc_payback
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
+from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
 
 # In-memory session cache (replace with Redis in production)
 _session_cache: dict[str, dict] = {}
@@ -656,6 +657,13 @@ async def compare_scenarios(req: CompareRequest):
         efficiency, req.max_charge_rate_kw,
         solar_kwp=req.solar_kwp, solar_installed_cost=req.solar_installed_cost,
     )
+
+    # ── Carbon intensity ─────────────────────────────────────────────────────
+    carbon_profile = fetch_carbon_intensity_profile()
+    for scen in [battery_scenario, solar_scenario, sb_scenario]:
+        flows = scen.get("daily_flows")
+        if flows:
+            scen["carbon"] = calc_carbon_savings(avg_day_kwh, flows, carbon_profile)
 
     scenarios = {
         "battery":       battery_scenario,

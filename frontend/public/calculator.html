@@ -532,6 +532,16 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .sc-bk{color:var(--text3)}
 .sc-bv{font-weight:600;color:var(--green)}
 .sc-bv.accent{color:var(--accent2)}
+.sc-carbon{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);
+  border-radius:8px;padding:.55rem .75rem;margin-top:.45rem}
+.sc-carbon-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--green);margin-bottom:.3rem}
+.sc-carbon-main{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:.78rem;font-weight:700;color:var(--green)}
+.sc-carbon-sub{font-size:.65rem;color:var(--text2);margin-top:.2rem}
+.sc-carbon-equiv{font-size:.64rem;color:var(--text3);margin-top:.15rem;
+  display:flex;gap:.6rem;flex-wrap:wrap}
+.sc-carbon-equiv span{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1599,6 +1609,28 @@ function renderScenarioComparison(data) {
         </div>`;
     }
 
+    // Carbon block
+    const carbon = s.carbon;
+    let carbonHtml = '';
+    if (carbon && carbon.kg_saved_annual > 0) {
+      const kgSaved = Math.round(carbon.kg_saved_annual);
+      const pct     = carbon.pct_reduction.toFixed(0);
+      const trees   = carbon.trees_equivalent.toFixed(1);
+      const miles   = Math.round(carbon.car_miles_equivalent).toLocaleString();
+      carbonHtml = `
+        <div class="sc-carbon">
+          <div class="sc-carbon-title">🌿 Carbon savings</div>
+          <div class="sc-carbon-main">
+            <span>${kgSaved.toLocaleString()} kg CO₂/yr saved</span>
+            <span style="font-size:.7rem;font-weight:500;opacity:.8">${pct}% reduction</span>
+          </div>
+          <div class="sc-carbon-equiv">
+            <span>🌳 ${trees} trees/yr</span>
+            <span>🚗 ${miles} car miles</span>
+          </div>
+        </div>`;
+    }
+
     const card = document.createElement('div');
     card.className = 'scenario-card' + (isBest ? ' is-best' : '');
     card.innerHTML = `
@@ -1624,7 +1656,8 @@ function renderScenarioComparison(data) {
       <div class="sc-breakdown">
         <div class="sc-br-title">How the saving breaks down</div>
         ${bdRows}
-      </div>`;
+      </div>
+      ${carbonHtml}`;
     grid.appendChild(card);
   }
 
