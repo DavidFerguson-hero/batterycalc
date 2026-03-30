@@ -250,8 +250,12 @@ def calc_day_flows(
         solar_to_batt[i] = stb
 
         # 3. Cheap-slot grid top-up → battery (grid draw, not stored kWh)
+        #    Skipped when solar is present: overnight grid pre-fill would consume
+        #    all headroom before solar starts, forcing daytime generation to export
+        #    instead of charging the battery.  Solar handles filling during the day;
+        #    any remaining headroom is implicitly covered by the next night cycle.
         gtb = 0.0
-        if has_batt and tariff.charge_slots[i] and soc < cap_kwh - 0.01:
+        if has_batt and solar_profile is None and tariff.charge_slots[i] and soc < cap_kwh - 0.01:
             headroom = min(max_per_slot - stb, cap_kwh - soc)
             if headroom > 0.001:
                 soc += headroom
