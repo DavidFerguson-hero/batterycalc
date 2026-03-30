@@ -551,6 +551,52 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .sc-carbon-equiv{font-size:.64rem;color:var(--text3);margin-top:.15rem;
   display:flex;gap:.6rem;flex-wrap:wrap}
 .sc-carbon-equiv span{white-space:nowrap}
+
+/* ── CTA bar ─────────────────────────────────────────────────────────────── */
+.cta-bar{
+  background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+  padding:.85rem 1.1rem;margin-bottom:1rem}
+.cta-bar-inner{
+  display:flex;flex-wrap:wrap;align-items:center;gap:.6rem}
+.cta-btn{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text2);font:inherit;font-size:.82rem;font-weight:600;
+  padding:.42rem .85rem;cursor:pointer;white-space:nowrap;
+  text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;
+  transition:background .15s,border-color .15s,color .15s}
+.cta-btn:hover{background:rgba(249,115,22,.07);border-color:rgba(249,115,22,.4);color:var(--text)}
+.cta-btn-primary{
+  background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.35);color:var(--accent)}
+.cta-btn-primary:hover{background:rgba(249,115,22,.18);border-color:var(--accent)}
+.cta-email-expand{
+  display:none;flex-wrap:wrap;align-items:center;gap:.45rem;
+  margin-top:.55rem;padding-top:.55rem;border-top:1px solid var(--border)}
+.cta-email-expand.visible{display:flex}
+.cta-email-input{
+  background:var(--bg);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);padding:.38rem .7rem;font:inherit;font-size:.82rem;
+  outline:none;min-width:190px;flex:1}
+.cta-email-input:focus{border-color:var(--accent)}
+.cta-email-msg{font-size:.74rem;color:var(--text2);margin-top:.3rem;width:100%}
+.cta-share-confirm{
+  font-size:.79rem;font-weight:600;color:var(--green);
+  opacity:0;transition:opacity .3s;pointer-events:none}
+.cta-share-confirm.visible{opacity:1}
+
+/* ── Breakdown toggle ─────────────────────────────────────────────────────── */
+.breakdown-wrap{margin-top:1rem}
+.breakdown-btn{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  color:var(--text2);font:inherit;font-size:.88rem;font-weight:600;
+  padding:.7rem 1.1rem;cursor:pointer;text-align:left;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:background .15s,border-color .15s,color .15s}
+.breakdown-btn:hover,.breakdown-btn.open{
+  background:rgba(249,115,22,.05);border-color:rgba(249,115,22,.3);color:var(--text)}
+.bd-arrow{transition:transform .25s;display:inline-block;font-size:.95rem}
+.breakdown-btn.open .bd-arrow{transform:rotate(90deg)}
+.breakdown-body{display:none}
+.breakdown-body.open{display:block;padding-top:.75rem}
 </style>
 </head>
 <body>
