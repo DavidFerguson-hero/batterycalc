@@ -504,6 +504,15 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 .csb-opt{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.28);
   color:#f97316;font-weight:700;border-radius:5px;padding:.05rem .4rem;white-space:nowrap}
 .csb-disclaimer{font-size:.7rem;color:var(--text3);margin-top:.5rem;line-height:1.5}
+.csb-ai-wrap{margin-top:.7rem;padding-top:.65rem;border-top:1px solid rgba(249,115,22,.2)}
+.csb-ai-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:rgba(249,115,22,.7);margin-bottom:.35rem;display:flex;align-items:center;gap:.4rem}
+.csb-ai-label::before{content:'✦';font-size:.55rem}
+.csb-ai-text{font-size:.9rem;line-height:1.7;color:var(--text)}
+.csb-ai-text.loading{color:var(--text2)}
+.csb-ai-cursor{display:inline-block;width:2px;height:.9em;background:var(--accent);
+  margin-left:2px;vertical-align:text-bottom;animation:blink .7s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 .scenario-compare-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
 @media(max-width:720px){.scenario-compare-grid{grid-template-columns:1fr}}
 .scenario-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;
@@ -1675,9 +1684,12 @@ function renderScenarioComparison(data) {
         <div class="csb-label">⭐ Best Option for Your Home</div>
         <div class="csb-text">
           <span class="csb-opt">${best.label}</span>
-          (${best.tech}) is the strongest investment for your usage profile —
-          saving around <span class="csb-num">£${bSaving.toLocaleString()}/year</span>
+          (${best.tech}) — saving around <span class="csb-num">£${bSaving.toLocaleString()}/year</span>
           and paying back in <span class="csb-num">${bPayback}</span>${roiText}.
+        </div>
+        <div class="csb-ai-wrap">
+          <div class="csb-ai-label">AI Analysis</div>
+          <div class="csb-ai-text loading" id="csb-ai-text">Analysing your results…<span class="csb-ai-cursor"></span></div>
         </div>
         <div class="csb-disclaimer">
           Estimates based on typical UK usage for a ${selectedBeds >= 5 ? '5+' : selectedBeds}-bed
@@ -1698,6 +1710,66 @@ function renderScenarioComparison(data) {
 
   if (data.full_result && data.full_result.all_combinations) {
     updateTariffColours(data.full_result.all_combinations);
+  }
+
+  fetchExplanation(data);
+}
+
+async function fetchExplanation(cmpData) {
+  const el = document.getElementById('csb-ai-text');
+  if (!el) return;
+
+  const annKwh   = parseInt(document.getElementById('energy-slider')?.value) || 3100;
+  const unitRate = parseFloat(document.getElementById('new-est-rate')?.value) || 28.16;
+  const postcode = document.getElementById('solar-postcode')?.value?.trim() || '';
+
+  const req = {
+    annual_kwh:    annKwh,
+    property_type: selectedPropType,
+    bedrooms:      selectedBeds,
+    postcode,
+    unit_rate_p:   unitRate,
+    best_scenario: cmpData.best_scenario,
+    scenarios:     cmpData.scenarios,
+  };
+
+  try {
+    const resp = await fetch(API_BASE + '/api/explain', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(req),
+    });
+    if (!resp.ok || !resp.body) { el.textContent = ''; return; }
+
+    el.className = 'csb-ai-text';
+    el.innerHTML = '<span class="csb-ai-cursor"></span>';
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let text = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();   // keep last incomplete line
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') {
+          el.textContent = text;
+          return;
+        }
+        try { text += JSON.parse(payload); } catch {}
+        // Update DOM with cursor
+        el.innerHTML = text.replace(/\n/g, '<br>') + '<span class="csb-ai-cursor"></span>';
+      }
+    }
+    el.textContent = text;
+  } catch {
+    el.textContent = '';
   }
 }
 
