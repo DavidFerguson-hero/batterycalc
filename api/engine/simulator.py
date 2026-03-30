@@ -263,8 +263,14 @@ def calc_day_flows(
         grid_to_batt[i] = gtb
 
         # 4. Battery discharge → remaining load
+        #    Solar+battery: discharge any time there is unmet load (maximise
+        #    self-sufficiency, avoid grid draw).  Battery-only: tariff-slot only.
+        #    SoC floor of 10% is enforced by min_soc in both cases.
         fb = 0.0
-        if has_batt and tariff.discharge_slots[i] and soc > min_soc:
+        should_discharge = tariff.discharge_slots[i] or (
+            solar_profile is not None and remaining > 0
+        )
+        if has_batt and should_discharge and soc > min_soc:
             disc = min(soc - min_soc, remaining, max_per_slot)
             soc       -= disc
             remaining -= disc
