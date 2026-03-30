@@ -204,13 +204,32 @@ def calc_day_flows(
     """
     Simulate one representative day and return per-slot energy flow arrays (kWh).
 
-    Dispatch priority (mirrors calc_solar_impact):
-      1. Solar self-consumption
-      2. Solar surplus → battery
-      3. Cheap-slot grid top-up → battery
-      4. Battery discharge → remaining load
-      5. Remaining solar surplus → export
-      6. Remaining load → grid
+    Dispatch strategy
+    -----------------
+    Battery-only (no solar):
+      Charge during tariff cheap slots → discharge during tariff peak slots.
+
+    Solar + battery:
+      Overnight cheap slots  → grid charges battery up to a ceiling that
+                               reserves headroom for expected daytime solar
+                               surplus (so solar fills the battery, not exports).
+      Daytime                → solar self-consumes first; surplus charges battery;
+                               battery discharges any time there is unmet load
+                               (maximise self-sufficiency, avoid grid draw).
+      Evening peak           → battery discharges to cover load as normal.
+      SoC floor of 10% (min_soc) is enforced throughout.
+
+    Overnight charge ceiling (solar+battery)
+    ----------------------------------------
+    Before the main loop we estimate how much solar surplus will be available
+    to charge the battery during the day:
+      expected_solar_batt_fill = Σ max(0, solar[i] − load[i])   for all i
+    This is an upper bound (assumes battery has infinite headroom when solar
+    generates).  The overnight grid charge ceiling is then:
+      ceiling = max(min_soc, cap_kwh − expected_solar_batt_fill)
+    Result: grid fills the battery to exactly the level that solar is expected
+    to top up, so the battery reaches ~100% by mid-afternoon without wasting
+    any solar generation as export.
 
     Returns dict of 48-element lists:
       solar_gen, self_consumed, solar_to_batt, grid_to_batt,
@@ -220,6 +239,15 @@ def calc_day_flows(
     has_batt = cap_kwh >= 1.0
     min_soc  = cap_kwh * 0.10 if has_batt else 0.0
     soc      = cap_kwh * 0.30 if has_batt else 0.0
+
+    # Pre-compute overnight charge ceiling for solar+battery
+    if has_batt and solar_profile is not None:
+        expected_solar_surplus = sum(
+            max(0.0, solar_profile[i] - day_kwh[i]) for i in range(48)
+        )
+        overnight_ceil = max(min_soc, cap_kwh - expected_solar_surplus)
+    else:
+        overnight_ceil = cap_kwh   # battery-only: fill to 100%
 
     solar_gen    = [0.0] * 48
     self_consumed= [0.0] * 48
@@ -241,7 +269,8 @@ def calc_day_flows(
         surplus   = gen - sc
         remaining = load - sc
 
-        # 2. Solar surplus → battery
+        # 2. Solar surplus → battery (up to full capacity, not just the ceiling —
+        #    the ceiling only limits overnight grid charging)
         stb = 0.0
         if has_batt and surplus > 0 and soc < cap_kwh - 0.01:
             stb = min(surplus, cap_kwh - soc, max_per_slot)
@@ -249,14 +278,13 @@ def calc_day_flows(
             surplus -= stb
         solar_to_batt[i] = stb
 
-        # 3. Cheap-slot grid top-up → battery (grid draw, not stored kWh)
-        #    Skipped when solar is present: overnight grid pre-fill would consume
-        #    all headroom before solar starts, forcing daytime generation to export
-        #    instead of charging the battery.  Solar handles filling during the day;
-        #    any remaining headroom is implicitly covered by the next night cycle.
+        # 3. Cheap-slot grid top-up → battery
+        #    Solar+battery: charge only up to overnight_ceil so that headroom is
+        #    preserved for daytime solar generation.
+        #    Battery-only: charge to cap_kwh (overnight_ceil == cap_kwh).
         gtb = 0.0
-        if has_batt and solar_profile is None and tariff.charge_slots[i] and soc < cap_kwh - 0.01:
-            headroom = min(max_per_slot - stb, cap_kwh - soc)
+        if has_batt and tariff.charge_slots[i] and soc < overnight_ceil - 0.01:
+            headroom = min(max_per_slot - stb, overnight_ceil - soc)
             if headroom > 0.001:
                 soc += headroom
                 gtb  = headroom / efficiency
@@ -335,6 +363,15 @@ def calc_solar_impact(
     tot_export_nb    = 0.0   # exported with no battery
     tot_export_wb    = 0.0   # exported with battery
 
+    # Pre-compute overnight charge ceiling per day (same logic as calc_day_flows).
+    # We use avg_solar_profile as a proxy for every day's expected solar surplus.
+    expected_solar_surplus = sum(
+        max(0.0, avg_solar_profile[i] - (sum(d[i] for d in days) / len(days)))
+        for i in range(48)
+    )
+    min_soc_global = cap_kwh * 0.10
+    overnight_ceil = max(min_soc_global, cap_kwh - expected_solar_surplus)
+
     for day_kwh in days:
         soc = cap_kwh * 0.30
         min_soc = cap_kwh * 0.10
@@ -360,23 +397,24 @@ def calc_solar_impact(
             remaining = load - self_use
             tot_self_consumed += self_use
 
-            # 2. Charge from solar surplus
+            # 2. Charge from solar surplus (up to full capacity)
             solar_to_batt = 0.0
             if surplus > 0 and soc < cap_kwh - 0.01:
                 solar_to_batt = min(surplus, cap_kwh - soc, max_per_slot)
                 soc     += solar_to_batt
                 surplus -= solar_to_batt
 
-            # 3. Top-up from cheap grid
+            # 3. Top-up from cheap grid — capped at overnight_ceil so headroom
+            #    is preserved for daytime solar generation
             grid_charge = 0.0
-            if tariff.charge_slots[i] and soc < cap_kwh - 0.01:
-                headroom = min(max_per_slot - solar_to_batt, cap_kwh - soc)
+            if tariff.charge_slots[i] and soc < overnight_ceil - 0.01:
+                headroom = min(max_per_slot - solar_to_batt, overnight_ceil - soc)
                 if headroom > 0.001:
                     soc += headroom
                     grid_charge = headroom / efficiency
 
-            # 4. Discharge to cover remaining load
-            if tariff.discharge_slots[i] and soc > min_soc:
+            # 4. Discharge to cover remaining load at any time (self-sufficiency)
+            if soc > min_soc and remaining > 0:
                 disc = min(soc - min_soc, remaining, max_per_slot)
                 soc       -= disc
                 remaining -= disc
