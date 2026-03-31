@@ -86,6 +86,9 @@ class CompareRequest(BaseModel):
     tariff_key_override:      Optional[str]   = None
     solar_kwp:                float        = Field(4.0,  ge=0.5, le=30)
     solar_installed_cost:     float        = Field(8000.0, ge=500, le=50000)
+    # Existing system context — changes scenario labels, best_key logic, AI framing
+    context_has_solar:        bool         = False
+    context_has_battery:      bool         = False
 
 
 class RecalculateRequest(BaseModel):
@@ -670,8 +673,63 @@ async def compare_scenarios(req: CompareRequest):
         "solar":         solar_scenario,
         "solar_battery": sb_scenario,
     }
+
+    # ── Relabel scenarios based on what the user already has ─────────────────
+    hs = req.context_has_solar
+    hb = req.context_has_battery
+
+    if hs and hb:
+        # User has both — compare current setup against alternatives and tariff
+        # optimisation. solar_battery = their current setup baseline.
+        scenarios["solar_battery"]["label"] = "Your current setup"
+        scenarios["solar_battery"]["icon"]  = "🏠"
+        scenarios["solar_battery"]["tech"]  = (
+            f"{req.solar_kwp:.1f} kWp solar + "
+            f"{scenarios['solar_battery']['breakdown'].get('battery_kwh', '?')} kWh battery"
+            " · optimise with best tariff"
+        )
+        scenarios["battery"]["label"] = "Battery only (no solar)"
+        scenarios["battery"]["icon"]  = "🔋"
+        scenarios["solar"]["label"]   = "Solar only (no battery)"
+        scenarios["solar"]["icon"]    = "☀️"
+        # Best = highest ROI excluding "solar only" (they already have more than that)
+        eligible = ["battery", "solar_battery"]
+
+    elif hs:
+        # User has solar — baseline is solar-only, recommended next step is adding a battery
+        scenarios["solar"]["label"]   = "Your solar today"
+        scenarios["solar"]["icon"]    = "☀️"
+        scenarios["solar"]["tech"]    = (
+            f"{req.solar_kwp:.1f} kWp solar · SEG export · no battery"
+        )
+        scenarios["solar_battery"]["label"] = "Add a battery"
+        scenarios["solar_battery"]["icon"]  = "☀️🔋"
+        scenarios["battery"]["label"] = "Battery only (no solar)"
+        scenarios["battery"]["icon"]  = "🔋"
+        # Best = highest ROI among options that actually change something
+        eligible = ["solar_battery", "battery"]
+
+    elif hb:
+        # User has a battery — baseline is battery-only, recommended next step is adding solar
+        scenarios["battery"]["label"] = "Your battery today"
+        scenarios["battery"]["icon"]  = "🔋"
+        batt_label = scenarios["battery"]["breakdown"].get("battery_kwh", "?")
+        scenarios["battery"]["tech"]  = (
+            f"{batt_label} kWh battery · {scenarios['battery']['breakdown'].get('best_tariff', 'TOU tariff')}"
+        )
+        scenarios["solar"]["label"]   = "Add solar panels"
+        scenarios["solar"]["icon"]    = "☀️"
+        scenarios["solar_battery"]["label"] = "Solar + your battery"
+        scenarios["solar_battery"]["icon"]  = "☀️🔋"
+        # Best = highest ROI among options that add something
+        eligible = ["solar", "solar_battery"]
+
+    else:
+        # Starting fresh — all three are valid recommendations
+        eligible = ["battery", "solar", "solar_battery"]
+
     best_key = max(
-        scenarios,
+        eligible,
         key=lambda k: scenarios[k].get("roi_10yr", -math.inf)
         if scenarios[k].get("roi_10yr") is not None else -math.inf,
     )

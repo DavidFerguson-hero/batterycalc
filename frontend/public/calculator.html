@@ -1248,18 +1248,20 @@ async function runCompare() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        annual_kwh:              annKwh,
-        property_type:           selectedPropType,
-        unit_rate_p:             unitRate,
-        inflation_pct:           parseFloat(document.getElementById('infl-slider').value),
-        current_sc_pd:           parseFloat(document.getElementById('sc-slider').value),
-        efficiency_pct:          parseFloat(document.getElementById('eff-slider').value),
-        max_charge_rate_kw:      parseFloat(document.getElementById('rate-slider').value),
+        annual_kwh:               annKwh,
+        property_type:            selectedPropType,
+        unit_rate_p:              unitRate,
+        inflation_pct:            parseFloat(document.getElementById('infl-slider').value),
+        current_sc_pd:            parseFloat(document.getElementById('sc-slider').value),
+        efficiency_pct:           parseFloat(document.getElementById('eff-slider').value),
+        max_charge_rate_kw:       parseFloat(document.getElementById('rate-slider').value),
         battery_cap_kwh_override: parseFloat(document.getElementById('cap-slider').value) || null,
         battery_cost_gbp_override: parseFloat(document.getElementById('cost-slider').value) || null,
-        tariff_key_override:     document.getElementById('tariff-select').value || null,
-        solar_kwp:               parseFloat(document.getElementById('kwp-slider').value),
-        solar_installed_cost:    parseFloat(document.getElementById('solar-cost-slider').value),
+        tariff_key_override:      document.getElementById('tariff-select').value || null,
+        solar_kwp:                parseFloat(document.getElementById('kwp-slider').value),
+        solar_installed_cost:     parseFloat(document.getElementById('solar-cost-slider').value),
+        context_has_solar:        hasSolar,
+        context_has_battery:      hasBattery,
       }),
     });
     sessionId  = cmpData.session_id;
@@ -1741,13 +1743,15 @@ async function fetchExplanation(cmpData) {
   const postcode = document.getElementById('solar-postcode')?.value?.trim() || '';
 
   const req = {
-    annual_kwh:    annKwh,
-    property_type: selectedPropType,
-    bedrooms:      selectedBeds,
+    annual_kwh:          annKwh,
+    property_type:       selectedPropType,
+    bedrooms:            selectedBeds,
     postcode,
-    unit_rate_p:   unitRate,
-    best_scenario: cmpData.best_scenario,
-    scenarios:     cmpData.scenarios,
+    unit_rate_p:         unitRate,
+    best_scenario:       cmpData.best_scenario,
+    scenarios:           cmpData.scenarios,
+    context_has_solar:   hasSolar,
+    context_has_battery: hasBattery,
   };
 
   try {
@@ -2207,10 +2211,12 @@ async function doMainCalculate() {
       efficiency_pct:           parseFloat(p.effPct),
       max_charge_rate_kw:       parseFloat(p.maxRateKw),
       solar_kwp:                solarKwp,
-      solar_installed_cost:     solarKwp * 1500,   // rough £/kWp installed
+      solar_installed_cost:     solarKwp * 1500,
       battery_cap_kwh_override: battKwh,
-      battery_cost_gbp_override: battKwh ? null : null,
+      battery_cost_gbp_override: null,
       tariff_key_override:      null,
+      context_has_solar:        hasSolar,
+      context_has_battery:      hasBattery,
     };
 
     const cmpData = await apiFetch('/api/compare', {
