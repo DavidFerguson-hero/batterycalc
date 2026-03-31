@@ -384,31 +384,26 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
   margin-top:.75rem;background:var(--bg);border:1px solid var(--border);
   border-radius:8px;padding:.5rem .8rem;font-size:.78rem;color:var(--text2)}
 
-/* ── Step 0: Mode selection ────────────────────────────────────────────── */
-.mode-select-heading{
-  font-size:1.2rem;font-weight:800;color:var(--text);letter-spacing:-.01em;margin-bottom:1.1rem}
-.mode-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem}
-@media(max-width:680px){.mode-cards{grid-template-columns:1fr;gap:.6rem}}
-.mode-card{
-  background:var(--bg3);border:2px solid var(--border);border-radius:14px;
-  padding:1.4rem 1.1rem;cursor:pointer;font:inherit;color:inherit;text-align:left;
-  display:flex;flex-direction:column;align-items:flex-start;gap:.4rem;
-  transition:border-color .18s,background .15s,transform .18s,box-shadow .18s;
-  position:relative;overflow:hidden}
-.mode-card::before{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(135deg,rgba(249,115,22,.08) 0%,transparent 60%);
-  opacity:0;transition:opacity .2s}
-.mode-card:hover{border-color:var(--accent);transform:translateY(-3px);
-  box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.mode-card:hover::before{opacity:1}
-.mode-card.selected,.mode-card:active{border-color:var(--accent);
-  background:rgba(249,115,22,.07)}
-.mode-icon{font-size:2rem;line-height:1;margin-bottom:.25rem}
-.mode-title{font-size:.97rem;font-weight:700;color:var(--text);line-height:1.3}
-.mode-sub{font-size:.75rem;color:var(--text2);line-height:1.5}
-.mode-arrow{position:absolute;bottom:1rem;right:1rem;font-size:.8rem;
-  color:var(--text3);transition:color .18s,transform .18s}
-.mode-card:hover .mode-arrow{color:var(--accent);transform:translateX(3px)}
+/* ── Existing system toggles ──────────────────────────────────────────── */
+.existing-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  padding:.7rem 1rem;cursor:pointer;user-select:none;
+  transition:border-color .15s,background .15s}
+.existing-toggle:hover{border-color:rgba(249,115,22,.4)}
+.existing-toggle.active{border-color:var(--accent);background:rgba(249,115,22,.06)}
+.existing-toggle-left{display:flex;align-items:center;gap:.6rem}
+.existing-toggle-icon{font-size:1.2rem;line-height:1}
+.existing-toggle-label{font-size:.88rem;font-weight:600;color:var(--text)}
+.existing-toggle-sub{font-size:.72rem;color:var(--text2);margin-top:.1rem}
+.existing-toggle-check{width:20px;height:20px;border:2px solid var(--border);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:border-color .15s,background .15s}
+.existing-toggle.active .existing-toggle-check{border-color:var(--accent);background:var(--accent)}
+.existing-toggle.active .existing-toggle-check::after{content:'✓';font-size:.7rem;color:#000;font-weight:700}
+.existing-sub-fields{display:none;background:rgba(249,115,22,.03);border:1px solid rgba(249,115,22,.2);
+  border-top:none;border-radius:0 0 10px 10px;padding:.8rem 1rem;margin-top:-4px}
+.existing-sub-fields.open{display:block}
 
 /* ── Step 1: back button + badge ─────────────────────────────────────────── */
 .back-btn{
@@ -747,39 +742,8 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 
 <div class="upload-summary-grid" id="upload-summary-wrap">
   <div class="card" id="s-upload">
-  <!-- ── STEP 0: Mode selection ──────────────────────────── -->
-  <div id="step-mode">
-    <div class="mode-select-heading">What's your starting point?</div>
-    <div class="mode-cards">
-
-      <button class="mode-card" id="mcard-nothing" onclick="selectMode('nothing')">
-        <span class="mode-icon">⚡</span>
-        <div class="mode-title">Starting fresh</div>
-        <div class="mode-sub">No solar or battery yet — show me all my options</div>
-        <span class="mode-arrow">→</span>
-      </button>
-
-      <button class="mode-card" id="mcard-solar" onclick="selectMode('solar')">
-        <span class="mode-icon">☀️</span>
-        <div class="mode-title">I have solar panels</div>
-        <div class="mode-sub">Find me the best battery &amp; tariff to pair with them</div>
-        <span class="mode-arrow">→</span>
-      </button>
-
-      <button class="mode-card" id="mcard-solar_battery" onclick="selectMode('solar_battery')">
-        <span class="mode-icon">☀️🔋</span>
-        <div class="mode-title">Solar + battery</div>
-        <div class="mode-sub">I have both — optimise my tariff for maximum savings</div>
-        <span class="mode-arrow">→</span>
-      </button>
-
-    </div>
-  </div>
-
-  <!-- ── STEP 1: Mode-specific form ─────────────────────── -->
-  <div id="step-form" style="display:none">
-    <button class="back-btn" onclick="showModeSelect()">← Change starting point</button>
-    <div class="step-mode-badge" id="step-mode-badge"></div>
+  <!-- ── STEP 1: Input form ─────────────────────────────── -->
+  <div id="step-form">
 
     <!-- EPC postcode lookup -->
     <div class="epc-lookup-card" id="epc-lookup-card">
@@ -854,63 +818,72 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
       <span style="font-size:.72rem;color:var(--text3)">(check your latest bill)</span>
     </div>
 
-    <!-- Explore options — only shown for 'nothing' mode -->
-    <div id="explore-section" style="display:none">
-      <div class="form-section-label">What do you want to explore?</div>
-      <div class="explore-toggle">
-        <button class="explore-btn selected" id="expl-battery" onclick="selectExplore('battery')">
-          🔋<br>Battery only
-        </button>
-        <button class="explore-btn" id="expl-solar" onclick="selectExplore('solar')">
-          ☀️<br>Solar only
-        </button>
-        <button class="explore-btn" id="expl-both" onclick="selectExplore('both')">
-          ☀️🔋<br>Both
-        </button>
-      </div>
-    </div>
 
-    <!-- Solar fields — shown when mode needs solar -->
-    <div id="solar-fields-section" style="display:none" class="solar-form-section">
-      <div class="solar-form-title">☀️ Solar panel details</div>
-      <div class="est-row">
-        <div class="est-field">
-          <label class="est-label">Property postcode</label>
-          <input type="text" class="est-input" id="new-solar-postcode"
-                 placeholder="e.g. SW1A 1AA" maxlength="9">
-        </div>
-        <div class="est-field">
-          <label class="est-label">System size — <span id="new-kwp-val">4.0 kWp</span></label>
-          <input type="range" class="slider" id="new-kwp-slider" min="1" max="16" step="0.5" value="4"
-                 oninput="document.getElementById('new-kwp-val').textContent=parseFloat(this.value).toFixed(1)+' kWp'"
-                 style="accent-color:#f59e0b">
-          <div class="range-limits"><span>1 kWp</span><span>16 kWp</span></div>
-        </div>
-      </div>
-      <div class="est-row" style="margin-top:.6rem">
-        <div class="est-field">
-          <label class="est-label">Roof orientation</label>
-          <select class="est-input" id="new-solar-orientation">
-            <option value="south">South (best)</option>
-            <option value="south_east">South-East</option>
-            <option value="south_west">South-West</option>
-            <option value="east">East</option>
-            <option value="west">West</option>
-            <option value="north">North</option>
-          </select>
-        </div>
-        <div class="est-field">
-          <label class="est-label">Export (SEG) rate — <span id="new-seg-val">15.0p</span>/kWh</label>
-          <input type="range" class="slider" id="new-seg-slider" min="1" max="30" step="0.5" value="15"
-                 oninput="document.getElementById('new-seg-val').textContent=parseFloat(this.value).toFixed(1)"
-                 style="accent-color:#f59e0b">
-          <div class="range-limits"><span>1p</span><span>30p</span></div>
-        </div>
-      </div>
-    </div>
+    <!-- Existing system toggles -->
+    <div class="form-section-label" style="margin-top:1.1rem">Do you already have any of these?</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem">
 
-    <button class="btn-primary" id="main-calc-btn" onclick="doMainCalculate()" style="margin-top:1rem">
-      Calculate →
+      <!-- Solar toggle -->
+      <div class="existing-toggle" id="toggle-solar" onclick="toggleExistingSolar()">
+        <div class="existing-toggle-left">
+          <span class="existing-toggle-icon">☀️</span>
+          <div>
+            <div class="existing-toggle-label">I have solar panels</div>
+            <div class="existing-toggle-sub">We'll include your generation in the comparison</div>
+          </div>
+        </div>
+        <div class="existing-toggle-check" id="toggle-solar-check"></div>
+      </div>
+      <div class="existing-sub-fields" id="solar-sub-fields">
+        <div class="est-row">
+          <div class="est-field">
+            <label class="est-label">System size — <span id="new-kwp-val">4.0 kWp</span></label>
+            <input type="range" class="slider" id="new-kwp-slider" min="1" max="16" step="0.5" value="4"
+                   oninput="document.getElementById('new-kwp-val').textContent=parseFloat(this.value).toFixed(1)+' kWp'"
+                   style="accent-color:#f59e0b">
+            <div class="range-limits"><span>1 kWp</span><span>16 kWp</span></div>
+          </div>
+          <div class="est-field">
+            <label class="est-label">Roof orientation</label>
+            <select class="est-input" id="new-solar-orientation">
+              <option value="south">South (best)</option>
+              <option value="south_east">South-East</option>
+              <option value="south_west">South-West</option>
+              <option value="east">East</option>
+              <option value="west">West</option>
+              <option value="north">North</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Battery toggle -->
+      <div class="existing-toggle" id="toggle-battery" onclick="toggleExistingBattery()">
+        <div class="existing-toggle-left">
+          <span class="existing-toggle-icon">🔋</span>
+          <div>
+            <div class="existing-toggle-label">I have a battery</div>
+            <div class="existing-toggle-sub">We'll use your actual battery size</div>
+          </div>
+        </div>
+        <div class="existing-toggle-check" id="toggle-battery-check"></div>
+      </div>
+      <div class="existing-sub-fields" id="battery-sub-fields">
+        <div class="est-field">
+          <label class="est-label">Battery size — <span id="new-batt-val">10.0 kWh</span></label>
+          <input type="range" class="slider" id="new-batt-slider" min="2" max="30" step="0.5" value="10"
+                 oninput="document.getElementById('new-batt-val').textContent=parseFloat(this.value).toFixed(1)+' kWh'"
+                 style="accent-color:#6366f1">
+          <div class="range-limits"><span>2 kWh</span><span>30 kWh</span></div>
+        </div>
+      </div>
+
+    </div>
+    <!-- keep hidden compat input used by old solar fields path -->
+    <input type="hidden" id="new-solar-postcode" value="">
+
+    <button class="btn-primary" id="main-calc-btn" onclick="doMainCalculate()" style="margin-top:1.25rem">
+      Show my options →
     </button>
     <div class="csv-link-row">
       <button class="csv-link-btn" onclick="showCSVStep()">
@@ -952,7 +925,7 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 </div>
 
 <div class="card hidden" id="s-scenarios">
-  <div class="section-title" style="margin-bottom:.6rem">Your Options at a Glance</div>
+  <div class="section-title" style="margin-bottom:.6rem">Your Personalised Recommendation</div>
   <div id="scenario-summary-bar"></div>
   <div class="scenario-compare-grid" id="scenario-grid"></div>
   <div class="text-sm" style="margin-top:.85rem;color:var(--text3);line-height:1.55;border-top:1px solid var(--border);padding-top:.75rem">
@@ -1261,8 +1234,7 @@ let _cmpDebounce = null;
 function debounceCompare() {
   clearTimeout(_cmpDebounce);
   _cmpDebounce = setTimeout(() => {
-    if (currentMode === 'nothing') runCompare();
-    else if (sessionId) runRecalculate();
+    if (sessionId) runCompare();
   }, 500);
 }
 
@@ -1447,7 +1419,7 @@ const EST_SUGGESTED_KWH = {
 function switchInputTab(tab) {
   // Legacy compatibility — route to new step system
   if (tab === 'csv') showCSVStep();
-  else showModeSelect();
+  else showFormStep();
 }
 
 function onEstPropChange() {
@@ -1552,8 +1524,7 @@ function setStatus(msg, type) {
 function debounceRecalc() {
   clearTimeout(_debounce);
   _debounce = setTimeout(() => {
-    if (currentMode === 'nothing') runCompare();
-    else if (sessionId) runRecalculate();
+    if (sessionId) runCompare();
   }, 400);
 }
 
@@ -2011,19 +1982,30 @@ function updatePlainSummary(data) {
 // SOLAR
 // ============================================================
 let solarData        = null;   // last solar result from /api/solar
-let currentMode      = null;   // 'nothing' | 'solar' | 'solar_battery'
-let currentExplore   = 'battery'; // 'battery' | 'solar' | 'both'  (nothing mode)
+let currentMode      = 'nothing';   // always 'nothing' in new journey (compare mode)
 let selectedPropType = 'semi';
 let selectedBeds     = 3;
 
-const MODE_LABELS = {
-  nothing:       '⚡ Starting fresh',
-  solar:         '☀️ I have solar panels',
-  solar_battery: '☀️🔋 Solar + battery',
-};
+// ============================================================
+// JOURNEY — existing system state
+// ============================================================
+let hasSolar   = false;
+let hasBattery = false;
+
+function toggleExistingSolar() {
+  hasSolar = !hasSolar;
+  document.getElementById('toggle-solar').classList.toggle('active', hasSolar);
+  document.getElementById('solar-sub-fields').classList.toggle('open', hasSolar);
+}
+
+function toggleExistingBattery() {
+  hasBattery = !hasBattery;
+  document.getElementById('toggle-battery').classList.toggle('active', hasBattery);
+  document.getElementById('battery-sub-fields').classList.toggle('open', hasBattery);
+}
 
 // ============================================================
-// JOURNEY — mode selection, property, explore
+// JOURNEY — property, EPC
 // ============================================================
 // EPC LOOKUP
 // ============================================================
@@ -2141,9 +2123,9 @@ function renderEpcResult(prop, inline = false) {
     <div class="epc-result-note">${confNote}</div>
     <div class="epc-result-override">Adjust any values below before calculating.</div>
   </div>
-  ${prop.has_solar && currentMode === 'nothing' ? `
+  ${prop.has_solar && !hasSolar ? `
   <div class="epc-result-notfound" style="margin-top:.5rem">
-    ☀️ EPC shows solar panels — consider switching to <strong>I have solar panels</strong> above.
+    ☀️ EPC shows solar panels — tick <strong>I have solar panels</strong> below.
   </div>` : ''}`;
 
   if (inline) {
@@ -2154,29 +2136,6 @@ function renderEpcResult(prop, inline = false) {
   }
 }
 
-// ============================================================
-function selectMode(mode) {
-  currentMode = mode;
-  document.getElementById('step-mode-badge').textContent = MODE_LABELS[mode];
-  document.getElementById('explore-section').style.display  = 'none';
-  const needsSolar = mode === 'solar' || mode === 'solar_battery';
-  document.getElementById('solar-fields-section').style.display = needsSolar ? '' : 'none';
-  document.getElementById('step-mode').style.display = 'none';
-  document.getElementById('step-form').style.display = '';
-  document.getElementById('step-csv').style.display  = 'none';
-  updateCalcBtnLabel();
-  updateEnergyCallout();
-}
-
-function selectExplore(type) {
-  currentExplore = type;
-  ['battery','solar','both'].forEach(t => {
-    document.getElementById('expl-'+t).classList.toggle('selected', t === type);
-  });
-  const showSolar = type === 'solar' || type === 'both';
-  document.getElementById('solar-fields-section').style.display = showSolar ? '' : 'none';
-  updateCalcBtnLabel();
-}
 
 function selectProp(prop) {
   selectedPropType = prop;
@@ -2219,36 +2178,9 @@ function updateEnergyCallout() {
   document.getElementById('energy-prop-desc').textContent = bedsLabel + ' ' + propLabel;
 }
 
-function updateCalcBtnLabel() {
-  const btn = document.getElementById('main-calc-btn');
-  if (!btn) return;
-  if (currentMode === 'solar_battery')                                    btn.textContent = 'Find my best tariff →';
-  else if (currentMode === 'solar')                                       btn.textContent = 'Find best battery & tariff →';
-  else if (currentMode === 'nothing' && currentExplore === 'solar')       btn.textContent = 'Calculate solar savings →';
-  else if (currentMode === 'nothing' && currentExplore === 'both')        btn.textContent = 'Compare all options →';
-  else                                                                     btn.textContent = 'Find the best battery →';
-}
-
-function showModeSelect() {
-  document.getElementById('step-mode').style.display = '';
-  document.getElementById('step-form').style.display = 'none';
-  document.getElementById('step-csv').style.display  = 'none';
-}
-
-function showFormStep() {
-  document.getElementById('step-mode').style.display = 'none';
-  document.getElementById('step-form').style.display = '';
-  document.getElementById('step-csv').style.display  = 'none';
-}
-
-function showCSVStep() {
-  document.getElementById('step-mode').style.display = 'none';
-  document.getElementById('step-form').style.display = 'none';
-  document.getElementById('step-csv').style.display  = '';
-}
 
 // ============================================================
-// MAIN CALCULATE — unified handler for the journey form
+// MAIN CALCULATE — unified handler, always calls /api/compare
 // ============================================================
 async function doMainCalculate() {
   const annKwh   = parseInt(document.getElementById('energy-slider').value);
@@ -2257,113 +2189,70 @@ async function doMainCalculate() {
 
   const btn = document.getElementById('main-calc-btn');
   btn.disabled = true;
-  setStatus('⏳ Calculating…', 'loading');
+  setStatus('⏳ Calculating your options…', 'loading');
 
   try {
     const p = getSliderParams();
 
-    if (currentMode === 'nothing') {
-      // "Starting fresh" — call /api/compare to get all three scenarios at once
-      const cmpData = await apiFetch('/api/compare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          annual_kwh:         annKwh,
-          property_type:      selectedPropType,
-          unit_rate_p:        unitRate,
-          inflation_pct:      parseFloat(p.inflPct),
-          current_sc_pd:      parseFloat(p.scPd),
-          efficiency_pct:     parseFloat(p.effPct),
-          max_charge_rate_kw: parseFloat(p.maxRateKw),
-        }),
-      });
+    // Build override params from user's existing system toggles
+    const solarKwp  = hasSolar   ? parseFloat(document.getElementById('new-kwp-slider').value)  : 4.0;
+    const battKwh   = hasBattery ? parseFloat(document.getElementById('new-batt-slider').value)  : null;
 
-      const fr = cmpData.full_result;
-      sessionId  = cmpData.session_id;
-      lastResult = fr;
+    const payload = {
+      annual_kwh:               annKwh,
+      property_type:            selectedPropType,
+      unit_rate_p:              unitRate,
+      inflation_pct:            parseFloat(p.inflPct),
+      current_sc_pd:            parseFloat(p.scPd),
+      efficiency_pct:           parseFloat(p.effPct),
+      max_charge_rate_kw:       parseFloat(p.maxRateKw),
+      solar_kwp:                solarKwp,
+      solar_installed_cost:     solarKwp * 1500,   // rough £/kWp installed
+      battery_cap_kwh_override: battKwh,
+      battery_cost_gbp_override: battKwh ? null : null,
+      tariff_key_override:      null,
+    };
 
-      // Sync sidebar controls to the best result
-      if (fr && fr.selected) {
-        const sel = fr.selected;
-        const tariffSel = document.getElementById('tariff-select');
-        if (tariffSel) tariffSel.value = sel.tariff_key || tariffSel.value;
-        const capSlider = document.getElementById('cap-slider');
-        if (capSlider && sel.battery_cap_kwh) capSlider.value = sel.battery_cap_kwh;
-      }
-
-      const bedsLabel = selectedBeds >= 5 ? '5+' : selectedBeds;
-      const propLabel = {flat:'flat',terraced:'terraced',semi:'semi-detached',detached:'detached'}[selectedPropType] || '';
-      document.getElementById('uz-label').textContent =
-        `${bedsLabel}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
-
-      showDataSummary(fr);
-      showAllSections();
-      initProjectionChart();
-      initSidebarProfileChart();
-      document.getElementById('profile-placeholder').style.display = 'none';
-      document.getElementById('profile-chart-wrap').style.display  = '';
-      renderScenarioComparison(cmpData);
-      renderResult(fr);
-      setStatus('', '');
-      return;
-    }
-
-    const data = await apiFetch('/api/estimate', {
+    const cmpData = await apiFetch('/api/compare', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        annual_kwh:         annKwh,
-        property_type:      selectedPropType,
-        unit_rate_p:        unitRate,
-        tariff_key:         p.tariffKey,
-        battery_cap_kwh:    parseFloat(p.capKwh),
-        battery_cost_gbp:   parseFloat(p.costGbp),
-        max_charge_rate_kw: parseFloat(p.maxRateKw),
-        efficiency_pct:     parseFloat(p.effPct),
-        inflation_pct:      parseFloat(p.inflPct),
-        current_sc_pd:      parseFloat(p.scPd),
-        export_rate_p:      getExportRatePence(),
-      }),
+      body: JSON.stringify(payload),
     });
 
-    sessionId  = data.session_id;
-    lastResult = data;
+    const fr = cmpData.full_result;
+    sessionId  = cmpData.session_id;
+    lastResult = fr;
+    currentMode = 'nothing';   // always use compare/unified output path
+
+    // Sync sidebar
+    if (fr && fr.selected) {
+      const sel = fr.selected;
+      const tariffSel = document.getElementById('tariff-select');
+      if (tariffSel) tariffSel.value = sel.tariff_key || tariffSel.value;
+      const capSlider = document.getElementById('cap-slider');
+      if (capSlider && sel.battery_cap_kwh) capSlider.value = sel.battery_cap_kwh;
+    }
+    if (hasSolar) {
+      const kwpSlider = document.getElementById('kwp-slider');
+      if (kwpSlider) kwpSlider.value = solarKwp;
+      const kwpVal = document.getElementById('kwp-val');
+      if (kwpVal) kwpVal.textContent = solarKwp.toFixed(1) + ' kWp';
+    }
 
     const bedsLabel = selectedBeds >= 5 ? '5+' : selectedBeds;
     const propLabel = {flat:'flat',terraced:'terraced',semi:'semi-detached',detached:'detached'}[selectedPropType] || '';
     document.getElementById('uz-label').textContent =
       `${bedsLabel}-bed ${propLabel} · ${Math.round(annKwh).toLocaleString()} kWh/yr`;
 
-    showDataSummary(data);
+    showDataSummary(fr);
     showAllSections();
     initProjectionChart();
     initSidebarProfileChart();
     document.getElementById('profile-placeholder').style.display = 'none';
     document.getElementById('profile-chart-wrap').style.display  = '';
-    renderResult(data);
+    renderScenarioComparison(cmpData);
+    renderResult(fr);
     setStatus('', '');
-
-    // Chain solar if mode requires it
-    const needsSolar = currentMode === 'solar' || currentMode === 'solar_battery';
-
-    if (needsSolar) {
-      const postcode = document.getElementById('new-solar-postcode').value.trim();
-      if (!postcode) {
-        setStatus('⚠️ Enter your postcode in the solar section to include generation data.', 'error');
-      } else {
-        // Sync values to sidebar solar controls
-        document.getElementById('solar-postcode').value = postcode;
-        document.getElementById('kwp-slider').value     = document.getElementById('new-kwp-slider').value;
-        document.getElementById('kwp-val').textContent  = parseFloat(document.getElementById('new-kwp-slider').value).toFixed(1) + ' kWp';
-        document.getElementById('solar-orientation').value = document.getElementById('new-solar-orientation').value;
-        const segVal = parseFloat(document.getElementById('new-seg-slider').value);
-        document.getElementById('solar-seg-slider').value   = segVal;
-        document.getElementById('solar-seg-val').textContent = segVal.toFixed(1) + 'p';
-        document.getElementById('solar-toggle').checked = true;
-        document.getElementById('solar-inputs').classList.add('visible');
-        await runSolarFromForm();
-      }
-    }
 
   } catch(e) {
     setStatus('❌ ' + (e.message || 'Calculation failed.'), 'error');
@@ -2372,47 +2261,16 @@ async function doMainCalculate() {
   }
 }
 
-async function runSolarFromForm() {
-  const postcode = document.getElementById('new-solar-postcode').value.trim();
-  const kwp      = parseFloat(document.getElementById('new-kwp-slider').value);
-  const orient   = document.getElementById('new-solar-orientation').value;
-  const seg      = parseFloat(document.getElementById('new-seg-slider').value);
-
-  setStatus('⏳ Fetching solar generation data from PVGIS…', 'loading');
-  const p = getSliderParams();
-
-  try {
-    const data = await apiFetch('/api/solar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id:         sessionId,
-        postcode,
-        panel_kwp:          kwp,
-        orientation:        orient,
-        tilt_deg:           35,
-        seg_rate_p:         seg,
-        panel_cost_gbp:     0,
-        tariff_key:         p.tariffKey,
-        battery_cap_kwh:    parseFloat(p.capKwh),
-        battery_cost_gbp:   parseFloat(p.costGbp),
-        max_charge_rate_kw: parseFloat(p.maxRateKw),
-        efficiency_pct:     parseFloat(p.effPct),
-        inflation_pct:      parseFloat(p.inflPct),
-        current_sc_pd:      parseFloat(p.scPd),
-        export_rate_p:      getExportRatePence(),
-      }),
-    });
-    solarData  = data.solar;
-    lastResult = data;
-    renderResult(data);
-    renderSolarCard(data.solar);
-    setSolarStatusMsg('✅ ' + Math.round(data.solar.annual_generation_kwh).toLocaleString() + ' kWh/yr estimated from PVGIS', 'success');
-    setStatus('', '');
-  } catch(e) {
-    setStatus('⚠️ Could not fetch solar data — showing battery-only results. ' + (e.message||''), 'error');
-  }
+function showCSVStep() {
+  document.getElementById('step-form').style.display = 'none';
+  document.getElementById('step-csv').style.display  = '';
 }
+
+function showFormStep() {
+  document.getElementById('step-form').style.display = '';
+  document.getElementById('step-csv').style.display  = 'none';
+}
+
 let breakdownOpen  = false;  // remembers expanded state across recalculates
 
 // ============================================================
@@ -2510,12 +2368,7 @@ function onKwhSlider(val) {
 
 // onSiqCardClick / onSiqToggle removed — solar captured via new journey mode selector
 
-// runSolarFromSiq removed — solar now handled by runSolarFromForm() via journey mode selector
-
-async function runSolarFromSiq() {
-  // Legacy alias — delegate to the new handler
-  return runSolarFromForm();
-}
+// runSolarFromSiq / runSolarFromForm removed — solar now handled via toggle in doMainCalculate()
 
 function onSolarToggle() {
   const on = document.getElementById('solar-toggle').checked;
@@ -3106,13 +2959,11 @@ async function handleFiles(files) {
 
 function showAllSections() {
   document.getElementById('upload-summary-wrap').classList.add('has-data');
-  // Show financial summary + CTA + expandable breakdown
   ['s-financial', 's-summary'].forEach(id => {
     document.getElementById(id).classList.remove('hidden');
   });
   document.getElementById('cta-bar').classList.remove('hidden');
   document.getElementById('breakdown-wrap').classList.remove('hidden');
-  // s-scenarios shown only by renderScenarioComparison() (nothing mode)
   document.getElementById('sidebar').classList.remove('hidden');
   document.getElementById('page-layout').classList.remove('no-sidebar');
 }
@@ -3124,7 +2975,9 @@ function clearData() {
   csvInput.value = '';
   uploadZone.classList.remove('collapsed');
   document.getElementById('upload-summary-wrap').classList.remove('has-data');
-  ['s-summary', 's-scenarios', 's-financial', 's-solar', 's-rec', 's-table'].forEach(id => {
+  document.getElementById('step-form').style.display = '';
+  document.getElementById('step-csv').style.display = 'none';
+  ['s-summary', 's-scenarios', 's-financial', 's-solar', 's-rec', 's-table', 's-energy-flow'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   // Hide CTA bar and collapse breakdown
@@ -3147,10 +3000,8 @@ function clearData() {
   if (sidebarProfileChart) { sidebarProfileChart.destroy(); sidebarProfileChart = null; }
   if (projChart)           { projChart.destroy();           projChart = null; }
   // Reset journey
-  currentMode    = null;
-  currentExplore = 'battery';
+  currentMode = 'nothing';
   uploadZone.classList.remove('collapsed');
-  showModeSelect();
 }
 
 // ============================================================
