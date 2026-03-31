@@ -40,24 +40,31 @@ def _build_prompt(req: ExplainRequest) -> str:
     if hs and hb:
         existing = "solar panels and a home battery already installed"
         framing  = (
-            "The customer wants to know how their current setup compares to alternatives "
-            "and whether switching tariff or changing equipment would improve returns. "
-            "The recommended option is their best next move — whether that means keeping "
-            "what they have on a better tariff, or making a change."
+            "The customer already has a complete solar + battery system. "
+            "Focus on what their system achieves today — the annual saving, "
+            "carbon reduction, and how well their existing investment is performing. "
+            "If the tariff could be optimised, mention it. Do not recommend buying "
+            "more equipment — they already have a great setup."
         )
     elif hs:
         existing = "solar panels already installed (no battery yet)"
         framing  = (
-            "The customer wants to know whether adding a battery is worth it. "
-            "The recommended option should be framed as the best upgrade step for "
-            "their existing solar investment."
+            "The customer already has solar panels. The two options shown are their "
+            "solar baseline (what they already have) and the upgrade (adding a battery). "
+            "The financials for 'Add a battery' show only the INCREMENTAL cost and saving "
+            "on top of their existing solar — not the total system cost. "
+            "Frame the recommendation as the right next step for their solar investment, "
+            "emphasising that the battery cost and payback are on top of what they already earn."
         )
     elif hb:
         existing = "a home battery already installed (no solar yet)"
         framing  = (
-            "The customer wants to know whether adding solar panels would complement "
-            "their battery. The recommended option should be framed as the best next "
-            "upgrade to maximise the value of their existing battery."
+            "The customer already has a home battery. The two options shown are their "
+            "battery baseline (what they already have) and the upgrade (adding solar panels). "
+            "The financials for 'Add solar panels' show only the INCREMENTAL cost and saving "
+            "on top of their existing battery savings — not the total system cost. "
+            "Frame the recommendation as the right next step to complement their battery, "
+            "emphasising that solar would work alongside what they already have."
         )
     else:
         existing = "no solar or battery currently installed"
@@ -102,7 +109,7 @@ Context: {framing}
 Results for all three options being compared:
 {scenarios_section(req, fmt_scen)}
 
-Instructions: Cover (1) the customer's existing situation and why the recommended option is the right next step for them specifically, (2) the key financial benefit (saving per year and payback), (3) briefly contrast with the other options shown, (4) if carbon saving exceeds 200 kg/yr, include a relatable equivalence. 4–6 sentences. Do not start with "I" or "As an"."""
+Instructions: {"Cover (1) how their existing setup is already performing and what it earns them, (2) whether there are any tariff improvements that could increase returns — be specific about the tariff and the extra saving, (3) the carbon impact. 3–5 sentences. Do not recommend buying more equipment." if (req.context_has_solar and req.context_has_battery) else "Cover (1) what their existing setup already earns them, (2) why adding the recommended upgrade makes financial sense — use the incremental cost and incremental saving (not total system cost), (3) the payback period for the upgrade investment, (4) if carbon saving exceeds 200 kg/yr mention a relatable equivalence. 4–6 sentences. Do not start with 'I' or 'As an'." if (req.context_has_solar or req.context_has_battery) else "Cover (1) why the recommended option suits this household's consumption and property type, (2) the key financial benefit (saving per year and payback period), (3) briefly contrast with the other options shown, (4) if carbon saving exceeds 200 kg/yr include a relatable equivalence. 4–6 sentences. Do not start with 'I' or 'As an'."}"""
 
 
 def scenarios_section(req: ExplainRequest, fmt_scen) -> str:
@@ -110,20 +117,16 @@ def scenarios_section(req: ExplainRequest, fmt_scen) -> str:
     if hs and hb:
         labels = [
             ("Your current setup (solar + battery)", "solar_battery"),
-            ("Battery only (no solar)", "battery"),
-            ("Solar only (no battery)", "solar"),
         ]
     elif hs:
         labels = [
-            ("Your solar today (baseline)", "solar"),
-            ("Add a battery", "solar_battery"),
-            ("Battery only, no solar", "battery"),
+            ("Your solar today (current baseline)", "solar"),
+            ("Add a battery (incremental cost & saving only)", "solar_battery"),
         ]
     elif hb:
         labels = [
-            ("Your battery today (baseline)", "battery"),
-            ("Add solar panels", "solar"),
-            ("Solar + your battery", "solar_battery"),
+            ("Your battery today (current baseline)", "battery"),
+            ("Add solar panels (incremental cost & saving only)", "solar_battery"),
         ]
     else:
         labels = [

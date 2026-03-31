@@ -668,71 +668,140 @@ async def compare_scenarios(req: CompareRequest):
         if flows:
             scen["carbon"] = calc_carbon_savings(avg_day_kwh, flows, carbon_profile)
 
-    scenarios = {
-        "battery":       battery_scenario,
-        "solar":         solar_scenario,
-        "solar_battery": sb_scenario,
-    }
-
-    # ── Relabel scenarios based on what the user already has ─────────────────
+    # ── Context-aware scenario filtering, relabelling & incremental financials ──
     hs = req.context_has_solar
     hb = req.context_has_battery
 
-    if hs and hb:
-        # User has both — compare current setup against alternatives and tariff
-        # optimisation. solar_battery = their current setup baseline.
-        scenarios["solar_battery"]["label"] = "Your current setup"
-        scenarios["solar_battery"]["icon"]  = "🏠"
-        scenarios["solar_battery"]["tech"]  = (
-            f"{req.solar_kwp:.1f} kWp solar + "
-            f"{scenarios['solar_battery']['breakdown'].get('battery_kwh', '?')} kWh battery"
-            " · optimise with best tariff"
-        )
-        scenarios["battery"]["label"] = "Battery only (no solar)"
-        scenarios["battery"]["icon"]  = "🔋"
-        scenarios["solar"]["label"]   = "Solar only (no battery)"
-        scenarios["solar"]["icon"]    = "☀️"
-        # Best = highest ROI excluding "solar only" (they already have more than that)
-        eligible = ["battery", "solar_battery"]
-
-    elif hs:
-        # User has solar — baseline is solar-only, recommended next step is adding a battery
-        scenarios["solar"]["label"]   = "Your solar today"
-        scenarios["solar"]["icon"]    = "☀️"
-        scenarios["solar"]["tech"]    = (
+    if hs and not hb:
+        # User has solar already.
+        # Show: "Your solar today" (baseline) + "Add a battery" (incremental).
+        # Drop battery-only — irrelevant when solar is already installed.
+        solar_scenario["label"] = "Your solar today"
+        solar_scenario["icon"]  = "☀️"
+        solar_scenario["tech"]  = (
             f"{req.solar_kwp:.1f} kWp solar · SEG export · no battery"
         )
-        scenarios["solar_battery"]["label"] = "Add a battery"
-        scenarios["solar_battery"]["icon"]  = "☀️🔋"
-        scenarios["battery"]["label"] = "Battery only (no solar)"
-        scenarios["battery"]["icon"]  = "🔋"
-        # Best = highest ROI among options that actually change something
-        eligible = ["solar_battery", "battery"]
 
-    elif hb:
-        # User has a battery — baseline is battery-only, recommended next step is adding solar
-        scenarios["battery"]["label"] = "Your battery today"
-        scenarios["battery"]["icon"]  = "🔋"
-        batt_label = scenarios["battery"]["breakdown"].get("battery_kwh", "?")
-        scenarios["battery"]["tech"]  = (
-            f"{batt_label} kWh battery · {scenarios['battery']['breakdown'].get('best_tariff', 'TOU tariff')}"
+        # Incremental cost = battery portion only (total - solar already paid for)
+        batt_cost_only = max(
+            round(sb_scenario.get("installed_cost", 0) - req.solar_installed_cost, 0),
+            best_batt["battery_cost"] if best_batt else 3500,
         )
-        scenarios["solar"]["label"]   = "Add solar panels"
-        scenarios["solar"]["icon"]    = "☀️"
-        scenarios["solar_battery"]["label"] = "Solar + your battery"
-        scenarios["solar_battery"]["icon"]  = "☀️🔋"
-        # Best = highest ROI among options that add something
-        eligible = ["solar", "solar_battery"]
+        incr_saving = (sb_scenario.get("annual_saving") or 0) - (solar_scenario.get("annual_saving") or 0)
+        if incr_saving > 0:
+            pb_incr = calc_payback(batt_cost_only, incr_saving, req.inflation_pct)
+            add_batt_payback = round(pb_incr.years, 1) if pb_incr.years != math.inf else None
+            add_batt_roi     = round(pb_incr.roi_10yr, 0)
+            add_batt_cum     = pb_incr.cumulative
+        else:
+            add_batt_payback = None
+            add_batt_roi     = round(-batt_cost_only, 0)
+            add_batt_cum     = []
+
+        add_battery = {
+            **sb_scenario,
+            "label":         "Add a battery",
+            "icon":          "☀️🔋",
+            "tech":          (
+                f"Add {sb_scenario['breakdown'].get('battery_kwh', '?')} kWh battery "
+                f"· {sb_scenario['breakdown'].get('best_tariff', 'best TOU tariff')}"
+            ),
+            "installed_cost": batt_cost_only,
+            "annual_saving":  round(incr_saving, 0),
+            "payback_years":  add_batt_payback,
+            "roi_10yr":       add_batt_roi,
+            "cumulative":     add_batt_cum,
+            "breakdown": {
+                **sb_scenario.get("breakdown", {}),
+                "incremental_note": f"Additional saving over your existing {req.solar_kwp:.1f} kWp solar",
+            },
+        }
+
+        scenarios = {
+            "solar":         solar_scenario,
+            "solar_battery": add_battery,
+        }
+        best_key = "solar_battery"
+
+    elif hb and not hs:
+        # User has a battery already.
+        # Show: "Your battery today" (baseline) + "Add solar panels" (incremental).
+        # Drop solar-only — irrelevant when a battery is already installed.
+        batt_label = battery_scenario["breakdown"].get("battery_kwh", "?")
+        battery_scenario["label"] = "Your battery today"
+        battery_scenario["icon"]  = "🔋"
+        battery_scenario["tech"]  = (
+            f"{batt_label} kWh battery · "
+            f"{battery_scenario['breakdown'].get('best_tariff', 'best TOU tariff')}"
+        )
+
+        # Incremental cost = solar panels only
+        solar_cost_only = req.solar_installed_cost
+        incr_saving = (sb_scenario.get("annual_saving") or 0) - (battery_scenario.get("annual_saving") or 0)
+        if incr_saving > 0:
+            pb_incr = calc_payback(solar_cost_only, incr_saving, req.inflation_pct)
+            add_sol_payback = round(pb_incr.years, 1) if pb_incr.years != math.inf else None
+            add_sol_roi     = round(pb_incr.roi_10yr, 0)
+            add_sol_cum     = pb_incr.cumulative
+        else:
+            add_sol_payback = None
+            add_sol_roi     = round(-solar_cost_only, 0)
+            add_sol_cum     = []
+
+        add_solar = {
+            **sb_scenario,
+            "label":         "Add solar panels",
+            "icon":          "☀️🔋",
+            "tech":          (
+                f"Add {req.solar_kwp:.1f} kWp solar · "
+                f"works alongside your existing battery"
+            ),
+            "installed_cost": round(solar_cost_only, 0),
+            "annual_saving":  round(incr_saving, 0),
+            "payback_years":  add_sol_payback,
+            "roi_10yr":       add_sol_roi,
+            "cumulative":     add_sol_cum,
+            "breakdown": {
+                **sb_scenario.get("breakdown", {}),
+                "incremental_note": (
+                    f"Additional saving over your existing {batt_label} kWh battery"
+                ),
+            },
+        }
+
+        scenarios = {
+            "battery":       battery_scenario,
+            "solar_battery": add_solar,
+        }
+        best_key = "solar_battery"
+
+    elif hs and hb:
+        # User has both.
+        # Show one card: their current setup (solar + battery) at full financials.
+        sb_scenario["label"] = "Your current setup"
+        sb_scenario["icon"]  = "🏠"
+        sb_scenario["tech"]  = (
+            f"{req.solar_kwp:.1f} kWp solar + "
+            f"{sb_scenario['breakdown'].get('battery_kwh', '?')} kWh battery"
+            f" · {sb_scenario['breakdown'].get('best_tariff', 'best tariff')}"
+        )
+        scenarios = {
+            "solar_battery": sb_scenario,
+        }
+        best_key = "solar_battery"
 
     else:
-        # Starting fresh — all three are valid recommendations
-        eligible = ["battery", "solar", "solar_battery"]
-
-    best_key = max(
-        eligible,
-        key=lambda k: scenarios[k].get("roi_10yr", -math.inf)
-        if scenarios[k].get("roi_10yr") is not None else -math.inf,
-    )
+        # Starting fresh — show all three, pick best by ROI.
+        scenarios = {
+            "battery":       battery_scenario,
+            "solar":         solar_scenario,
+            "solar_battery": sb_scenario,
+        }
+        best_key = max(
+            scenarios,
+            key=lambda k: scenarios[k].get("roi_10yr", -math.inf)
+            if scenarios[k].get("roi_10yr") is not None else -math.inf,
+        )
 
     # ── Full estimate result for drill-down sections ─────────────────────────
     best_tariff_key = (
