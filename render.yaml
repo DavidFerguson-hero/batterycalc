@@ -7,6 +7,7 @@ services:
     runtime: docker
     plan: free
     region: frankfurt          # closest Render region to the UK
+    branch: main               # deploy only reviewed, merged code (feature branches never go live)
     rootDir: api
     dockerfilePath: ./Dockerfile
     dockerContext: .
