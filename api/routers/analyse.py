@@ -5,7 +5,10 @@ POST /api/recalculate — re-run with new slider params against cached days
 from __future__ import annotations
 import math
 import hashlib
-from typing import Annotated, Optional
+import time
+from collections import OrderedDict
+from dataclasses import replace
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
@@ -19,8 +22,38 @@ from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
 
-# In-memory session cache (replace with Redis in production)
-_session_cache: dict[str, dict] = {}
+# In-memory session cache so /recalculate can re-run without a re-upload.
+# Bounded in size and age: a full year of half-hourly data is ~17,500 numbers per
+# session, and uploaded usage should not sit in memory indefinitely. Never persisted.
+_SESSION_MAX = 200
+_SESSION_TTL_S = 60 * 60
+_session_cache: "OrderedDict[str, tuple[float, ParseResult]]" = OrderedDict()
+
+
+def _cache_put(session_id: str, parse: ParseResult) -> None:
+    _session_cache[session_id] = (time.monotonic(), replace(parse, readings={}))
+    _session_cache.move_to_end(session_id)
+    while len(_session_cache) > _SESSION_MAX:
+        _session_cache.popitem(last=False)
+
+
+def _cache_get(session_id: str) -> ParseResult | None:
+    item = _session_cache.get(session_id)
+    if item is None:
+        return None
+    stored_at, parse = item
+    if time.monotonic() - stored_at > _SESSION_TTL_S:
+        del _session_cache[session_id]
+        return None
+    return parse
+
+
+def _average_day(days: list[list[float]]) -> list[float]:
+    n = len(days)
+    return [sum(d[i] for d in days) / n for i in range(48)]
+
+
+HeatingType = Literal["gas", "electric"]
 
 # ── Solar estimation constants ──────────────────────────────────────────────
 SOLAR_KWP             = 4.0      # Standard residential system (kWp)
@@ -70,6 +103,7 @@ class EstimateRequest(BaseModel):
     inflation_pct:     float = Field(5.0,   ge=0,   le=20)
     current_sc_pd:     float = Field(53.0,  ge=0,   le=200)
     export_rate_p:     float = Field(0.0,   ge=0,   le=100)
+    heating_type:      HeatingType = "gas"   # from the EPC: "electric" when there's no mains gas
 
 
 class CompareRequest(BaseModel):
@@ -89,6 +123,7 @@ class CompareRequest(BaseModel):
     # Existing system context — changes scenario labels, best_key logic, AI framing
     context_has_solar:        bool         = False
     context_has_battery:      bool         = False
+    heating_type:             HeatingType  = "gas"
 
 
 class RecalculateRequest(BaseModel):
@@ -178,6 +213,9 @@ def _build_response(
             "daily_avg_kwh": parse.daily_avg_kwh,
             "annual_kwh_estimate": parse.annual_kwh_estimate,
             "inferred_rate_pence": round(current_rate * 100, 2) if current_rate else None,
+            "days_modelled": len(parse.days),
+            "coverage": parse.coverage,
+            "confidence": parse.confidence,
         },
         "selected": {
             "tariff_key": tariff_key,
@@ -205,10 +243,7 @@ def _build_response(
             "soc_profile": [round(v, 3) for v in sim.avg_soc_profile],
             "cumulative_savings": pb.cumulative,
             "heatmap": heatmap,
-            "avg_consumption_profile": [
-                round(sum(day[i] for day in parse.days) / len(parse.days), 4)
-                for i in range(48)
-            ],
+            "avg_consumption_profile": [round(v, 4) for v in _average_day(parse.days)],
         },
         "recommendations": {
             "best_tariff_key": best_tariff,
@@ -443,14 +478,7 @@ async def analyse(
     # Cache parsed days against a session id based on raw content hash
     combined_raw = b"".join([str(r.days).encode() for r in parse_results])
     session_id = _session_key(combined_raw)
-    _session_cache[session_id] = {
-        "days": merged.days,
-        "inferred_rate": merged.inferred_rate,
-        "days_count": merged.days_count,
-        "total_kwh": merged.total_kwh,
-        "daily_avg_kwh": merged.daily_avg_kwh,
-        "annual_kwh_estimate": merged.annual_kwh_estimate,
-    }
+    _cache_put(session_id, merged)
 
     return _build_response(
         parse=merged,
@@ -472,18 +500,11 @@ async def estimate(req: EstimateRequest):
     if req.property_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"property_type must be one of {valid_types}")
 
-    parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p)
+    parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p, req.heating_type)
 
-    cache_key = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}"
+    cache_key = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}|{req.heating_type}"
     session_id = hashlib.sha256(cache_key.encode()).hexdigest()[:16]
-    _session_cache[session_id] = {
-        "days":                parse.days,
-        "inferred_rate":       parse.inferred_rate,
-        "days_count":          parse.days_count,
-        "total_kwh":           parse.total_kwh,
-        "daily_avg_kwh":       parse.daily_avg_kwh,
-        "annual_kwh_estimate": parse.annual_kwh_estimate,
-    }
+    _cache_put(session_id, parse)
 
     return _build_response(
         parse=parse,
@@ -502,22 +523,12 @@ async def estimate(req: EstimateRequest):
 
 @router.post("/recalculate")
 async def recalculate(req: RecalculateRequest):
-    cached = _session_cache.get(req.session_id)
-    if cached is None:
+    parse = _cache_get(req.session_id)
+    if parse is None:
         raise HTTPException(
             status_code=404,
             detail="Session not found. Please re-upload your CSV files.",
         )
-
-    from engine.csv_parser import ParseResult as PR
-    parse = PR(
-        days=cached["days"],
-        inferred_rate=cached["inferred_rate"],
-        days_count=cached["days_count"],
-        total_kwh=cached["total_kwh"],
-        daily_avg_kwh=cached["daily_avg_kwh"],
-        annual_kwh_estimate=cached["annual_kwh_estimate"],
-    )
 
     return _build_response(
         parse=parse,
@@ -548,19 +559,12 @@ async def compare_scenarios(req: CompareRequest):
     if req.property_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"property_type must be one of {valid_types}")
 
-    parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p)
+    parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p, req.heating_type)
     unit_rate = parse.inferred_rate if parse.inferred_rate else IMPLIED_RATE
 
-    cache_key  = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}"
+    cache_key  = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}|{req.heating_type}"
     session_id = hashlib.sha256(cache_key.encode()).hexdigest()[:16]
-    _session_cache[session_id] = {
-        "days":                parse.days,
-        "inferred_rate":       parse.inferred_rate,
-        "days_count":          parse.days_count,
-        "total_kwh":           parse.total_kwh,
-        "daily_avg_kwh":       parse.daily_avg_kwh,
-        "annual_kwh_estimate": parse.annual_kwh_estimate,
-    }
+    _cache_put(session_id, parse)
 
     efficiency = req.efficiency_pct / 100.0
 
@@ -640,7 +644,7 @@ async def compare_scenarios(req: CompareRequest):
     # ── Build solar profile and representative average day ───────────────────
     solar_daily_kwh = req.solar_kwp * SOLAR_GEN_PER_KWP / 365.0
     solar_profile   = [v * solar_daily_kwh for v in UK_SOLAR_PROFILE_NORM]
-    avg_day_kwh     = parse.days[0]   # synthetic profile: all 35 days identical
+    avg_day_kwh     = _average_day(parse.days)   # year-average day (days now vary by season)
 
     # Battery-only flows — use best tariff, no solar
     if best_batt:

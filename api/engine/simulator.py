@@ -18,6 +18,7 @@ class DayResult:
     grid_profile: list[float]   # Grid import (kWh) each slot
     export_kwh: float = 0.0
     export_revenue: float = 0.0
+    end_soc: float = 0.0        # SoC (kWh) left at midnight, carried into the next day
 
 
 @dataclass
@@ -57,17 +58,19 @@ def simulate_day_full(
     max_rate_kw: float,
     efficiency: float,          # round-trip, e.g. 0.90
     export_rate: float = 0.0,   # £/kWh — 0 means no export
+    start_soc: float | None = None,
 ) -> DayResult:
     """
     Simulate one day of battery operation.
 
     Charging: efficiency loss applied on grid-side (importing more than stored).
     Discharging: 1-to-1 offset of consumption (efficiency already paid on charge).
-    Battery starts at 30% SoC, respects 10% minimum reserve.
+    Battery starts at start_soc (default 30% SoC, used for the first day of a run),
+    respects 10% minimum reserve, and reports end_soc for the next day.
     """
     max_per_slot = max_rate_kw * 0.5    # kWh limit per 30-min slot
     min_soc = cap_kwh * 0.10
-    soc = cap_kwh * 0.30
+    soc = cap_kwh * 0.30 if start_soc is None else min(max(start_soc, min_soc), cap_kwh)
 
     cost_no_battery = 0.0
     cost_with_battery = 0.0
@@ -111,6 +114,9 @@ def simulate_day_full(
                 total_export_revenue = residual * export_rate
                 cost_with_battery -= total_export_revenue
 
+    # Energy sold as export has left the battery, so it can't also carry into tomorrow.
+    end_soc = max(min_soc, soc - total_export_kwh)
+
     return DayResult(
         cost_no_battery=cost_no_battery,
         cost_with_battery=cost_with_battery,
@@ -118,6 +124,7 @@ def simulate_day_full(
         grid_profile=grid_profile,
         export_kwh=total_export_kwh,
         export_revenue=total_export_revenue,
+        end_soc=end_soc,
     )
 
 
@@ -155,21 +162,39 @@ def run_simulation(
     avg_soc = [0.0] * 48
     tot_export_kwh = 0.0
     tot_export_revenue = 0.0
+    soc = None   # first day starts at the default 30%; each later day starts where the last ended
+    rates = tariff.slot_rates
+    discharge = tariff.discharge_slots
+
+    # Consecutive identical days that start at the same charge give identical results,
+    # so reuse the previous day's. Exact, and it makes the estimate route (where every
+    # day in a month is the same) about as fast as it was with 35 days.
+    prev_day: list[float] | None = None
+    prev_soc: float | None = None
+    prev = None   # (result, cost_no_batt, cost_current, shifted)
 
     for day_kwh in days:
-        for i in range(48):
-            tot_curr += day_kwh[i] * cur_rate
-            tot_no_batt += day_kwh[i] * tariff.slot_rates[i]
+        if prev is not None and soc == prev_soc and (day_kwh is prev_day or day_kwh == prev_day):
+            result, day_no_batt, day_curr, day_shifted = prev
+        else:
+            day_curr = sum(day_kwh) * cur_rate
+            day_no_batt = sum(k * r for k, r in zip(day_kwh, rates))
+            result = simulate_day_full(day_kwh, tariff, cap_kwh, max_rate_kw, efficiency, export_rate, soc)
+            day_shifted = sum(
+                max(0.0, k - g) for k, g, dis in zip(day_kwh, result.grid_profile, discharge) if dis
+            )
+            prev_day, prev_soc = day_kwh, soc
+            prev = (result, day_no_batt, day_curr, day_shifted)
 
-        result = simulate_day_full(day_kwh, tariff, cap_kwh, max_rate_kw, efficiency, export_rate)
+        soc = result.end_soc
+        tot_curr += day_curr
+        tot_no_batt += day_no_batt
         tot_with_batt += result.cost_with_battery
         tot_export_kwh += result.export_kwh
         tot_export_revenue += result.export_revenue
-
-        for i in range(48):
-            avg_soc[i] += result.soc_profile[i]
-            if tariff.discharge_slots[i]:
-                kwh_shifted += max(0.0, day_kwh[i] - result.grid_profile[i])
+        kwh_shifted += day_shifted
+        for i, v in enumerate(result.soc_profile):
+            avg_soc[i] += v
 
     avg_soc = [v / n_days for v in avg_soc]
 
@@ -372,9 +397,9 @@ def calc_solar_impact(
     min_soc_global = cap_kwh * 0.10
     overnight_ceil = max(min_soc_global, cap_kwh - expected_solar_surplus)
 
+    min_soc = cap_kwh * 0.10
+    soc = cap_kwh * 0.30   # first day only — charge carries over between days
     for day_kwh in days:
-        soc = cap_kwh * 0.30
-        min_soc = cap_kwh * 0.10
 
         day_gen = sum(avg_solar_profile)
         tot_generation += day_gen

@@ -1255,6 +1255,7 @@ async function runCompare() {
       body: JSON.stringify({
         annual_kwh:               annKwh,
         property_type:            selectedPropType,
+        heating_type:             selectedHeatingType,
         unit_rate_p:              unitRate,
         inflation_pct:            parseFloat(document.getElementById('infl-slider').value),
         current_sc_pd:            parseFloat(document.getElementById('sc-slider').value),
@@ -1454,6 +1455,7 @@ async function doEstimateClick() {
       body: JSON.stringify({
         annual_kwh:         annKwh,
         property_type:      propType,
+        heating_type:       selectedHeatingType,
         unit_rate_p:        unitRate,
         inflation_pct:      parseFloat(p.inflPct),
         current_sc_pd:      parseFloat(p.scPd),
@@ -1993,6 +1995,7 @@ function updatePlainSummary(data) {
 let solarData        = null;   // last solar result from /api/solar
 let currentMode      = 'nothing';   // always 'nothing' in new journey (compare mode)
 let selectedPropType = 'semi';
+let selectedHeatingType = 'gas';   // from the EPC: 'electric' when the home has no mains gas
 let selectedBeds     = 3;
 
 // ============================================================
@@ -2087,6 +2090,7 @@ function onEpcSelect(props) {
 }
 
 function applyEpcProperty(prop) {
+  selectedHeatingType = prop.heating_type || 'gas';
   selectProp(prop.property_type);
   selectBeds(Math.min(Math.max(1, prop.bedrooms), 5));
   const slider = document.getElementById('energy-slider');
@@ -2210,6 +2214,7 @@ async function doMainCalculate() {
     const payload = {
       annual_kwh:               annKwh,
       property_type:            selectedPropType,
+      heating_type:             selectedHeatingType,
       unit_rate_p:              unitRate,
       inflation_pct:            parseFloat(p.inflPct),
       current_sc_pd:            parseFloat(p.scPd),

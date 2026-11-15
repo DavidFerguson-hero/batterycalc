@@ -1,11 +1,14 @@
 """
 Synthetic half-hourly consumption profile generator.
 
-Takes annual_kwh + property_type and produces a list of day arrays in the
-same format as csv_parser.ParseResult.days, so the existing simulation
-engine can consume it without modification.
+Takes annual_kwh + property_type (+ heating type from the EPC) and produces
+365 days of half-hourly kWh in the same format as csv_parser.ParseResult.days,
+so the simulation engine can consume it without modification.
 """
 from __future__ import annotations
+
+from datetime import date, timedelta
+
 from .csv_parser import ParseResult
 
 # ---------------------------------------------------------------------------
@@ -74,26 +77,75 @@ SUGGESTED_KWH: dict[str, dict[int, int]] = {
     "detached": {3: 4200, 4: 5100, 5: 6500},
 }
 
-N_SYNTHETIC_DAYS = 35   # matches a typical CSV upload; enough for stable averages
+# ---------------------------------------------------------------------------
+# Seasonal shape — relative daily use by calendar month (index 0 = January).
+#
+# APPROXIMATE, pending calibration against real households (task 3.1).
+# Shaped to match the well-known UK pattern: domestic electricity peaks in
+# Dec/Jan (lighting, longer evenings, more time indoors) and bottoms out in
+# June/July. Homes heated by electricity (no mains gas) swing far more.
+#   gas:      December ≈ 1.5× June
+#   electric: December ≈ 3.2× June
+# ---------------------------------------------------------------------------
+MONTHLY_FACTORS: dict[str, list[float]] = {
+    "gas":      [1.20, 1.12, 1.05, 0.95, 0.88, 0.83, 0.83, 0.85, 0.90, 1.00, 1.12, 1.22],
+    "electric": [1.75, 1.60, 1.35, 1.00, 0.70, 0.55, 0.52, 0.55, 0.68, 0.95, 1.40, 1.75],
+}
+HEATING_TYPES = tuple(MONTHLY_FACTORS)
+
+# A fixed non-leap year: the estimate route models "a typical year", not a real one.
+MODEL_YEAR = 2025
+N_SYNTHETIC_DAYS = 365
 
 
-def generate_days(annual_kwh: float, property_type: str) -> list[list[float]]:
-    """Return N_SYNTHETIC_DAYS identical days scaled to the given annual total."""
+def model_year_dates() -> list[date]:
+    start = date(MODEL_YEAR, 1, 1)
+    return [start + timedelta(days=i) for i in range(N_SYNTHETIC_DAYS)]
+
+
+def monthly_factors(heating: str) -> list[float]:
+    if heating not in MONTHLY_FACTORS:
+        raise ValueError(f"heating must be one of {HEATING_TYPES}")
+    return MONTHLY_FACTORS[heating]
+
+
+def generate_days(
+    annual_kwh: float,
+    property_type: str,
+    heating: str = "gas",
+) -> list[list[float]]:
+    """
+    Return 365 days (1 Jan → 31 Dec of a typical year) whose total is annual_kwh.
+    Each day uses the property's daily shape, scaled by its month's seasonal factor.
+    """
     profile = _PROFILES.get(property_type, PROFILE_HOUSE)
-    daily_kwh = annual_kwh / 365.0
-    day = [v * daily_kwh for v in profile]
-    return [day[:] for _ in range(N_SYNTHETIC_DAYS)]
+    factors = monthly_factors(heating)
+    dates = model_year_dates()
+    weight_total = sum(factors[d.month - 1] for d in dates)
+    days: list[list[float]] = []
+    for d in dates:
+        daily_kwh = annual_kwh * factors[d.month - 1] / weight_total
+        days.append([v * daily_kwh for v in profile])
+    return days
 
 
-def make_parse_result(annual_kwh: float, property_type: str, unit_rate_p: float) -> ParseResult:
+def make_parse_result(
+    annual_kwh: float,
+    property_type: str,
+    unit_rate_p: float,
+    heating: str = "gas",
+) -> ParseResult:
     """Build a ParseResult from estimator inputs, ready for run_simulation()."""
-    days = generate_days(annual_kwh, property_type)
-    daily_avg = annual_kwh / 365.0
+    days = generate_days(annual_kwh, property_type, heating)
+    total = sum(sum(d) for d in days)
     return ParseResult(
         days=days,
         inferred_rate=unit_rate_p / 100.0,
-        days_count=N_SYNTHETIC_DAYS,
-        total_kwh=round(daily_avg * N_SYNTHETIC_DAYS, 2),
-        daily_avg_kwh=round(daily_avg, 3),
+        days_count=len(days),
+        total_kwh=round(total, 2),
+        daily_avg_kwh=round(total / len(days), 3),
         annual_kwh_estimate=round(annual_kwh, 1),
+        dates=model_year_dates(),
+        coverage=None,
+        confidence="estimate",
     )
