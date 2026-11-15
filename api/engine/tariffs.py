@@ -39,22 +39,22 @@ class Tariff:
 
 
 def _make_octopus_go() -> list[float]:
-    r = _flat(0.3872)
-    for i in range(0, 11): r[i] = 0.07   # 00:00–05:30
-    r[47] = 0.07                           # 23:30
+    r = _flat(0.3471)
+    for i in range(1, 11): r[i] = 0.094  # 00:30–05:30
     return r
 
 def _make_intelligent_octopus() -> list[float]:
-    r = _flat(0.38)
-    for i in range(0, 11): r[i] = 0.09
-    r[46] = r[47] = 0.09
+    r = _flat(0.3446)
+    for i in range(0, 11): r[i] = 0.099
+    r[46] = r[47] = 0.099
     return r
 
 def _make_octopus_cosy() -> list[float]:
-    r = _flat(0.28)
-    for i in range(8, 14):  r[i] = 0.12  # 04:00–07:00 cosy
-    for i in range(26, 32): r[i] = 0.12  # 13:00–16:00 cosy
-    for i in range(32, 42): r[i] = 0.50  # 16:00–21:00 peak
+    r = _flat(0.2882)
+    for i in range(8, 14):  r[i] = 0.1413  # 04:00–07:00 cosy
+    for i in range(26, 32): r[i] = 0.1413  # 13:00–16:00 cosy
+    for i in range(44, 48): r[i] = 0.1413  # 22:00–00:00 cosy
+    for i in range(32, 38): r[i] = 0.4322  # 16:00–19:00 peak
     return r
 
 def _make_economy7() -> list[float]:
@@ -120,36 +120,40 @@ TARIFFS: dict[str, Tariff] = {
         key="octopusGo",
         name="Octopus Go",
         supplier="Octopus Energy",
-        description="Night 7p/kWh (23:30–05:30) · Day 38.72p/kWh. Lowest overnight rate — maximises battery savings.",
+        description="Night 9.4p/kWh (00:30–05:30) · Day 34.71p/kWh. Lowest overnight rate — maximises battery savings.",
         color="#ff6b35",
         slot_rates=_make_octopus_go(),
-        charge_slots=_slots((0, 10), (47, 47)),
-        discharge_slots=_slots((11, 46)),
-        standing_charge=0.47,
+        charge_slots=_slots((1, 10)),
+        discharge_slots=_slots((0, 0), (11, 47)),
+        standing_charge=0.5167,
         export_rate=0.075,
     ),
     "intelligentOctopus": Tariff(
         key="intelligentOctopus",
         name="Intelligent Octopus Go",
         supplier="Octopus Energy",
-        description="Smart overnight 9p/kWh (23:00–05:30) · Day 38p/kWh. AI-managed charging.",
+        description="Smart overnight 9.9p/kWh (23:00–05:30) · Day 34.46p/kWh. AI-managed charging.",
         color="#c56bff",
         slot_rates=_make_intelligent_octopus(),
         charge_slots=_slots((0, 10), (46, 47)),
         discharge_slots=_slots((11, 45)),
-        standing_charge=0.47,
+        standing_charge=0.5194,
         export_rate=0.075,
     ),
     "octopusCosy": Tariff(
         key="octopusCosy",
         name="Octopus Cosy",
         supplier="Octopus Energy",
-        description="Cosy 12p/kWh (04:00–07:00 & 13:00–16:00) · Peak 50p/kWh (16:00–21:00) · Standard 28p.",
+        description="Cosy 14.13p/kWh (04:00–07:00, 13:00–16:00 & 22:00–00:00) · Peak 43.22p/kWh (16:00–19:00) · Standard 28.82p.",
         color="#ff3d6b",
         slot_rates=_make_octopus_cosy(),
+        # 22:00–00:00 is also a Cosy-rate window, but the simulator resets the battery
+        # to 30% at midnight each day, so charging then would be paid for and never used.
+        # Load in that window still gets the cheap rate. Revisit when task 1.1 carries
+        # state of charge across days.
         charge_slots=_slots((8, 13), (26, 31)),
-        discharge_slots=_slots((32, 41)),
-        standing_charge=0.47,
+        discharge_slots=_slots((0, 7), (14, 25), (32, 43)),
+        standing_charge=0.5167,
         export_rate=0.075,
     ),
     "economy7": Tariff(

@@ -102,9 +102,9 @@ def test_a2_soc_never_above_100pct(solar, tariff):
 # B. BATTERY-ONLY DISPATCH  (9)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Octopus Go: cheap slots 0–10 and 47 (00:00–05:30, 23:30)
-GO_CHARGE_SLOTS = list(range(0, 11)) + [47]
-GO_PEAK_SLOTS   = list(range(11, 47))
+# Octopus Go: cheap slots 1–10 (00:30–05:30)
+GO_CHARGE_SLOTS = list(range(1, 11))
+GO_PEAK_SLOTS   = [0] + list(range(11, 48))
 
 # Flux: charge 00:00–05:00 (slots 0–9, 46–47), peak 16:00–19:00 (slots 32–37)
 FLUX_CHARGE_SLOTS    = list(range(0, 10)) + [46, 47]
