@@ -52,7 +52,7 @@ Owner: David Ferguson · Drafted: 15 Nov 2026 · Status: ready to start Phase 0
   - *Done when:* `pytest` reports 60 passed.
 - [x] **0.3 Continuous integration (CI).** Add `.github/workflows/ci.yml` to run the API tests and the frontend lint and build on every pull request.
 - [x] **0.4 Update tariff rates.** Apply the changes flagged in the latest run in `frontend/public/tariff-logs.json` to `api/engine/tariffs.py` and to the `CURRENT` copy in `scripts/check_tariffs.py`. Show the diff for David to approve.
-- [ ] **0.5 Fix the tariff checker.** It reports Intelligent Octopus Go day and night both as 24.27p, which is almost certainly a parsing error. Fix it and add a test using a saved sample response.
+- [x] **0.5 Fix the tariff checker.** It reports Intelligent Octopus Go day and night both as 24.27p, which is almost certainly a parsing error. Fix it and add a test using a saved sample response.
 - [ ] **0.6 Dependency check.** Pin compatible versions (pip reports a starlette/sse-starlette conflict). Remove the unused Postgres/Redis services from `docker-compose.yml`, or comment them as future use.
 
 ---

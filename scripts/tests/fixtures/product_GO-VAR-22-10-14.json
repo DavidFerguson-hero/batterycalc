@@ -1,0 +1,189 @@
+{
+ "code": "GO-VAR-22-10-14",
+ "full_name": "Octopus Go",
+ "display_name": "Octopus Go",
+ "description": "The smart EV tariff with super cheap electricity between 00:30 - 05:30 every night",
+ "is_variable": true,
+ "is_green": false,
+ "is_tracker": false,
+ "is_prepay": false,
+ "is_business": false,
+ "is_restricted": false,
+ "term": null,
+ "available_from": "2022-10-14T00:00:00+01:00",
+ "available_to": null,
+ "tariffs_active_at": "2026-11-15T05:58:59.835666Z",
+ "single_register_electricity_tariffs": {
+  "_A": {
+   "direct_debit_monthly": {
+    "code": "E-1R-GO-VAR-22-10-14-A",
+    "standing_charge_exc_vat": 51.6715,
+    "standing_charge_inc_vat": 51.6715,
+    "online_discount_exc_vat": 0,
+    "online_discount_inc_vat": 0.0,
+    "dual_fuel_discount_exc_vat": 0,
+    "dual_fuel_discount_inc_vat": 0.0,
+    "exit_fees_exc_vat": 0,
+    "exit_fees_inc_vat": 0,
+    "exit_fees_type": "NONE",
+    "links": [
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/GO-VAR-22-10-14/electricity-tariffs/E-1R-GO-VAR-22-10-14-A/standing-charges/",
+      "method": "GET",
+      "rel": "standing_charges"
+     },
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/GO-VAR-22-10-14/electricity-tariffs/E-1R-GO-VAR-22-10-14-A/standard-unit-rates/",
+      "method": "GET",
+      "rel": "standard_unit_rates"
+     }
+    ],
+    "standard_unit_rate_exc_vat": 34.7089,
+    "standard_unit_rate_inc_vat": 34.7089
+   }
+  }
+ },
+ "dual_register_electricity_tariffs": {},
+ "four_rate_ev_electricity_tariffs": {},
+ "single_register_gas_tariffs": {},
+ "sample_quotes": {
+  "_A": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 105632,
+     "annual_cost_exc_vat": 105632
+    }
+   }
+  },
+  "_B": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 101097,
+     "annual_cost_exc_vat": 101097
+    }
+   }
+  },
+  "_C": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 101761,
+     "annual_cost_exc_vat": 101761
+    }
+   }
+  },
+  "_D": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 113746,
+     "annual_cost_exc_vat": 113746
+    }
+   }
+  },
+  "_E": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 103991,
+     "annual_cost_exc_vat": 103991
+    }
+   }
+  },
+  "_F": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 105460,
+     "annual_cost_exc_vat": 105460
+    }
+   }
+  },
+  "_G": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 102005,
+     "annual_cost_exc_vat": 102005
+    }
+   }
+  },
+  "_H": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 104351,
+     "annual_cost_exc_vat": 104351
+    }
+   }
+  },
+  "_J": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 106308,
+     "annual_cost_exc_vat": 106308
+    }
+   }
+  },
+  "_K": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 106106,
+     "annual_cost_exc_vat": 106106
+    }
+   }
+  },
+  "_L": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 107010,
+     "annual_cost_exc_vat": 107010
+    }
+   }
+  },
+  "_M": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 104854,
+     "annual_cost_exc_vat": 104854
+    }
+   }
+  },
+  "_N": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 106054,
+     "annual_cost_exc_vat": 106054
+    }
+   }
+  },
+  "_P": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 106303,
+     "annual_cost_exc_vat": 106303
+    }
+   }
+  }
+ },
+ "sample_consumption": {
+  "electricity_single_rate": {
+   "electricity_standard": 2500
+  },
+  "electricity_dual_rate": {
+   "electricity_day": 1972,
+   "electricity_night": 1428
+  },
+  "dual_fuel_single_rate": {
+   "electricity_standard": 2500,
+   "gas_standard": 9500
+  },
+  "dual_fuel_dual_rate": {
+   "electricity_day": 1972,
+   "electricity_night": 1428,
+   "gas_standard": 9500
+  }
+ },
+ "links": [
+  {
+   "href": "https://api.oegb-kraken.energy/v1/products/GO-VAR-22-10-14/",
+   "method": "GET",
+   "rel": "self"
+  }
+ ],
+ "brand": "OCTOPUS_ENERGY"
+}

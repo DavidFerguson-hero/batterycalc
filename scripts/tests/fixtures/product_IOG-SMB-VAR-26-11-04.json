@@ -1,0 +1,210 @@
+{
+ "code": "IOG-SMB-VAR-26-11-04",
+ "full_name": "Intelligent Octopus Go",
+ "display_name": "Intelligent Octopus Go",
+ "description": "With Intelligent Octopus Go EV tariff, you have access to a super low electricity rate between 23:30 - 05:30 every night, plus it smart-charges your car at the cheapest and greenest times.",
+ "is_variable": true,
+ "is_green": false,
+ "is_tracker": false,
+ "is_prepay": false,
+ "is_business": false,
+ "is_restricted": false,
+ "term": null,
+ "available_from": "2026-11-05T00:00:00Z",
+ "available_to": null,
+ "tariffs_active_at": "2026-11-15T06:37:47.366939Z",
+ "single_register_electricity_tariffs": {},
+ "dual_register_electricity_tariffs": {},
+ "four_rate_ev_electricity_tariffs": {
+  "_A": {
+   "direct_debit_monthly": {
+    "code": "E-1R-IOG-SMB-VAR-26-11-04-A",
+    "standing_charge_exc_vat": 51.94,
+    "standing_charge_inc_vat": 51.94,
+    "online_discount_exc_vat": 0,
+    "online_discount_inc_vat": 0.0,
+    "dual_fuel_discount_exc_vat": 0,
+    "dual_fuel_discount_inc_vat": 0.0,
+    "exit_fees_exc_vat": 0,
+    "exit_fees_inc_vat": 0,
+    "exit_fees_type": "NONE",
+    "links": [
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/IOG-SMB-VAR-26-11-04/electricity-tariffs/E-1R-IOG-SMB-VAR-26-11-04-A/standing-charges/",
+      "method": "GET",
+      "rel": "standing_charges"
+     },
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/IOG-SMB-VAR-26-11-04/electricity-tariffs/E-1R-IOG-SMB-VAR-26-11-04-A/day-unit-rates/",
+      "method": "GET",
+      "rel": "day_unit_rates"
+     },
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/IOG-SMB-VAR-26-11-04/electricity-tariffs/E-1R-IOG-SMB-VAR-26-11-04-A/night-unit-rates/",
+      "method": "GET",
+      "rel": "night_unit_rates"
+     },
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/IOG-SMB-VAR-26-11-04/electricity-tariffs/E-1R-IOG-SMB-VAR-26-11-04-A/ev-device-peak-unit-rates/",
+      "method": "GET",
+      "rel": "ev_device_peak_unit_rates"
+     },
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/IOG-SMB-VAR-26-11-04/electricity-tariffs/E-1R-IOG-SMB-VAR-26-11-04-A/ev-device-off-peak-unit-rates/",
+      "method": "GET",
+      "rel": "ev_device_off_peak_unit_rates"
+     }
+    ],
+    "day_unit_rate_exc_vat": 34.4638,
+    "day_unit_rate_inc_vat": 34.4638,
+    "night_unit_rate_exc_vat": 9.9,
+    "night_unit_rate_inc_vat": 9.9,
+    "ev_device_peak_unit_rate_exc_vat": 34.4638,
+    "ev_device_peak_unit_rate_inc_vat": 34.4638,
+    "ev_device_off_peak_unit_rate_exc_vat": 9.9,
+    "ev_device_off_peak_unit_rate_inc_vat": 9.9
+   }
+  }
+ },
+ "single_register_gas_tariffs": {},
+ "sample_quotes": {
+  "_A": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_B": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_C": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_D": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_E": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_F": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_G": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_H": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_J": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_K": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_L": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_M": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_N": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  },
+  "_P": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 0,
+     "annual_cost_exc_vat": 0
+    }
+   }
+  }
+ },
+ "sample_consumption": {
+  "electricity_single_rate": {
+   "electricity_standard": 2500
+  },
+  "electricity_dual_rate": {
+   "electricity_day": 1972,
+   "electricity_night": 1428
+  },
+  "dual_fuel_single_rate": {
+   "electricity_standard": 2500,
+   "gas_standard": 9500
+  },
+  "dual_fuel_dual_rate": {
+   "electricity_day": 1972,
+   "electricity_night": 1428,
+   "gas_standard": 9500
+  }
+ },
+ "links": [
+  {
+   "href": "https://api.oegb-kraken.energy/v1/products/IOG-SMB-VAR-26-11-04/",
+   "method": "GET",
+   "rel": "self"
+  }
+ ],
+ "brand": "OCTOPUS_ENERGY"
+}

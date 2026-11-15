@@ -19,7 +19,7 @@ import json
 import re
 import sys
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -114,162 +114,147 @@ def _manual(key: str, url: str, notes: str) -> dict:
 
 
 # ── Octopus Energy API ────────────────────────────────────────────────────────
+#
+# We model Octopus's *variable* products (decision on task 0.4). They are matched
+# by exact display name, so fixed deals ("Octopus Go 12M Fixed"), Intelligent Go
+# Max and Intelligent Flux are never picked by accident.
+# All rates are pence inc VAT, region A (Eastern England), direct debit monthly.
 
-def _octopus_products() -> list[dict]:
-    """Fetch all currently-active Octopus import products."""
-    url = "https://api.octopus.energy/v1/products/?brand=OCTOPUS_ENERGY&page_size=100&is_prepay=false"
-    r = requests.get(url, timeout=TIMEOUT)
-    r.raise_for_status()
-    return [
-        p for p in r.json().get("results", [])
-        if p.get("available_to") is None and p.get("direction") == "IMPORT"
+OCTOPUS_API      = "https://api.octopus.energy/v1/products/"
+OCTOPUS_REGION   = "_A"
+OCTOPUS_PAYMENT  = "direct_debit_monthly"
+OCTOPUS_PRODUCTS = {
+    "octopusGo":          "Octopus Go",
+    "intelligentOctopus": "Intelligent Octopus Go",
+    "octopusCosy":        "Cosy Octopus",
+}
+
+
+class OctopusParseError(ValueError):
+    """The API answered, but not in a shape we can turn into trustworthy rates."""
+
+
+def pick_octopus_product(products: list[dict], display_name: str) -> dict | None:
+    """The active, non-business import product whose display name matches exactly."""
+    matches = [
+        p for p in products
+        if p.get("display_name") == display_name
+        and p.get("available_to") is None
+        and p.get("direction") == "IMPORT"
+        and not p.get("is_business", False)
     ]
+    # If Octopus ever lists two, take the newest.
+    matches.sort(key=lambda p: p.get("available_from") or "", reverse=True)
+    return matches[0] if matches else None
 
 
-def _octopus_product_rates(code: str) -> dict | None:
-    """Day unit rate + standing charge (pence inc VAT, region A, direct debit monthly)."""
-    r = requests.get(f"https://api.octopus.energy/v1/products/{code}/", timeout=TIMEOUT)
-    r.raise_for_status()
-    dd = (
-        r.json()
-        .get("single_register_electricity_tariffs", {})
-        .get("_A", {})
-        .get("direct_debit_monthly", {})
-    )
-    if not dd:
-        return None
+def octopus_tariff_terms(detail: dict) -> tuple[str, dict]:
+    """
+    Return (tariff_group, terms) for region A, direct debit monthly.
+    tariff_group is e.g. "single_register_electricity_tariffs" (Go, Cosy) or
+    "four_rate_ev_electricity_tariffs" (Intelligent Go, since Nov 2026).
+    """
+    for group, regions in detail.items():
+        if not group.endswith("_electricity_tariffs") or not regions:
+            continue
+        terms = (regions.get(OCTOPUS_REGION) or {}).get(OCTOPUS_PAYMENT)
+        if terms:
+            return group, terms
+    raise OctopusParseError(f"No {OCTOPUS_REGION} {OCTOPUS_PAYMENT} electricity tariff in product")
+
+
+def octopus_slot_values(unit_rates: dict) -> list[float]:
+    """Distinct unit rates (pence inc VAT) in a standard-unit-rates response, ascending."""
+    vals = {round(r["value_inc_vat"], 2) for r in unit_rates.get("results", []) if "value_inc_vat" in r}
+    return sorted(vals)
+
+
+def parse_octopus_go(detail: dict, unit_rates: dict) -> dict[str, float]:
+    _, terms = octopus_tariff_terms(detail)
+    vals = octopus_slot_values(unit_rates)
+    if len(vals) != 2:
+        raise OctopusParseError(f"Expected 2 distinct Go rates in one day, got {vals}")
     return {
-        "day_p":       round(dd.get("standard_unit_rate_inc_vat", 0), 2),
-        "standing_p":  round(dd.get("standing_charge_inc_vat", 0), 2),
+        "night_p":    vals[0],
+        "day_p":      vals[1],
+        "standing_p": round(terms["standing_charge_inc_vat"], 2),
     }
 
 
-def _octopus_night_rate(code: str) -> float | None:
-    """
-    For Go/Intelligent/Cosy, the cheap overnight rate is the minimum
-    across all 48 half-hourly slots in the unit-rates endpoint.
-    """
-    tariff_code = f"E-1R-{code}-A"
-    url = (
-        f"https://api.octopus.energy/v1/products/{code}/"
-        f"electricity-tariffs/{tariff_code}/standard-unit-rates/?page_size=48"
+def parse_intelligent_octopus(detail: dict) -> dict[str, float]:
+    group, terms = octopus_tariff_terms(detail)
+    day, night = terms.get("day_unit_rate_inc_vat"), terms.get("night_unit_rate_inc_vat")
+    if day is None or night is None:
+        raise OctopusParseError(f"No day/night rates in {group}")
+    if not night < day:
+        raise OctopusParseError(f"Night rate {night} is not below day rate {day}")
+    return {
+        "night_p":    round(night, 2),
+        "day_p":      round(day, 2),
+        "standing_p": round(terms["standing_charge_inc_vat"], 2),
+    }
+
+
+def parse_octopus_cosy(detail: dict, unit_rates: dict) -> dict[str, float]:
+    _, terms = octopus_tariff_terms(detail)
+    vals = octopus_slot_values(unit_rates)
+    if len(vals) != 3:
+        raise OctopusParseError(f"Expected 3 distinct Cosy rates in one day, got {vals}")
+    return {
+        "cosy_p":     vals[0],
+        "standard_p": vals[1],
+        "peak_p":     vals[2],
+        "standing_p": round(terms["standing_charge_inc_vat"], 2),
+    }
+
+
+def _get_json(url: str) -> dict:
+    r = requests.get(url, timeout=TIMEOUT)
+    r.raise_for_status()
+    return r.json()
+
+
+def _octopus_products() -> list[dict]:
+    """All Octopus products currently on sale."""
+    return _get_json(f"{OCTOPUS_API}?brand=OCTOPUS_ENERGY&page_size=100&is_prepay=false").get("results", [])
+
+
+def _octopus_unit_rates_next_day(code: str, tariff_code: str) -> dict:
+    """Half-hourly unit rates for the next 24 hours only, so old prices can't creep in."""
+    start = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    end   = start + timedelta(days=1)
+    fmt   = "%Y-%m-%dT%H:%M:%SZ"
+    return _get_json(
+        f"{OCTOPUS_API}{code}/electricity-tariffs/{tariff_code}/standard-unit-rates/"
+        f"?period_from={start.strftime(fmt)}&period_to={end.strftime(fmt)}&page_size=100"
     )
+
+
+def check_octopus(key: str, products: list[dict]) -> dict:
+    source = "Octopus Energy API"
+    display_name = OCTOPUS_PRODUCTS[key]
     try:
-        r = requests.get(url, timeout=TIMEOUT)
-        r.raise_for_status()
-        vals = [s["value_inc_vat"] for s in r.json().get("results", []) if "value_inc_vat" in s]
-        return round(min(vals), 2) if vals else None
-    except Exception:
-        return None
-
-
-def _octopus_cosy_slot_rates(code: str) -> tuple[float | None, float | None]:
-    """Return (cosy_rate, peak_rate) from Cosy slot rates."""
-    tariff_code = f"E-1R-{code}-A"
-    url = (
-        f"https://api.octopus.energy/v1/products/{code}/"
-        f"electricity-tariffs/{tariff_code}/standard-unit-rates/?page_size=48"
-    )
-    try:
-        r = requests.get(url, timeout=TIMEOUT)
-        r.raise_for_status()
-        vals = [s["value_inc_vat"] for s in r.json().get("results", []) if "value_inc_vat" in s]
-        if vals:
-            return round(min(vals), 2), round(max(vals), 2)
-    except Exception:
-        pass
-    return None, None
-
-
-def check_octopus_go(products: list[dict]) -> dict:
-    try:
-        prod = next(
-            (p for p in products
-             if "Octopus Go" in p.get("display_name", "")
-             and "Intelligent" not in p.get("display_name", "")),
-            None,
-        )
+        prod = pick_octopus_product(products, display_name)
         if not prod:
-            return _err("octopusGo", "Octopus Energy API", "No active Octopus Go product found")
+            return _err(key, source, f'No active product named "{display_name}"')
 
-        code  = prod["code"]
-        rates = _octopus_product_rates(code)
-        if not rates:
-            return _err("octopusGo", "Octopus Energy API", f"Could not retrieve rates for {code}")
+        code   = prod["code"]
+        detail = _get_json(f"{OCTOPUS_API}{code}/")
+        _, terms = octopus_tariff_terms(detail)
 
-        night = _octopus_night_rate(code)
-        if night is not None:
-            rates["night_p"] = night
+        if key == "intelligentOctopus":
+            rates = parse_intelligent_octopus(detail)
+        else:
+            unit_rates = _octopus_unit_rates_next_day(code, terms["code"])
+            parser = parse_octopus_go if key == "octopusGo" else parse_octopus_cosy
+            rates = parser(detail, unit_rates)
 
         return _ok(
-            "octopusGo",
-            "Octopus Energy API",
-            f"https://api.octopus.energy/v1/products/{code}/",
-            rates,
+            key, source, f"{OCTOPUS_API}{code}/", rates,
             {"product_code": code, "product_name": prod.get("display_name", "")},
         )
     except Exception as e:
-        return _err("octopusGo", "Octopus Energy API", f"{e}\n{traceback.format_exc()}")
-
-
-def check_intelligent_octopus(products: list[dict]) -> dict:
-    try:
-        prod = next(
-            (p for p in products if "Intelligent Octopus" in p.get("display_name", "")),
-            None,
-        )
-        if not prod:
-            return _err("intelligentOctopus", "Octopus Energy API", "No active Intelligent Octopus product found")
-
-        code  = prod["code"]
-        rates = _octopus_product_rates(code)
-        if not rates:
-            return _err("intelligentOctopus", "Octopus Energy API", f"Could not retrieve rates for {code}")
-
-        night = _octopus_night_rate(code)
-        if night is not None:
-            rates["night_p"] = night
-
-        return _ok(
-            "intelligentOctopus",
-            "Octopus Energy API",
-            f"https://api.octopus.energy/v1/products/{code}/",
-            rates,
-            {"product_code": code, "product_name": prod.get("display_name", "")},
-        )
-    except Exception as e:
-        return _err("intelligentOctopus", "Octopus Energy API", f"{e}")
-
-
-def check_octopus_cosy(products: list[dict]) -> dict:
-    try:
-        prod = next(
-            (p for p in products if "Cosy" in p.get("display_name", "")),
-            None,
-        )
-        if not prod:
-            return _err("octopusCosy", "Octopus Energy API", "No active Octopus Cosy product found")
-
-        code  = prod["code"]
-        rates = _octopus_product_rates(code)
-        if not rates:
-            return _err("octopusCosy", "Octopus Energy API", f"Could not retrieve rates for {code}")
-
-        cosy, peak = _octopus_cosy_slot_rates(code)
-        if cosy is not None:
-            rates["cosy_p"]     = cosy
-            rates["peak_p"]     = peak
-            rates["standard_p"] = rates.pop("day_p", CURRENT["octopusCosy"]["standard_p"])
-
-        return _ok(
-            "octopusCosy",
-            "Octopus Energy API",
-            f"https://api.octopus.energy/v1/products/{code}/",
-            rates,
-            {"product_code": code, "product_name": prod.get("display_name", "")},
-        )
-    except Exception as e:
-        return _err("octopusCosy", "Octopus Energy API", f"{e}")
+        return _err(key, source, f"{e}\n{traceback.format_exc()}")
 
 
 # ── Ofgem price cap ───────────────────────────────────────────────────────────
@@ -323,9 +308,8 @@ def run_check() -> dict:
     print("  Fetching Octopus products…")
     try:
         products = _octopus_products()
-        results["octopusGo"]          = check_octopus_go(products)
-        results["intelligentOctopus"] = check_intelligent_octopus(products)
-        results["octopusCosy"]        = check_octopus_cosy(products)
+        for k in OCTOPUS_PRODUCTS:
+            results[k] = check_octopus(k, products)
     except Exception as e:
         err_msg = str(e)
         for k in ("octopusGo", "intelligentOctopus", "octopusCosy"):
