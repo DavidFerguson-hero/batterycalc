@@ -146,6 +146,8 @@ async def solar(req: SolarRequest):
         "saving_solar_only":           solar_result.saving_solar_only,
         "saving_solar_battery":        solar_result.saving_solar_battery,
         "incremental_battery_saving":  round(incremental_battery_saving, 2),
+        # Task 1.4: where the battery's saving comes from (parts add up to its total)
+        "battery_saving_breakdown":    solar_result.saving_breakdown(),
         "payback_battery_years":       round(pb_batt.years, 2) if pb_batt.years != math.inf else None,
         "payback_panels_years":        round(pb_panels.years, 2) if pb_panels and pb_panels.years != math.inf else None,
         "payback_combined_years":      round(pb_combined.years, 2) if pb_combined and pb_combined.years != math.inf else None,

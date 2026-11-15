@@ -83,7 +83,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
     - lifetime net gain
     - verdict (`worth_it` | `borderline` | `not_yet`)
   - *Done when:* tests cover the never-pays-back case, the mid-life inverter dip and the verdict boundaries.
-- [ ] **1.4 Where the saving comes from.** (H10) Split the annual saving into:
+- [x] **1.4 Where the saving comes from.** (H10) Split the annual saving into:
   - (a) cheap-rate charging used at peak (time-shifting)
   - (b) solar stored instead of exported, net of lost export income
   - (c) other peak avoidance
