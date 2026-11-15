@@ -35,9 +35,9 @@ TIMEOUT   = 20
 # ── Rates currently in engine/tariffs.py ──────────────────────────────────────
 # Keep this in sync whenever tariffs.py is manually updated.
 CURRENT: dict[str, dict[str, float]] = {
-    "octopusGo":          {"night_p": 7.0,  "day_p": 38.72, "standing_p": 47.0},
-    "intelligentOctopus": {"night_p": 9.0,  "day_p": 38.0,  "standing_p": 47.0},
-    "octopusCosy":        {"cosy_p": 12.0,  "peak_p": 50.0, "standard_p": 28.0, "standing_p": 47.0},
+    "octopusGo":          {"night_p": 9.4,  "day_p": 34.71, "standing_p": 51.67},
+    "intelligentOctopus": {"night_p": 9.9,  "day_p": 34.46, "standing_p": 51.94},
+    "octopusCosy":        {"cosy_p": 14.13, "peak_p": 43.22, "standard_p": 28.82, "standing_p": 51.67},
     "economy7":           {"night_p": 9.0,  "day_p": 33.0,  "standing_p": 53.0},
     "eonNextDrive":       {"night_p": 8.5,  "day_p": 35.0,  "standing_p": 53.0},
     "edfGoElectric":      {"night_p": 8.0,  "day_p": 34.0,  "standing_p": 50.0},
