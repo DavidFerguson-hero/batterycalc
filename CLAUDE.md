@@ -13,7 +13,7 @@ Follow `docs/dev-plan-homeowner-v2.md`. Work through the tasks in order and tick
 ## Run locally
 - API: `cd api && pip install -r requirements.txt && uvicorn main:app --reload --port 8000`
 - Frontend: `cd frontend && npm install && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev`
-- Tests: `cd api && pip install -r requirements-dev.txt && pytest`
+- Tests: `cd api && pip install -r requirements-dev.txt && pytest` and `cd scripts && pip install -r requirements-dev.txt && pytest`
 
 ## Rules
 - Branch `feature/homeowner-v2`, one small pull request per task, never push to `main`.

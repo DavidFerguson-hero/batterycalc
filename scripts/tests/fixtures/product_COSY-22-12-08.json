@@ -1,0 +1,189 @@
+{
+ "code": "COSY-22-12-08",
+ "full_name": "Cosy Octopus",
+ "display_name": "Cosy Octopus",
+ "description": "Cosy Octopus is a heat pump tariff with eight hours of super cheap electricity every day to warm your home.",
+ "is_variable": true,
+ "is_green": false,
+ "is_tracker": false,
+ "is_prepay": false,
+ "is_business": false,
+ "is_restricted": false,
+ "term": null,
+ "available_from": "2022-12-13T00:00:00Z",
+ "available_to": null,
+ "tariffs_active_at": "2026-11-15T05:55:48.345735Z",
+ "single_register_electricity_tariffs": {
+  "_A": {
+   "direct_debit_monthly": {
+    "code": "E-1R-COSY-22-12-08-A",
+    "standing_charge_exc_vat": 51.6715,
+    "standing_charge_inc_vat": 51.6715,
+    "online_discount_exc_vat": 0,
+    "online_discount_inc_vat": 0.0,
+    "dual_fuel_discount_exc_vat": 0,
+    "dual_fuel_discount_inc_vat": 0.0,
+    "exit_fees_exc_vat": 0,
+    "exit_fees_inc_vat": 0,
+    "exit_fees_type": "NONE",
+    "links": [
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/COSY-22-12-08/electricity-tariffs/E-1R-COSY-22-12-08-A/standing-charges/",
+      "method": "GET",
+      "rel": "standing_charges"
+     },
+     {
+      "href": "https://api.oegb-kraken.energy/v1/products/COSY-22-12-08/electricity-tariffs/E-1R-COSY-22-12-08-A/standard-unit-rates/",
+      "method": "GET",
+      "rel": "standard_unit_rates"
+     }
+    ],
+    "standard_unit_rate_exc_vat": 14.1309,
+    "standard_unit_rate_inc_vat": 14.1309
+   }
+  }
+ },
+ "dual_register_electricity_tariffs": {},
+ "four_rate_ev_electricity_tariffs": {},
+ "single_register_gas_tariffs": {},
+ "sample_quotes": {
+  "_A": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 54187,
+     "annual_cost_exc_vat": 54187
+    }
+   }
+  },
+  "_B": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 52179,
+     "annual_cost_exc_vat": 52179
+    }
+   }
+  },
+  "_C": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 50741,
+     "annual_cost_exc_vat": 50741
+    }
+   }
+  },
+  "_D": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 61346,
+     "annual_cost_exc_vat": 61346
+    }
+   }
+  },
+  "_E": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 54651,
+     "annual_cost_exc_vat": 54651
+    }
+   }
+  },
+  "_F": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 55946,
+     "annual_cost_exc_vat": 55946
+    }
+   }
+  },
+  "_G": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 51534,
+     "annual_cost_exc_vat": 51534
+    }
+   }
+  },
+  "_H": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 52460,
+     "annual_cost_exc_vat": 52460
+    }
+   }
+  },
+  "_J": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 54736,
+     "annual_cost_exc_vat": 54736
+    }
+   }
+  },
+  "_K": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 55091,
+     "annual_cost_exc_vat": 55091
+    }
+   }
+  },
+  "_L": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 55552,
+     "annual_cost_exc_vat": 55552
+    }
+   }
+  },
+  "_M": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 56199,
+     "annual_cost_exc_vat": 56199
+    }
+   }
+  },
+  "_N": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 57080,
+     "annual_cost_exc_vat": 57080
+    }
+   }
+  },
+  "_P": {
+   "direct_debit_monthly": {
+    "electricity_single_rate": {
+     "annual_cost_inc_vat": 55149,
+     "annual_cost_exc_vat": 55149
+    }
+   }
+  }
+ },
+ "sample_consumption": {
+  "electricity_single_rate": {
+   "electricity_standard": 2500
+  },
+  "electricity_dual_rate": {
+   "electricity_day": 1972,
+   "electricity_night": 1428
+  },
+  "dual_fuel_single_rate": {
+   "electricity_standard": 2500,
+   "gas_standard": 9500
+  },
+  "dual_fuel_dual_rate": {
+   "electricity_day": 1972,
+   "electricity_night": 1428,
+   "gas_standard": 9500
+  }
+ },
+ "links": [
+  {
+   "href": "https://api.oegb-kraken.energy/v1/products/COSY-22-12-08/",
+   "method": "GET",
+   "rel": "self"
+  }
+ ],
+ "brand": "OCTOPUS_ENERGY"
+}
