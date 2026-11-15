@@ -303,6 +303,8 @@ def _build_response(
             "roi_10yr": pb.roi_10yr,
             "ann_export_revenue": round(sim.ann_export_revenue, 2),
             "ann_kwh_exported": round(sim.ann_kwh_exported, 1),
+            # Task 1.4: where saving_battery_only comes from (parts add up to it)
+            "saving_breakdown": sim.saving_breakdown(),
         },
         "lifetime": {
             "year1_battery_saving": round(battery_saving, 2),

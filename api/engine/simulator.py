@@ -34,6 +34,23 @@ class SimResult:
     ann_export_revenue: float = 0.0
     ann_kwh_exported: float = 0.0
 
+    def saving_breakdown(self) -> dict:
+        """
+        Where the battery's saving (saving_battery_only) comes from, battery without solar.
+          time_shifting  — grid electricity charged cheaply and used at dearer times, net of
+                           what charging it cost (losses included)
+          solar_storage  — none without solar
+          other          — stored energy sold back to the grid
+        The parts add up to saving_battery_only exactly.
+        """
+        other = self.ann_export_revenue
+        return {
+            "time_shifting": round(self.saving_battery_only - other, 2),
+            "solar_storage": 0.0,
+            "other": round(other, 2),
+            "total": round(self.saving_battery_only, 2),
+        }
+
 
 @dataclass
 class SolarResult:
@@ -49,6 +66,20 @@ class SolarResult:
     ann_cost_solar_battery: float       # new tariff + solar + battery
     saving_solar_only: float            # vs ann_cost_current
     saving_solar_battery: float         # vs ann_cost_current
+    # What adding the battery to the solar saves, split by where the stored energy came from.
+    # Parts add up to battery_saving (= saving_solar_battery − saving_solar_only).
+    battery_saving: float = 0.0
+    battery_time_shifting: float = 0.0  # grid-charged energy used at dearer times, net of charge cost
+    battery_solar_storage: float = 0.0  # stored solar used at home, net of the export income given up
+    battery_other: float = 0.0          # the battery's starting charge
+
+    def saving_breakdown(self) -> dict:
+        return {
+            "time_shifting": round(self.battery_time_shifting, 2),
+            "solar_storage": round(self.battery_solar_storage, 2),
+            "other": round(self.battery_other, 2),
+            "total": round(self.battery_saving, 2),
+        }
 
 
 def simulate_day_full(
@@ -399,6 +430,10 @@ def calc_solar_impact(
 
     min_soc = cap_kwh * 0.10
     soc = cap_kwh * 0.30   # first day only — charge carries over between days
+    # Where the stored energy came from, so each kWh used can be credited to its source.
+    pool = {"grid": 0.0, "solar": 0.0, "start": soc}
+    val_grid = val_solar = val_start = 0.0   # £ of home use covered, by source
+    cost_grid = cost_solar = 0.0             # £ to charge from grid / export income given up
     for day_kwh in days:
 
         day_gen = sum(avg_solar_profile)
@@ -428,6 +463,8 @@ def calc_solar_impact(
                 solar_to_batt = min(surplus, cap_kwh - soc, max_per_slot)
                 soc     += solar_to_batt
                 surplus -= solar_to_batt
+                pool["solar"] += solar_to_batt
+                cost_solar    += solar_to_batt * seg_rate
 
             # 3. Top-up from cheap grid — capped at overnight_ceil so headroom
             #    is preserved for daytime solar generation
@@ -437,10 +474,22 @@ def calc_solar_impact(
                 if headroom > 0.001:
                     soc += headroom
                     grid_charge = headroom / efficiency
+                    pool["grid"] += headroom
+                    cost_grid    += grid_charge * rate
 
             # 4. Discharge to cover remaining load at any time (self-sufficiency)
             if soc > min_soc and remaining > 0:
                 disc = min(soc - min_soc, remaining, max_per_slot)
+                stored = pool["grid"] + pool["solar"] + pool["start"]
+                for src in pool:
+                    share = disc * pool[src] / stored
+                    pool[src] -= share
+                    if src == "grid":
+                        val_grid += share * rate
+                    elif src == "solar":
+                        val_solar += share * rate
+                    else:
+                        val_start += share * rate
                 soc       -= disc
                 remaining -= disc
 
@@ -459,7 +508,15 @@ def calc_solar_impact(
     ann_exp_wb       = tot_export_wb * scale
     self_pct         = (ann_self / ann_gen * 100.0) if ann_gen > 0 else 0.0
 
+    batt_shift = (val_grid - cost_grid) * scale
+    batt_solar = (val_solar - cost_solar) * scale
+    batt_other = val_start * scale
+
     return SolarResult(
+        battery_saving=round(ann_solar_only - ann_solar_batt, 2),
+        battery_time_shifting=batt_shift,
+        battery_solar_storage=batt_solar,
+        battery_other=batt_other,
         ann_generation_kwh=round(ann_gen, 0),
         ann_self_consumed_kwh=round(ann_self, 0),
         ann_exported_no_batt_kwh=round(ann_exp_nb, 0),
