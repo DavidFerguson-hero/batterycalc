@@ -38,9 +38,9 @@ Owner: David Ferguson · Drafted: 15 Nov 2026 · Status: ready to start Phase 0
 | --- | --- | --- | --- |
 | D1 | Where to host the API (Railway reports "Application not found") | **Decided 15 Nov 2026: Render free tier** (Railway free plan no longer available). Blueprint in `render.yaml`. URL comes from `NEXT_PUBLIC_API_URL` | Task 0.1 |
 | D2 | Rebuild the homeowner journey as Next.js pages, or keep extending `public/calculator.html` (3,000 lines, loaded in an iframe) | Rebuild in Next.js under `/check`. Keep the old calculator live until the new one matches it, then redirect | Phase 2 |
-| D3 | Verdict thresholds | Green "Worth it" if likely payback ≤ 70% of warranty years. Amber "Borderline" if ≤ 100%. Grey "Not yet" otherwise | Task 1.3 |
+| D3 | Verdict thresholds | **Decided 15 Nov 2026: as recommended.** Green "Worth it" if likely payback ≤ 70% of warranty years. Amber "Borderline" if ≤ 100%. Grey "Not yet" otherwise | Task 1.3 |
 | D4 | Cost figures (battery, inverter, install, VAT; solar, heat pump, EV charger for context) and their sources | David to supply or approve low/typical/high figures with a source and date for each | Task 1.8 |
-| D5 | Default assumptions | Energy price growth 3% a year (central; 1% low, 5% high; currently a single 5%). Battery capacity loss 2% a year. Battery life 15 years. Warranty 10 years. Inverter replacement at year 10 | Task 1.3 |
+| D5 | Default assumptions | **Decided 15 Nov 2026: as recommended.** Energy price growth 3% a year (central; 1% low, 5% high). Battery capacity loss 2% a year. Battery life 15 years. Warranty 10 years. Inverter replacement at year 10 | Task 1.3 |
 
 ---
 
@@ -71,7 +71,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
   - EV: annual miles → kWh (default 0.3 kWh per mile), charged in a chosen window (overnight cheap slot by default).
   - Heat pump: annual heat demand from the EPC (or floor area) ÷ efficiency (default 3.0), spread with a winter-heavy monthly shape and a morning/evening daily shape.
   - Both can be "already have" (already in the CSV data, so don't add again) or "planning" (add to the data).
-- [ ] **1.3 Lifetime finance with ranges.** (H7, H9, H13) **[DECISIONS D3, D5]**
+- [x] **1.3 Lifetime finance with ranges.** (H7, H9, H13) **[DECISIONS D3, D5]**
   - Replace `engine/payback.py` with a lifetime model covering:
     - battery capacity loss each year
     - inverter replacement cost in its replacement year

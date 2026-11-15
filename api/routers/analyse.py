@@ -17,7 +17,8 @@ from pydantic import BaseModel, Field
 from engine.csv_parser import parse_csv_bytes, merge_parse_results, ParseResult
 from engine.simulator import run_simulation, calc_day_flows
 from engine.optimiser import build_opt_matrix
-from engine.payback import calc_payback
+from engine.payback import calc_payback   # legacy payback for the classic calculator (until task 2.11)
+from engine.lifetime import lifetime_finance
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
@@ -233,6 +234,12 @@ def _build_response(
 
     pb = calc_payback(battery_cost_gbp, sim.total_saving, inflation_pct)
 
+    # Lifetime finance and verdict (task 1.3). Uses the saving the battery itself makes:
+    # whatever switching to this tariff *without* a battery would already save is not
+    # credited to the battery. If switching alone would cost more, the battery gets it all.
+    battery_saving = sim.total_saving - max(0.0, sim.saving_tariff_switch)
+    lifetime = lifetime_finance(battery_cost_gbp, battery_saving)
+
     # Optimisation matrix (all tariffs × all standard battery sizes)
     matrix = build_opt_matrix(
         days=parse.days,
@@ -296,6 +303,10 @@ def _build_response(
             "roi_10yr": pb.roi_10yr,
             "ann_export_revenue": round(sim.ann_export_revenue, 2),
             "ann_kwh_exported": round(sim.ann_kwh_exported, 1),
+        },
+        "lifetime": {
+            "year1_battery_saving": round(battery_saving, 2),
+            **lifetime.to_dict(),
         },
         "charts": {
             "soc_profile": [round(v, 3) for v in sim.avg_soc_profile],
