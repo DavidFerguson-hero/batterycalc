@@ -129,7 +129,8 @@ def test_estimate_returns_lifetime_block():
     j = r.json()
     lt = j["lifetime"]
     f = j["financials"]
-    expected = f["total_saving"] - max(0.0, f["saving_tariff_switch"])
+    # Since task 1.5: credited only beyond the best tariff available without a battery.
+    expected = j["tariff_check"]["best_no_battery"]["annual_cost"] - f["ann_cost_with_battery"]
     assert lt["year1_battery_saving"] == pytest.approx(expected, abs=0.02)
     assert lt["verdict"] in ("worth_it", "borderline", "not_yet")
     assert lt["installed_cost"]["typical"] == 6000
