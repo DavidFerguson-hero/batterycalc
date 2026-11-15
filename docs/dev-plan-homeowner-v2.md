@@ -67,7 +67,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
     - If less than a year is uploaded, scale by month using the estimate shapes and lower the confidence label.
   - Estimate route: replace the "35 identical days" in `profile_estimator.generate_days` with 365 days. Use monthly seasonal scaling (more in winter) and adjust for heating type from the EPC.
   - *Done when:* the sum of 365 estimated days equals the annual kWh within 1%, and December use is greater than June use for a typical house.
-- [ ] **1.2 Extra loads: EV and heat pump.** (H1, H6, H18, H19)
+- [x] **1.2 Extra loads: EV and heat pump.** (H1, H6, H18, H19)
   - EV: annual miles → kWh (default 0.3 kWh per mile), charged in a chosen window (overnight cheap slot by default).
   - Heat pump: annual heat demand from the EPC (or floor area) ÷ efficiency (default 3.0), spread with a winter-heavy monthly shape and a morning/evening daily shape.
   - Both can be "already have" (already in the CSV data, so don't add again) or "planning" (add to the data).
