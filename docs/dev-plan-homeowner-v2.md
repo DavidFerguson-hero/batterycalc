@@ -88,7 +88,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
   - (b) solar stored instead of exported, net of lost export income
   - (c) other peak avoidance
   - *Done when:* the parts sum to the total saving within £1.
-- [ ] **1.5 Tariff check.** (H11, H18, H20) Always compute four cases:
+- [x] **1.5 Tariff check.** (H11, H18, H20) Always compute four cases:
   - current tariff without a battery (baseline)
   - best-fit tariff without a battery ("switch tariff only")
   - current tariff with a battery

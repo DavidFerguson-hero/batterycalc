@@ -19,6 +19,7 @@ from engine.simulator import run_simulation, calc_day_flows
 from engine.optimiser import build_opt_matrix
 from engine.payback import calc_payback   # legacy payback for the classic calculator (until task 2.11)
 from engine.lifetime import lifetime_finance
+from engine.tariff_check import tariff_check
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
@@ -160,6 +161,7 @@ class EstimateRequest(BaseModel):
     heating_type:      HeatingType = "gas"   # from the EPC: "electric" when there's no mains gas
     ev:                Optional[EVInput] = None
     heat_pump:         Optional[HeatPumpInput] = None
+    current_tariff_key: Optional[str] = None   # if already on a time-of-use tariff
 
 
 class CompareRequest(BaseModel):
@@ -194,6 +196,7 @@ class RecalculateRequest(BaseModel):
     inflation_pct: float = Field(5.0, ge=0, le=20)
     current_sc_pd: float = Field(53.0, ge=0, le=200)   # pence/day
     export_rate_p: float = Field(0.0, ge=0, le=100)
+    current_tariff_key: Optional[str] = None
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -210,6 +213,7 @@ def _build_response(
     session_id: str,
     source: str = "upload",   # "upload" | "estimate"
     export_rate_p: float = 0.0,
+    current_tariff_key: str | None = None,   # None: a flat rate at the household's own price
 ) -> dict:
     tariff = TARIFFS.get(tariff_key)
     if tariff is None:
@@ -234,10 +238,19 @@ def _build_response(
 
     pb = calc_payback(battery_cost_gbp, sim.total_saving, inflation_pct)
 
-    # Lifetime finance and verdict (task 1.3). Uses the saving the battery itself makes:
-    # whatever switching to this tariff *without* a battery would already save is not
-    # credited to the battery. If switching alone would cost more, the battery gets it all.
-    battery_saving = sim.total_saving - max(0.0, sim.saving_tariff_switch)
+    # Tariff check (task 1.5): current vs best-fit tariff, with and without the battery.
+    try:
+        tcheck = tariff_check(
+            parse.days, current_rate or IMPLIED_RATE, current_sc_pd,
+            battery_cap_kwh, max_charge_rate_kw, efficiency,
+            export_rate=export_rate_p / 100.0, current_tariff_key=current_tariff_key,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Lifetime finance and verdict (task 1.3). The battery is credited only with what it
+    # saves beyond the best tariff the household could switch to *without* a battery.
+    battery_saving = tcheck["best_no_battery"]["annual_cost"] - sim.ann_cost_with_battery
     lifetime = lifetime_finance(battery_cost_gbp, battery_saving)
 
     # Optimisation matrix (all tariffs × all standard battery sizes)
@@ -306,6 +319,7 @@ def _build_response(
             # Task 1.4: where saving_battery_only comes from (parts add up to it)
             "saving_breakdown": sim.saving_breakdown(),
         },
+        "tariff_check": tcheck,
         "lifetime": {
             "year1_battery_saving": round(battery_saving, 2),
             **lifetime.to_dict(),
@@ -535,6 +549,7 @@ async def analyse(
     property_type: Annotated[str, Form()] = "semi",
     ev: Annotated[Optional[str], Form(description="EVInput as JSON")] = None,
     heat_pump: Annotated[Optional[str], Form(description="HeatPumpInput as JSON")] = None,
+    current_tariff_key: Annotated[Optional[str], Form()] = None,
 ):
     if not files:
         raise HTTPException(status_code=400, detail="At least one CSV file is required.")
@@ -572,6 +587,7 @@ async def analyse(
         current_sc_pd=current_sc_pd,
         session_id=session_id,
         export_rate_p=export_rate_p,
+        current_tariff_key=current_tariff_key,
     )
 
 
@@ -600,6 +616,7 @@ async def estimate(req: EstimateRequest):
         session_id=session_id,
         source="estimate",
         export_rate_p=req.export_rate_p,
+        current_tariff_key=req.current_tariff_key,
     )
 
 
@@ -623,6 +640,7 @@ async def recalculate(req: RecalculateRequest):
         current_sc_pd=req.current_sc_pd,
         session_id=req.session_id,
         export_rate_p=req.export_rate_p,
+        current_tariff_key=req.current_tariff_key,
     )
 
 
