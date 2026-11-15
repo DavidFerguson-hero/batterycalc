@@ -21,6 +21,7 @@ from engine.payback import calc_payback   # legacy payback for the classic calcu
 from engine.lifetime import lifetime_finance
 from engine.tariff_check import tariff_check
 from engine.size_comparison import compare_sizes, options_from_matrix
+from engine.levers import price_lever, verdict_change
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
@@ -202,6 +203,38 @@ class RecalculateRequest(BaseModel):
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+def _pay_back_levers(parse, tcheck, tariff_key, battery_saving, price, verdict,
+                     unit_rate, standing_pd, cap_kwh, max_rate_kw, efficiency,
+                     export_rate, current_tariff_key) -> dict:
+    """Price, tariff and EV levers for a battery whose verdict is "not yet"."""
+    out: dict = {"price": price_lever(battery_saving, price)}
+
+    best = tcheck["best_with_battery"]
+    if best["key"] == tariff_key:
+        out["switch_tariff"] = None   # already on the best tariff for this battery
+    else:
+        out["switch_tariff"] = {
+            "tariff_key": best["key"], "tariff_name": best["name"],
+            **verdict_change(tcheck["battery_adds"], price, verdict),
+        }
+
+    ev_now = ((parse.extra_loads or {}).get("ev") or {}).get("status", "none")
+    if ev_now != "none":
+        out["add_ev"] = None          # an EV is already part of the picture
+    else:
+        ev = EVSettings(status="planning")
+        days = apply_extra_loads(parse.days, parse.dates, ev, route="upload").days
+        t_ev = tariff_check(days, unit_rate, standing_pd, cap_kwh, max_rate_kw, efficiency,
+                            export_rate=export_rate, current_tariff_key=current_tariff_key)
+        out["add_ev"] = {
+            "annual_miles": ev.annual_miles,
+            "tariff_key": t_ev["best_with_battery"]["key"],
+            "tariff_name": t_ev["best_with_battery"]["name"],
+            **verdict_change(t_ev["battery_adds"], price, verdict),
+        }
+    return out
+
+
 def _build_response(
     parse: ParseResult,
     tariff_key: str,
@@ -253,6 +286,15 @@ def _build_response(
     # saves beyond the best tariff the household could switch to *without* a battery.
     battery_saving = tcheck["best_no_battery"]["annual_cost"] - sim.ann_cost_with_battery
     lifetime = lifetime_finance(battery_cost_gbp, battery_saving)
+
+    # What would make it pay back (task 1.7) — only when the answer is "not yet".
+    levers = None
+    if lifetime.verdict == "not_yet":
+        levers = _pay_back_levers(
+            parse, tcheck, tariff_key, battery_saving, battery_cost_gbp, lifetime.verdict,
+            current_rate or IMPLIED_RATE, current_sc_pd, battery_cap_kwh, max_charge_rate_kw,
+            efficiency, export_rate_p / 100.0, current_tariff_key,
+        )
 
     # Optimisation matrix (all tariffs × all standard battery sizes)
     matrix = build_opt_matrix(
@@ -332,6 +374,7 @@ def _build_response(
             "year1_battery_saving": round(battery_saving, 2),
             **lifetime.to_dict(),
         },
+        "what_would_make_it_pay_back": levers,
         "charts": {
             "soc_profile": [round(v, 3) for v in sim.avg_soc_profile],
             "cumulative_savings": pb.cumulative,
