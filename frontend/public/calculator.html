@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Home Battery Storage Calculator</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/calculator-config.js"></script>
 <style>
 :root{
   --bg:#0a1628;--bg2:#162035;--bg3:#1e2d4a;--bg4:#243558;
@@ -1188,9 +1189,13 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:.1
 
 <script>
 // ============================================================
-// CONFIG — set API_BASE to your Railway URL before deploying
+// CONFIG — API_BASE comes from NEXT_PUBLIC_API_URL, baked in at build
+// time by /calculator-config.js (frontend/app/calculator-config.js/route.ts).
+// Falls back to the local API when opened on localhost.
 // ============================================================
-const API_BASE = 'https://batterycalc-production.up.railway.app';
+const API_BASE = (window.BATTERYSIZER_API_BASE
+  || (['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:8000' : '')
+).replace(/\/+$/, '');
 
 // Guard: warn clearly if API_BASE is not configured
 if (!API_BASE) {
@@ -1199,7 +1204,7 @@ if (!API_BASE) {
     if (el) {
       el.className = 'msg-error';
       el.innerHTML = '⚠️ <strong>API not configured.</strong> The backend has not been deployed yet. '
-        + 'Set <code>API_BASE</code> in the HTML to your Railway URL, or run the API locally.';
+        + 'Set <code>NEXT_PUBLIC_API_URL</code> when building the frontend, or run the API locally.';
     }
   });
 }

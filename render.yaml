@@ -1,0 +1,25 @@
+# Render Blueprint for the BatterySizer API (decision D1: Render free tier).
+# In the Render dashboard: New → Blueprint → pick this repo. Render reads this file.
+# Free instances sleep after 15 minutes idle; the first request after that takes ~30–60 s.
+services:
+  - type: web
+    name: batterysizer-api
+    runtime: docker
+    plan: free
+    region: frankfurt          # closest Render region to the UK
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Secrets: Render asks for these when the Blueprint is first applied.
+      - key: ANTHROPIC_API_KEY  # /api/explain (AI-written summary)
+        sync: false
+      - key: EPC_EMAIL          # /api/epc/lookup (EPC = Energy Performance Certificate register)
+        sync: false
+      - key: EPC_API_KEY
+        sync: false
+      # Optional: extra frontend origins allowed by CORS, comma-separated.
+      - key: CORS_EXTRA_ORIGINS
+        value: ""

@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -18,17 +20,27 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",                          # Next.js dev
+    "http://localhost:8080",                          # local static dev
+    "https://davidferguson-hero.github.io",           # GitHub Pages
+    "https://batterycalc.vercel.app",                 # Vercel
+    "https://batterysizer.co.uk",                     # Custom domain
+    "https://www.batterysizer.co.uk",                 # Custom domain (www)
+    "https://dev.batterysizer.co.uk",                 # Dev subdomain
+]
+
+# Extra origins can be added at deploy time without a code change, e.g.
+# CORS_EXTRA_ORIGINS="https://preview.batterysizer.co.uk,https://foo.vercel.app"
+EXTRA_CORS_ORIGINS = [
+    o.strip().rstrip("/")
+    for o in os.environ.get("CORS_EXTRA_ORIGINS", "").split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",                          # Next.js dev
-        "http://localhost:8080",                          # local static dev
-        "https://davidferguson-hero.github.io",           # GitHub Pages
-        "https://batterycalc.vercel.app",                 # Vercel
-        "https://batterysizer.co.uk",                     # Custom domain
-        "https://www.batterysizer.co.uk",                 # Custom domain (www)
-        "https://dev.batterysizer.co.uk",                 # Dev subdomain
-    ],
+    allow_origins=DEFAULT_CORS_ORIGINS + EXTRA_CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
