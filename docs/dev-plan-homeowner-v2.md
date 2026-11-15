@@ -46,9 +46,9 @@ Owner: David Ferguson · Drafted: 15 Nov 2026 · Status: ready to start Phase 0
 
 ## Phase 0: Stabilise (about 1–2 days)
 
-- [ ] **0.1 Restore the API.** **[DECISION D1]** Re-deploy `api/` and confirm `GET /health` returns `{"status":"ok"}`. Replace the hard-coded `API_BASE` in `frontend/public/calculator.html` (line ~1193) with a value injected at build time, or with `NEXT_PUBLIC_API_URL`. Add the new host to the CORS (cross-origin) list in `api/main.py`.
+- [x] **0.1 Restore the API.** **[DECISION D1]** Re-deploy `api/` and confirm `GET /health` returns `{"status":"ok"}`. Replace the hard-coded `API_BASE` in `frontend/public/calculator.html` (line ~1193) with a value injected at build time, or with `NEXT_PUBLIC_API_URL`. Add the new host to the CORS (cross-origin) list in `api/main.py`.
   - *Done when:* the live site at /calculator produces results end to end.
-- [ ] **0.2 Real test runner.** `api/tests/test_simulator.py` is a script, so pytest collects 0 tests. Convert its 60 checks into pytest test functions, keeping the same cases. Add `pytest` to `api/requirements-dev.txt`.
+- [x] **0.2 Real test runner.** `api/tests/test_simulator.py` is a script, so pytest collects 0 tests. Convert its 60 checks into pytest test functions, keeping the same cases. Add `pytest` to `api/requirements-dev.txt`.
   - *Done when:* `pytest` reports 60 passed.
 - [ ] **0.3 Continuous integration (CI).** Add `.github/workflows/ci.yml` to run the API tests and the frontend lint and build on every pull request.
 - [ ] **0.4 Update tariff rates.** Apply the changes flagged in the latest run in `frontend/public/tariff-logs.json` to `api/engine/tariffs.py` and to the `CURRENT` copy in `scripts/check_tariffs.py`. Show the diff for David to approve.
