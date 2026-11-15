@@ -95,7 +95,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
   - best-fit tariff with a battery
 
   Flag when switching tariff alone captures 70% or more of the best saving.
-- [ ] **1.6 Size comparison.** (H8, H12) Sweep standard sizes and return the best-value size (highest lifetime net gain, not largest saving) plus its neighbours either side.
+- [x] **1.6 Size comparison.** (H8, H12) Sweep standard sizes and return the best-value size (highest lifetime net gain, not largest saving) plus its neighbours either side.
 - [ ] **1.7 "What would make it pay back".** (H14) When the verdict is `not_yet`, calculate:
   - the battery price at which payback equals the warranty period
   - whether a tariff switch or adding a planned EV changes the verdict

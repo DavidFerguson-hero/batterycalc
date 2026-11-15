@@ -20,6 +20,7 @@ from engine.optimiser import build_opt_matrix
 from engine.payback import calc_payback   # legacy payback for the classic calculator (until task 2.11)
 from engine.lifetime import lifetime_finance
 from engine.tariff_check import tariff_check
+from engine.size_comparison import compare_sizes, options_from_matrix
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
@@ -265,6 +266,12 @@ def _build_response(
         current_sc_pd=current_sc_pd,
     )
 
+    # Size comparison (task 1.6): best-value size by likely lifetime net gain, from the matrix.
+    size_cmp = compare_sizes(
+        options_from_matrix(matrix, {k: t.name for k, t in TARIFFS.items()}, tcheck["current"]),
+        tcheck["best_no_battery"]["annual_cost"],
+    )
+
     # Best tariff (by total saving, for selected battery size)
     best_tariff = _best_tariff(matrix, battery_cap_kwh)
     best_battery_kwh = _best_battery(matrix, tariff_key)
@@ -320,6 +327,7 @@ def _build_response(
             "saving_breakdown": sim.saving_breakdown(),
         },
         "tariff_check": tcheck,
+        "size_comparison": size_cmp,
         "lifetime": {
             "year1_battery_saving": round(battery_saving, 2),
             **lifetime.to_dict(),
