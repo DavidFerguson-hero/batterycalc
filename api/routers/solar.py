@@ -10,8 +10,7 @@ from engine.solar_fetcher import resolve_postcode, fetch_solar_profiles, weighte
 from engine.simulator import run_simulation, calc_solar_impact
 from engine.tariffs import TARIFFS
 from engine.payback import calc_payback
-from routers.analyse import _session_cache, _build_response
-from engine.csv_parser import ParseResult
+from routers.analyse import _cache_get, _build_response
 
 router = APIRouter(tags=["solar"])
 
@@ -37,8 +36,8 @@ class SolarRequest(BaseModel):
 
 @router.post("/solar")
 async def solar(req: SolarRequest):
-    cached = _session_cache.get(req.session_id)
-    if cached is None:
+    parse = _cache_get(req.session_id)
+    if parse is None:
         raise HTTPException(
             status_code=404,
             detail="Session not found. Please upload or estimate your consumption first.",
@@ -67,22 +66,6 @@ async def solar(req: SolarRequest):
 
     avg_solar = weighted_avg_profile(solar_data["monthly_profiles"])
 
-    # Store in session so future recalculations can include solar
-    _session_cache[req.session_id]["solar_avg_profile"] = avg_solar
-    _session_cache[req.session_id]["solar_seg_rate"]    = req.seg_rate_p / 100.0
-    _session_cache[req.session_id]["solar_annual_kwh"]  = solar_data["annual_kwh"]
-    _session_cache[req.session_id]["solar_panel_kwp"]   = req.panel_kwp
-
-    # ── Rebuild parse object from cache ────────────────────────────────────
-    parse = ParseResult(
-        days=cached["days"],
-        inferred_rate=cached["inferred_rate"],
-        days_count=cached["days_count"],
-        total_kwh=cached["total_kwh"],
-        daily_avg_kwh=cached["daily_avg_kwh"],
-        annual_kwh_estimate=cached["annual_kwh_estimate"],
-    )
-
     tariff = TARIFFS.get(req.tariff_key)
     if tariff is None:
         raise HTTPException(status_code=400, detail=f"Unknown tariff: {req.tariff_key}")
@@ -97,8 +80,8 @@ async def solar(req: SolarRequest):
         cap_kwh=req.battery_cap_kwh,
         max_rate_kw=req.max_charge_rate_kw,
         efficiency=efficiency,
-        days=cached["days"],
-        current_rate=cached["inferred_rate"],
+        days=parse.days,
+        current_rate=parse.inferred_rate,
         current_sc_pd=req.current_sc_pd,
         export_rate=export_rate,
     )
@@ -112,7 +95,7 @@ async def solar(req: SolarRequest):
         cap_kwh=req.battery_cap_kwh,
         max_rate_kw=req.max_charge_rate_kw,
         efficiency=efficiency,
-        days=cached["days"],
+        days=parse.days,
         avg_solar_profile=avg_solar,
         seg_rate=seg_rate,
         ann_cost_current=sim.ann_cost_current,
@@ -147,7 +130,7 @@ async def solar(req: SolarRequest):
         inflation_pct=req.inflation_pct,
         current_sc_pd=req.current_sc_pd,
         session_id=req.session_id,
-        source=cached.get("source", "upload"),
+        source="estimate" if parse.confidence == "estimate" else "upload",
     )
 
     base["solar"] = {

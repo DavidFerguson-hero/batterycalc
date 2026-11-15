@@ -164,6 +164,7 @@ def _parse_row(row: dict) -> dict:
         "annual_kwh":       annual_kwh,
         "has_solar":        has_solar,
         "has_gas":          has_gas,
+        "heating_type":     "gas" if has_gas else "electric",   # pass to /estimate and /compare
         "floor_area_m2":    floor_area,
         "energy_per_m2":    energy_per_m2,
         "epc_rating":       row.get("current-energy-rating") or None,

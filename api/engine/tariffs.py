@@ -147,11 +147,7 @@ TARIFFS: dict[str, Tariff] = {
         description="Cosy 14.13p/kWh (04:00–07:00, 13:00–16:00 & 22:00–00:00) · Peak 43.22p/kWh (16:00–19:00) · Standard 28.82p.",
         color="#ff3d6b",
         slot_rates=_make_octopus_cosy(),
-        # 22:00–00:00 is also a Cosy-rate window, but the simulator resets the battery
-        # to 30% at midnight each day, so charging then would be paid for and never used.
-        # Load in that window still gets the cheap rate. Revisit when task 1.1 carries
-        # state of charge across days.
-        charge_slots=_slots((8, 13), (26, 31)),
+        charge_slots=_slots((8, 13), (26, 31), (44, 47)),
         discharge_slots=_slots((0, 7), (14, 25), (32, 43)),
         standing_charge=0.5167,
         export_rate=0.075,

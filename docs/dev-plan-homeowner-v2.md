@@ -61,7 +61,7 @@ Owner: David Ferguson · Drafted: 15 Nov 2026 · Status: ready to start Phase 0
 
 All new engine code lives in `api/engine/` with pytest tests. Existing endpoints keep working until Phase 2 switches over.
 
-- [ ] **1.1 Full-year modelling.** (H2, H3, H4, H19)
+- [x] **1.1 Full-year modelling.** (H2, H3, H4, H19)
   - CSV route: accept up to 12 months of half-hourly data and simulate every day.
     - Report coverage (days found, gaps filled) back to the user.
     - If less than a year is uploaded, scale by month using the estimate shapes and lower the confidence label.
