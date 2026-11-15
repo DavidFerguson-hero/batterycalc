@@ -43,6 +43,7 @@ class ParseResult:
     dates: list[date] | None = None  # calendar date of each entry in days, when known
     coverage: dict | None = None     # what was found and what was filled (CSV route)
     confidence: str | None = None    # "high" | "medium" | "low" | "estimate"
+    extra_loads: dict | None = None  # EV / heat pump added or reshaped (task 1.2)
     # Raw readings keyed by date, kept only so several files can be merged.
     readings: dict = field(default_factory=dict, repr=False)
 

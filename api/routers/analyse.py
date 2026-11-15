@@ -21,6 +21,10 @@ from engine.payback import calc_payback
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
+from engine.extra_loads import (
+    EV_DEFAULT_MILES, EV_DEFAULT_WINDOW, EV_KWH_PER_MILE, HP_DEFAULT_EFFICIENCY,
+    EVSettings, HeatPumpSettings, apply_extra_loads,
+)
 
 # In-memory session cache so /recalculate can re-run without a re-upload.
 # Bounded in size and age: a full year of half-hourly data is ~17,500 numbers per
@@ -54,6 +58,55 @@ def _average_day(days: list[list[float]]) -> list[float]:
 
 
 HeatingType = Literal["gas", "electric"]
+LoadStatus = Literal["none", "have", "planning"]
+
+
+class EVInput(BaseModel):
+    """An electric car. "have": already in the usage figures. "planning": add it on top."""
+    status:       LoadStatus = "none"
+    annual_miles: float = Field(EV_DEFAULT_MILES, ge=0, le=60000)
+    kwh_per_mile: float = Field(EV_KWH_PER_MILE, ge=0.1, le=1.0)
+    charge_start: str   = Field(EV_DEFAULT_WINDOW[0], pattern=r"^([01]\d|2[0-3]):(00|30)$")
+    charge_end:   str   = Field(EV_DEFAULT_WINDOW[1], pattern=r"^([01]\d|2[0-3]):(00|30)$")
+
+
+class HeatPumpInput(BaseModel):
+    """A heat pump. Heat demand comes from heat_demand_kwh if given, else floor area × EPC rating."""
+    status:          LoadStatus = "none"
+    heat_demand_kwh: Optional[float] = Field(None, ge=500, le=60000)
+    floor_area_m2:   Optional[float] = Field(None, ge=15, le=1000)
+    epc_rating:      Optional[str]   = Field(None, pattern=r"^[A-Ga-g]$")
+    efficiency:      float = Field(HP_DEFAULT_EFFICIENCY, ge=1.5, le=6.0)
+
+
+def _with_extra_loads(
+    parse: ParseResult,
+    ev: EVInput | None,
+    hp: HeatPumpInput | None,
+    route: str,
+    property_type: str,
+) -> ParseResult:
+    """Apply the EV / heat pump to the days and record what changed in the summary."""
+    ev = ev or EVInput()
+    hp = hp or HeatPumpInput()
+    if ev.status == "none" and hp.status == "none":
+        return parse
+    try:
+        res = apply_extra_loads(
+            parse.days, parse.dates,
+            EVSettings(**ev.model_dump()), HeatPumpSettings(**hp.model_dump()),
+            route=route, property_type=property_type,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    annual = sum(map(sum, res.days)) * 365.0 / len(res.days)
+    return replace(
+        parse,
+        days=res.days,
+        annual_kwh_estimate=round(annual, 1),
+        daily_avg_kwh=round(annual / 365.0, 3),
+        extra_loads={"ev": ev.model_dump(), "heat_pump": hp.model_dump(), **res.summary()},
+    )
 
 # ── Solar estimation constants ──────────────────────────────────────────────
 SOLAR_KWP             = 4.0      # Standard residential system (kWp)
@@ -104,6 +157,8 @@ class EstimateRequest(BaseModel):
     current_sc_pd:     float = Field(53.0,  ge=0,   le=200)
     export_rate_p:     float = Field(0.0,   ge=0,   le=100)
     heating_type:      HeatingType = "gas"   # from the EPC: "electric" when there's no mains gas
+    ev:                Optional[EVInput] = None
+    heat_pump:         Optional[HeatPumpInput] = None
 
 
 class CompareRequest(BaseModel):
@@ -124,6 +179,8 @@ class CompareRequest(BaseModel):
     context_has_solar:        bool         = False
     context_has_battery:      bool         = False
     heating_type:             HeatingType  = "gas"
+    ev:                       Optional[EVInput] = None
+    heat_pump:                Optional[HeatPumpInput] = None
 
 
 class RecalculateRequest(BaseModel):
@@ -216,6 +273,7 @@ def _build_response(
             "days_modelled": len(parse.days),
             "coverage": parse.coverage,
             "confidence": parse.confidence,
+            "extra_loads": parse.extra_loads,
         },
         "selected": {
             "tariff_key": tariff_key,
@@ -461,6 +519,9 @@ async def analyse(
     inflation_pct: Annotated[float, Form()] = 5.0,
     current_sc_pd: Annotated[float, Form()] = 53.0,
     export_rate_p: Annotated[float, Form()] = 0.0,
+    property_type: Annotated[str, Form()] = "semi",
+    ev: Annotated[Optional[str], Form(description="EVInput as JSON")] = None,
+    heat_pump: Annotated[Optional[str], Form(description="HeatPumpInput as JSON")] = None,
 ):
     if not files:
         raise HTTPException(status_code=400, detail="At least one CSV file is required.")
@@ -474,9 +535,16 @@ async def analyse(
             raise HTTPException(status_code=422, detail=str(e))
 
     merged = merge_parse_results(parse_results)
+    try:
+        ev_in = EVInput.model_validate_json(ev) if ev else None
+        hp_in = HeatPumpInput.model_validate_json(heat_pump) if heat_pump else None
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid ev / heat_pump settings: {e}")
+    merged = _with_extra_loads(merged, ev_in, hp_in, "upload", property_type)
 
     # Cache parsed days against a session id based on raw content hash
     combined_raw = b"".join([str(r.days).encode() for r in parse_results])
+    combined_raw += f"|{property_type}|{ev or ''}|{heat_pump or ''}".encode()
     session_id = _session_key(combined_raw)
     _cache_put(session_id, merged)
 
@@ -501,8 +569,9 @@ async def estimate(req: EstimateRequest):
         raise HTTPException(status_code=400, detail=f"property_type must be one of {valid_types}")
 
     parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p, req.heating_type)
+    parse = _with_extra_loads(parse, req.ev, req.heat_pump, "estimate", req.property_type)
 
-    cache_key = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}|{req.heating_type}"
+    cache_key = f"est|{req.model_dump_json(include={'annual_kwh', 'property_type', 'unit_rate_p', 'heating_type', 'ev', 'heat_pump'})}"
     session_id = hashlib.sha256(cache_key.encode()).hexdigest()[:16]
     _cache_put(session_id, parse)
 
@@ -560,9 +629,10 @@ async def compare_scenarios(req: CompareRequest):
         raise HTTPException(status_code=400, detail=f"property_type must be one of {valid_types}")
 
     parse = make_parse_result(req.annual_kwh, req.property_type, req.unit_rate_p, req.heating_type)
+    parse = _with_extra_loads(parse, req.ev, req.heat_pump, "estimate", req.property_type)
     unit_rate = parse.inferred_rate if parse.inferred_rate else IMPLIED_RATE
 
-    cache_key  = f"est|{req.annual_kwh}|{req.property_type}|{req.unit_rate_p}|{req.heating_type}"
+    cache_key  = f"est|{req.model_dump_json(include={'annual_kwh', 'property_type', 'unit_rate_p', 'heating_type', 'ev', 'heat_pump'})}"
     session_id = hashlib.sha256(cache_key.encode()).hexdigest()[:16]
     _cache_put(session_id, parse)
 
