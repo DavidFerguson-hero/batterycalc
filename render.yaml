@@ -17,10 +17,8 @@ services:
       # Secrets: Render asks for these when the Blueprint is first applied.
       - key: ANTHROPIC_API_KEY  # /api/explain (AI-written summary)
         sync: false
-      - key: EPC_EMAIL          # /api/epc/lookup (EPC = Energy Performance Certificate register)
-        sync: false
-      - key: EPC_API_KEY
-        sync: false
+      - key: EPC_API_TOKEN      # /api/epc/lookup: bearer token from get-energy-performance-data.communities.gov.uk
+        sync: false             # (GOV.UK One Login account → "My account"); replaced EPC_EMAIL/EPC_API_KEY in Nov 2026
       # Optional: extra frontend origins allowed by CORS, comma-separated.
       - key: CORS_EXTRA_ORIGINS
         value: ""
