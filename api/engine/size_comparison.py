@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .costs import fair_price, price_range_for
 from .lifetime import lifetime_finance
 
 
@@ -35,7 +36,7 @@ def compare_sizes(options: list[SizeOption], best_no_battery_cost: float) -> dic
     rows = []
     for o in sorted(options, key=lambda x: x.kwh):
         saving = best_no_battery_cost - o.annual_cost_with_battery
-        lt = lifetime_finance(o.installed_cost, saving)
+        lt = lifetime_finance(o.installed_cost, saving, *price_range_for(o.kwh, o.installed_cost))
         rows.append({
             "kwh": o.kwh,
             "label": o.label,
@@ -51,7 +52,7 @@ def compare_sizes(options: list[SizeOption], best_no_battery_cost: float) -> dic
     best_i = max(range(len(rows)), key=lambda i: (rows[i]["lifetime_net_gain"], -rows[i]["kwh"]))
     biggest_saving = max(rows, key=lambda r: r["year1_battery_saving"])
     return {
-        "best_value": rows[best_i],
+        "best_value": {**rows[best_i], "fair_price": fair_price(rows[best_i]["kwh"])},
         "smaller": rows[best_i - 1] if best_i > 0 else None,
         "larger": rows[best_i + 1] if best_i + 1 < len(rows) else None,
         "biggest_saving_kwh": biggest_saving["kwh"],

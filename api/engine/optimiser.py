@@ -6,13 +6,14 @@ Returns a dict keyed by tariff_key, each containing a list of result dicts
 """
 from __future__ import annotations
 import math
-from .tariffs import TARIFFS, OPT_TARIFF_KEYS, OPT_BATTERIES, Tariff
+from .tariffs import TARIFFS, OPT_TARIFF_KEYS, Tariff
+from .costs import standard_batteries
 from .simulator import run_simulation, SimResult
 from .payback import calc_payback, PaybackResult
 
 
 def _nearest_batt_kwh(kwh: float) -> float:
-    sizes = [b["kwh"] for b in OPT_BATTERIES]
+    sizes = [b["kwh"] for b in standard_batteries()]
     return min(sizes, key=lambda s: abs(s - kwh))
 
 
@@ -27,7 +28,7 @@ def build_opt_matrix(
     current_sc_pd: float = 53.0,
 ) -> dict:
     """
-    Run simulation for every tariff in OPT_TARIFF_KEYS × every battery in OPT_BATTERIES.
+    Run simulation for every tariff in OPT_TARIFF_KEYS × every standard battery size (engine/costs.py).
 
     For the battery size nearest to selected_cap_kwh, the installed cost is taken from
     selected_cost_gbp (the user's slider) rather than the default price list. This makes
@@ -39,7 +40,7 @@ def build_opt_matrix(
     for tk in OPT_TARIFF_KEYS:
         tariff = TARIFFS[tk]
         rows = []
-        for batt in OPT_BATTERIES:
+        for batt in standard_batteries():
             batt_cost = selected_cost_gbp if batt["kwh"] == nearest_kwh else batt["cost"]
 
             sim = run_simulation(

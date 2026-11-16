@@ -4,6 +4,8 @@ POST /api/solar  — fetch PVGIS data and compute solar-augmented savings
 from __future__ import annotations
 import math
 from fastapi import APIRouter, HTTPException
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from engine.solar_fetcher import resolve_postcode, fetch_solar_profiles, weighted_avg_profile
@@ -11,6 +13,7 @@ from engine.simulator import run_simulation, calc_solar_impact
 from engine.tariffs import TARIFFS
 from engine.payback import calc_payback
 from routers.analyse import _cache_get, _build_response
+from engine.costs import battery_price
 
 router = APIRouter(tags=["solar"])
 
@@ -26,7 +29,7 @@ class SolarRequest(BaseModel):
     # Slider params (same as recalculate)
     tariff_key:         str   = "octopusGo"
     battery_cap_kwh:    float = Field(10.0, ge=1,    le=50)
-    battery_cost_gbp:   float = Field(6000, ge=500,  le=50000)
+    battery_cost_gbp:   Optional[float] = Field(None, ge=500, le=50000)   # None: typical price for the size
     max_charge_rate_kw: float = Field(3.6,  ge=0.5,  le=15)
     efficiency_pct:     float = Field(90.0, ge=50,   le=100)
     inflation_pct:      float = Field(5.0,  ge=0,    le=20)
@@ -36,6 +39,8 @@ class SolarRequest(BaseModel):
 
 @router.post("/solar")
 async def solar(req: SolarRequest):
+    if req.battery_cost_gbp is None:
+        req.battery_cost_gbp = round(battery_price(req.battery_cap_kwh)["typical"], -1)
     parse = _cache_get(req.session_id)
     if parse is None:
         raise HTTPException(

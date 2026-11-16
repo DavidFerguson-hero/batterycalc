@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from engine.lifetime import lifetime_finance
 from engine.size_comparison import SizeOption, compare_sizes, options_from_matrix
-from engine.tariffs import OPT_BATTERIES
+from engine.costs import standard_batteries
 from main import app
 
 BASE = 1500.0   # £/yr on the best tariff without a battery
@@ -96,7 +96,7 @@ def test_estimate_returns_size_comparison():
     r = TestClient(app).post("/api/estimate", json={"annual_kwh": 3500, "property_type": "semi"})
     assert r.status_code == 200, r.text
     sc = r.json()["size_comparison"]
-    assert [row["kwh"] for row in sc["all_sizes"]] == sorted(b["kwh"] for b in OPT_BATTERIES)
+    assert [row["kwh"] for row in sc["all_sizes"]] == sorted(b["kwh"] for b in standard_batteries())
     best = sc["best_value"]
     assert best["lifetime_net_gain"] == max(row["lifetime_net_gain"] for row in sc["all_sizes"])
     # Each size's saving is measured against the best tariff without a battery.

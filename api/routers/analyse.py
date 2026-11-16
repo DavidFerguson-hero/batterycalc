@@ -22,6 +22,7 @@ from engine.lifetime import lifetime_finance
 from engine.tariff_check import tariff_check
 from engine.size_comparison import compare_sizes, options_from_matrix
 from engine.levers import price_lever, verdict_change
+from engine.costs import battery_price, context_costs, fair_price, price_range_for
 from engine.tariffs import TARIFFS, OPT_TARIFF_KEYS, IMPLIED_RATE
 from engine.profile_estimator import make_parse_result, SUGGESTED_KWH
 from engine.carbon import fetch_carbon_intensity_profile, calc_carbon_savings
@@ -154,7 +155,7 @@ class EstimateRequest(BaseModel):
     unit_rate_p:       float = Field(28.16, ge=5, le=100)   # pence/kWh
     tariff_key:        str   = "octopusGo"
     battery_cap_kwh:   float = Field(10.0,  ge=1,   le=50)
-    battery_cost_gbp:  float = Field(6000,  ge=500, le=50000)
+    battery_cost_gbp:  Optional[float] = Field(None, ge=500, le=50000)   # None: typical price for the size
     max_charge_rate_kw:float = Field(3.6,   ge=0.5, le=15)
     efficiency_pct:    float = Field(90.0,  ge=50,  le=100)
     inflation_pct:     float = Field(5.0,   ge=0,   le=20)
@@ -192,7 +193,7 @@ class RecalculateRequest(BaseModel):
     session_id: str
     tariff_key: str = "octopusGo"
     battery_cap_kwh: float = Field(10.0, ge=1, le=50)
-    battery_cost_gbp: float = Field(6000, ge=500, le=50000)
+    battery_cost_gbp: Optional[float] = Field(None, ge=500, le=50000)   # None: typical price for the size
     max_charge_rate_kw: float = Field(3.6, ge=0.5, le=15)
     efficiency_pct: float = Field(90.0, ge=50, le=100)
     inflation_pct: float = Field(5.0, ge=0, le=20)
@@ -239,7 +240,7 @@ def _build_response(
     parse: ParseResult,
     tariff_key: str,
     battery_cap_kwh: float,
-    battery_cost_gbp: float,
+    battery_cost_gbp: float | None,
     max_charge_rate_kw: float,
     efficiency_pct: float,
     inflation_pct: float,
@@ -252,6 +253,8 @@ def _build_response(
     tariff = TARIFFS.get(tariff_key)
     if tariff is None:
         raise HTTPException(status_code=400, detail=f"Unknown tariff key: {tariff_key}")
+    if battery_cost_gbp is None:
+        battery_cost_gbp = round(battery_price(battery_cap_kwh)["typical"], -1)
 
     efficiency = efficiency_pct / 100.0
     current_rate = parse.inferred_rate
@@ -285,7 +288,8 @@ def _build_response(
     # Lifetime finance and verdict (task 1.3). The battery is credited only with what it
     # saves beyond the best tariff the household could switch to *without* a battery.
     battery_saving = tcheck["best_no_battery"]["annual_cost"] - sim.ann_cost_with_battery
-    lifetime = lifetime_finance(battery_cost_gbp, battery_saving)
+    lifetime = lifetime_finance(
+        battery_cost_gbp, battery_saving, *price_range_for(battery_cap_kwh, battery_cost_gbp))
 
     # What would make it pay back (task 1.7) — only when the answer is "not yet".
     levers = None
@@ -370,6 +374,9 @@ def _build_response(
         },
         "tariff_check": tcheck,
         "size_comparison": size_cmp,
+        # Task 1.8: fair installed price for the chosen size, and costs for context
+        "fair_price": fair_price(battery_cap_kwh, battery_cost_gbp),
+        "context_costs": context_costs(),
         "lifetime": {
             "year1_battery_saving": round(battery_saving, 2),
             **lifetime.to_dict(),
@@ -591,7 +598,7 @@ async def analyse(
     files: Annotated[list[UploadFile], File()],
     tariff_key: Annotated[str, Form()] = "octopusGo",
     battery_cap_kwh: Annotated[float, Form()] = 10.0,
-    battery_cost_gbp: Annotated[float, Form()] = 6000.0,
+    battery_cost_gbp: Annotated[Optional[float], Form()] = None,
     max_charge_rate_kw: Annotated[float, Form()] = 3.6,
     efficiency_pct: Annotated[float, Form()] = 90.0,
     inflation_pct: Annotated[float, Form()] = 5.0,
@@ -726,7 +733,7 @@ async def compare_scenarios(req: CompareRequest):
         max_rate_kw=req.max_charge_rate_kw,
         efficiency=efficiency,
         selected_cap_kwh=10.0,
-        selected_cost_gbp=6000.0,
+        selected_cost_gbp=battery_price(10.0)["typical"],
         inflation_pct=req.inflation_pct,
         current_sc_pd=req.current_sc_pd,
     )
@@ -788,8 +795,8 @@ async def compare_scenarios(req: CompareRequest):
         battery_scenario = {
             "label": "Battery Only", "icon": "🔋",
             "tech": "No saving found for current profile",
-            "annual_saving": 0, "installed_cost": 6000,
-            "payback_years": None, "roi_10yr": -6000,
+            "annual_saving": 0, "installed_cost": battery_price(10.0)["typical"],
+            "payback_years": None, "roi_10yr": -battery_price(10.0)["typical"],
             "cumulative": [], "breakdown": {},
         }
 
@@ -964,7 +971,7 @@ async def compare_scenarios(req: CompareRequest):
         best_batt["tariff_key"] if best_batt else "octopusGo"
     )
     best_batt_kwh = best_batt["battery_kwh"] if best_batt else 10.0
-    best_batt_cost = best_batt["battery_cost"] if best_batt else 6000.0
+    best_batt_cost = best_batt["battery_cost"] if best_batt else battery_price(10.0)["typical"]
 
     full_result = _build_response(
         parse=parse,

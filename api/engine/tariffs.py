@@ -257,19 +257,5 @@ OPT_TARIFF_KEYS = [
     "scottishPower",
 ]
 
-OPT_BATTERIES = [
-    {"kwh": 5.0,  "cost": 3500,  "label": "5 kWh"},
-    {"kwh": 7.5,  "cost": 5000,  "label": "7.5 kWh"},
-    {"kwh": 10.0, "cost": 6000,  "label": "10 kWh"},
-    {"kwh": 13.5, "cost": 7500,  "label": "13.5 kWh"},
-    {"kwh": 15.0, "cost": 8500,  "label": "15 kWh"},
-    {"kwh": 20.0, "cost": 11000, "label": "20 kWh"},
-]
+# Battery sizes and prices moved to api/data/costs.json (task 1.8); see engine/costs.py.
 
-DEFAULT_COSTS: dict[float, int] = {
-    3: 2200, 4: 2900, 5: 3500, 6: 4000, 7: 4600, 7.5: 5000,
-    8: 5300, 9: 5700, 10: 6000, 11: 6400, 12: 6800, 13: 7200,
-    13.5: 7500, 14: 7800, 15: 8500, 16: 9000, 17: 9500,
-    18: 10000, 19: 10500, 20: 11000, 21: 11500, 22: 12000,
-    23: 12500, 24: 13000, 25: 13500,
-}

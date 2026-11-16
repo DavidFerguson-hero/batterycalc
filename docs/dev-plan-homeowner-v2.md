@@ -39,7 +39,7 @@ Owner: David Ferguson · Drafted: 15 Nov 2026 · Status: ready to start Phase 0
 | D1 | Where to host the API (Railway reports "Application not found") | **Decided 15 Nov 2026: Render free tier** (Railway free plan no longer available). Blueprint in `render.yaml`. URL comes from `NEXT_PUBLIC_API_URL` | Task 0.1 |
 | D2 | Rebuild the homeowner journey as Next.js pages, or keep extending `public/calculator.html` (3,000 lines, loaded in an iframe) | Rebuild in Next.js under `/check`. Keep the old calculator live until the new one matches it, then redirect | Phase 2 |
 | D3 | Verdict thresholds | **Decided 15 Nov 2026: as recommended.** Green "Worth it" if likely payback ≤ 70% of warranty years. Amber "Borderline" if ≤ 100%. Grey "Not yet" otherwise | Task 1.3 |
-| D4 | Cost figures (battery, inverter, install, VAT; solar, heat pump, EV charger for context) and their sources | David to supply or approve low/typical/high figures with a source and date for each | Task 1.8 |
+| D4 | Cost figures (battery, inverter, install, VAT; solar, heat pump, EV charger for context) and their sources | **Decided 16 Nov 2026: researched figures approved.** Held in `api/data/costs.json` with a source and date for each | Task 1.8 |
 | D5 | Default assumptions | **Decided 15 Nov 2026: as recommended.** Energy price growth 3% a year (central; 1% low, 5% high). Battery capacity loss 2% a year. Battery life 15 years. Warranty 10 years. Inverter replacement at year 10 | Task 1.3 |
 
 ---
@@ -99,7 +99,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
 - [x] **1.7 "What would make it pay back".** (H14) When the verdict is `not_yet`, calculate:
   - the battery price at which payback equals the warranty period
   - whether a tariff switch or adding a planned EV changes the verdict
-- [ ] **1.8 Cost data file.** (H9, H21) **[DECISION D4]**
+- [x] **1.8 Cost data file.** (H9, H21) **[DECISION D4]**
   - Move `OPT_BATTERIES` and `DEFAULT_COSTS` out of `tariffs.py` into `api/data/costs.json`, with low/typical/high, components (unit, inverter, install, VAT), source and as-of date.
   - Add context costs for solar, heat pump and EV charger.
   - The API returns a "fair price range" for the recommended size.

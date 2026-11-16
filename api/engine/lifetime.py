@@ -20,6 +20,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Literal
 
+from .costs import default_cost_range_ratios, inverter_replacement
+
 # ── D5: default assumptions ───────────────────────────────────────────────────
 PRICE_GROWTH = {"low": 0.01, "central": 0.03, "high": 0.05}   # energy prices, a year
 CAPACITY_LOSS_PER_YEAR = 0.02
@@ -27,9 +29,8 @@ BATTERY_LIFE_YEARS = 15
 WARRANTY_YEARS = 10
 INVERTER_REPLACEMENT_YEAR = 10
 
-# ── Placeholders until D4 (task 1.8) supplies sourced cost figures ───────────
-INVERTER_REPLACEMENT_COST = 1000.0   # £, PLACEHOLDER — fitted hybrid inverter
-COST_RANGE = (0.85, 1.15)            # low / high installed cost as a share of typical, PLACEHOLDER
+# ── Costs (decision D4): api/data/costs.json via engine/costs.py ──────────────
+INVERTER_REPLACEMENT_COST = float(inverter_replacement()["typical"])
 
 # ── D3: verdict thresholds (likely payback as a share of the warranty) ───────
 WORTH_IT_SHARE = 0.70
@@ -148,8 +149,10 @@ def lifetime_finance(
 ) -> LifetimeResult:
     """Model the battery over its life in three cases and give a verdict."""
     a = assumptions or LifetimeAssumptions()
-    low = cost_low if cost_low is not None else typical_cost * COST_RANGE[0]
-    high = cost_high if cost_high is not None else typical_cost * COST_RANGE[1]
+    if cost_low is None or cost_high is None:
+        lo_r, hi_r = default_cost_range_ratios()
+    low = cost_low if cost_low is not None else typical_cost * lo_r
+    high = cost_high if cost_high is not None else typical_cost * hi_r
     g = a.price_growth
 
     cases = {}
