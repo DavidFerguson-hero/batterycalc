@@ -5,6 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from models.assess import AssessRequest, AssessResponse, UsageCheckResponse  # noqa: E402
+from routers.summary import SummaryResponse  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[2] / "docs" / "api-v2.schema.json"
 
@@ -15,6 +16,7 @@ def build() -> dict:
         "request": AssessRequest.model_json_schema(),
         "response": AssessResponse.model_json_schema(),
         "usage_check_response": UsageCheckResponse.model_json_schema(),
+        "summary_response": SummaryResponse.model_json_schema(),
     }
 
 

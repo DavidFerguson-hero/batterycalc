@@ -36,6 +36,7 @@ const parts = [
   await compile(stripFieldTitles(schema.request, true), "AssessRequest", opts),
   await compile(stripFieldTitles(schema.response, true), "AssessResponse", opts),
   await compile(stripFieldTitles(schema.usage_check_response, true), "UsageCheckResponse", opts),
+  await compile(stripFieldTitles(schema.summary_response, true), "SummaryResponse", opts),
 ];
 const text = parts.join("\n\n");
 

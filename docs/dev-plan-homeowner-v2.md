@@ -139,7 +139,7 @@ Build in `frontend/app/check/` with React components in `frontend/components/`. 
   11. NextSteps (fair price range, installer question checklist, share)
   12. Assumptions (collapsed, with the tariff-checked date)
 - [x] **2.8 Share and download** (H22). "Copy link" button, plus a print stylesheet that produces a tidy one-page summary when saved as PDF.
-- [ ] **2.9 Plain-English summary.** Optionally reuse `/api/explain` (Claude-written summary) beneath the verdict, clearly labelled as AI-generated.
+- [x] **2.9 Plain-English summary.** Optionally reuse `/api/explain` (Claude-written summary) beneath the verdict, clearly labelled as AI-generated.
 - [ ] **2.10 Mobile and accessibility.**
   - Works at 375px wide.
   - Keyboard navigable.

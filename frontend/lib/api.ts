@@ -9,9 +9,9 @@
  * a quiet spell can take 30–60 seconds. Callers should show a "waking up" message
  * rather than treat a slow reply as an error.
  */
-import type { AssessRequest, AssessResponse, UsageCheckResponse } from "./api-v2-types";
+import type { AssessRequest, AssessResponse, SummaryResponse, UsageCheckResponse } from "./api-v2-types";
 
-export type { AssessRequest, AssessResponse, UsageCheckResponse } from "./api-v2-types";
+export type { AssessRequest, AssessResponse, SummaryResponse, UsageCheckResponse } from "./api-v2-types";
 
 export const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 
@@ -104,6 +104,19 @@ export async function checkUsage(files: File[], signal?: AbortSignal): Promise<U
   const form = new FormData();
   for (const f of files) form.append("files", f);
   return request<UsageCheckResponse>("/api/v2/usage/check", { method: "POST", body: form }, signal);
+}
+
+/**
+ * A short plain-English summary of an answer, written by AI (Claude) from its headline
+ * figures (POST /api/v2/summary). Throws ApiError when no summary is available
+ * (switched off, busy, or the reply failed its checks); callers just leave it out.
+ */
+export async function summarise(answer: AssessResponse, signal?: AbortSignal): Promise<SummaryResponse> {
+  return request<SummaryResponse>(
+    "/api/v2/summary",
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(answer) },
+    signal,
+  );
 }
 
 /** A home at a postcode, from GET /api/epc/lookup (the EPC register). */

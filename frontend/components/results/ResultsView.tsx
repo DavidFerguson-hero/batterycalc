@@ -11,6 +11,7 @@ import { buildAssessRequest } from "@/lib/request";
 import { parseJourney, stepHref } from "@/lib/journey";
 import { useUploads } from "@/lib/uploads";
 
+import AiSummary from "./AiSummary";
 import { ConfidenceBadge, HeadlineNumbers, SavingBreakdown, VerdictCard } from "./AnswerSections";
 import { Assumptions, ContextPanel, NextSteps, SizeComparison, TariffCheck } from "./ExploreSections";
 import PrintSummary from "./PrintSummary";
@@ -107,6 +108,7 @@ export default function ResultsView() {
   return (
     <div className="space-y-10">
       <VerdictCard data={data} />
+      <AiSummary data={data} />
       <HeadlineNumbers data={data} />
       <ShareBar route={data.usage.route} compact />
       <ConfidenceBadge data={data} query={query} />

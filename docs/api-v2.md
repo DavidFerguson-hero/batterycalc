@@ -140,6 +140,15 @@ Estimate route, 3,500 kWh a year, semi-detached, no battery specified:
 
 ---
 
+## `POST /api/v2/summary`
+
+A short, plain-English summary of an answer, written by Claude Haiku 5.5 (`claude-haiku-5-5`, low effort). Shown under the verdict on the results page and labelled as AI-written.
+
+- **Request:** the `AssessResponse` exactly as `/api/v2/assess` returned it (JSON). Only the headline figures go into the prompt; the half-hourly profiles are never sent to Claude. Nothing is stored or logged.
+- **Response:** `{"summary": "...", "model": "claude-haiku-5-5"}` (`SummaryResponse` in the schema).
+- **Checks:** every £ amount in the reply must be one of the figures it was given, so the summary can't introduce a number that isn't on the page. A reply that fails, is refused or is cut off returns `502`.
+- **Errors:** `503` when `ANTHROPIC_API_KEY` isn't set or Claude is rate limited, `429` after 30 summaries an hour from one address, `502` as above, `422` for a body that isn't an `AssessResponse`. The results page hides the summary on any error.
+
 ## `POST /api/v2/usage/check`
 
 Reads uploaded usage files and says what was found, **without** running the assessment, so the upload step can show "We found 342 days from …" in a second or two. In memory only; nothing is stored.
