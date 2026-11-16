@@ -37,7 +37,7 @@ Owner: David Ferguson · Drafted: 15 Nov 2026 · Status: ready to start Phase 0
 | # | Decision | Recommendation | Needed by |
 | --- | --- | --- | --- |
 | D1 | Where to host the API (Railway reports "Application not found") | **Decided 15 Nov 2026: Render free tier** (Railway free plan no longer available). Blueprint in `render.yaml`. URL comes from `NEXT_PUBLIC_API_URL` | Task 0.1 |
-| D2 | Rebuild the homeowner journey as Next.js pages, or keep extending `public/calculator.html` (3,000 lines, loaded in an iframe) | Rebuild in Next.js under `/check`. Keep the old calculator live until the new one matches it, then redirect | Phase 2 |
+| D2 | Rebuild the homeowner journey as Next.js pages, or keep extending `public/calculator.html` (3,000 lines, loaded in an iframe) | **Decided 16 Nov 2026: rebuild in Next.js under `/check`.** Keep the old calculator live until the new one matches it, then redirect | Phase 2 |
 | D3 | Verdict thresholds | **Decided 15 Nov 2026: as recommended.** Green "Worth it" if likely payback ≤ 70% of warranty years. Amber "Borderline" if ≤ 100%. Grey "Not yet" otherwise | Task 1.3 |
 | D4 | Cost figures (battery, inverter, install, VAT; solar, heat pump, EV charger for context) and their sources | **Decided 16 Nov 2026: researched figures approved.** Held in `api/data/costs.json` with a source and date for each | Task 1.8 |
 | D5 | Default assumptions | **Decided 15 Nov 2026: as recommended.** Energy price growth 3% a year (central; 1% low, 5% high). Battery capacity loss 2% a year. Battery life 15 years. Warranty 10 years. Inverter replacement at year 10 | Task 1.3 |
@@ -114,7 +114,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
 
 Build in `frontend/app/check/` with React components in `frontend/components/`. Inputs live in the URL query string, so any result can be shared or bookmarked without a database (H22). Add a charting library (Recharts suggested) and keep styling consistent with the current landing page.
 
-- [ ] **2.1 Foundations.** Shared layout, progress indicator, typed API client for `/api/v2/assess` in `frontend/lib/api.ts`, and a `Term` tooltip component for plain-English definitions (kWh, EPC, tariff, payback).
+- [x] **2.1 Foundations.** Shared layout, progress indicator, typed API client for `/api/v2/assess` in `frontend/lib/api.ts`, and a `Term` tooltip component for plain-English definitions (kWh, EPC, tariff, payback).
 - [ ] **2.2 Step: your home setup** `/check` (H1, H6). Pick what you have now and what you're planning: solar, heat pump, EV, existing battery, none.
 - [ ] **2.3 Step: choose a route** (H2). Two cards: "I have my usage data" and "Quick estimate (2 minutes)".
 - [ ] **2.4 Route A: upload** (H4).
