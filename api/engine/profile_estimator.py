@@ -7,49 +7,34 @@ so the simulation engine can consume it without modification.
 """
 from __future__ import annotations
 
+import random
 from datetime import date, timedelta
 
 from .csv_parser import ParseResult
 
 # ---------------------------------------------------------------------------
-# Profile shapes — relative weights, normalized to sum=1.0 by _norm()
-# 48 slots, each representing a 30-min window starting at midnight.
+# Daily shape — share of a day's use in each half hour (48 slots from midnight,
+# UK local time), normalised to sum to 1.0 by _norm().
+#
+# Measured, not guessed (task 3.1): the average day of 3,765 London homes with a
+# full year of half-hourly readings in 2013 (Low Carbon London smart meter trial,
+# UK Power Networks, via 4TU.ResearchData, CC BY 4.0), each home weighted equally.
+# Real homes use far more overnight (fridges, freezers, standby: about 15% of the
+# day before 06:00) and have a gentler teatime peak than the hand-drawn curve this
+# replaced, which made a battery look about 8% more useful than it is.
+# The trial recorded no property type, so every home type uses this shape.
 # ---------------------------------------------------------------------------
-
-# Standard house: strong morning (07-09) + evening peak (18-21)
-_RAW_HOUSE = [
-    # 00:00–05:30  overnight low
-    0.40, 0.35, 0.30, 0.28, 0.26, 0.25, 0.25, 0.26, 0.28, 0.32, 0.38, 0.46,
-    # 06:00–07:30  morning ramp
-    0.72, 1.10, 1.55, 1.80,
-    # 08:00–09:30  morning peak → taper
-    1.75, 1.52, 1.28, 1.05,
-    # 10:00–15:30  daytime (most out at work)
-    0.88, 0.78, 0.76, 0.76, 0.80, 0.84, 0.86, 0.82, 0.76, 0.74, 0.78, 0.90,
-    # 16:00–17:30  late afternoon ramp
-    1.12, 1.38, 1.72, 2.02,
-    # 18:00–20:30  evening peak (cooking, heating, TV)
-    2.25, 2.28, 2.18, 2.02, 1.78, 1.50,
+_RAW_TYPICAL = [
+    # 00:00–05:30  overnight: fridges, freezers, standby, late evenings
+    0.80, 0.74, 0.67, 0.61, 0.57, 0.55, 0.53, 0.52, 0.52, 0.52, 0.56, 0.60,
+    # 06:00–09:30  morning
+    0.68, 0.78, 0.90, 0.98, 1.02, 1.03, 1.03, 1.03,
+    # 10:00–15:30  daytime
+    1.02, 1.00, 1.00, 1.01, 1.03, 1.04, 1.03, 1.01, 0.99, 0.99, 1.00, 1.05,
+    # 16:00–20:30  teatime and evening peak
+    1.12, 1.21, 1.31, 1.38, 1.47, 1.51, 1.53, 1.51, 1.49,
     # 21:00–23:30  wind down
-    1.20, 0.95, 0.72, 0.56, 0.46, 0.40,
-]
-
-# Flat/apartment: flatter profile — softer morning, less cooking peak
-_RAW_FLAT = [
-    # 00:00–05:30  overnight
-    0.38, 0.33, 0.28, 0.26, 0.24, 0.23, 0.23, 0.24, 0.26, 0.30, 0.35, 0.44,
-    # 06:00–07:30  morning ramp (softer — smaller kitchen, no garden)
-    0.62, 0.92, 1.28, 1.45,
-    # 08:00–09:30  morning peak
-    1.42, 1.25, 1.10, 0.98,
-    # 10:00–15:30  daytime (slightly higher — more WFH in smaller spaces)
-    0.90, 0.84, 0.82, 0.82, 0.84, 0.87, 0.88, 0.86, 0.82, 0.80, 0.83, 0.92,
-    # 16:00–17:30  late afternoon
-    1.05, 1.22, 1.48, 1.68,
-    # 18:00–20:30  evening peak (flatter — smaller appliances)
-    1.75, 1.78, 1.70, 1.58, 1.40, 1.20,
-    # 21:00–23:30  wind down
-    1.05, 0.85, 0.65, 0.52, 0.43, 0.38,
+    1.47, 1.44, 1.37, 1.30, 1.16, 1.01, 0.92,
 ]
 
 
@@ -58,15 +43,22 @@ def _norm(raw: list[float]) -> list[float]:
     return [v / total for v in raw]
 
 
-PROFILE_HOUSE = _norm(_RAW_HOUSE)
-PROFILE_FLAT  = _norm(_RAW_FLAT)
+PROFILE_TYPICAL = _norm(_RAW_TYPICAL)
 
 _PROFILES: dict[str, list[float]] = {
-    "flat":     PROFILE_FLAT,
-    "terraced": PROFILE_HOUSE,
-    "semi":     PROFILE_HOUSE,
-    "detached": PROFILE_HOUSE,
+    "flat":     PROFILE_TYPICAL,
+    "terraced": PROFILE_TYPICAL,
+    "semi":     PROFILE_TYPICAL,
+    "detached": PROFILE_TYPICAL,
 }
+
+# Real homes don't use the same amount every day: in the trial, a home's daily total
+# typically varied by about 25% around its average for the month. A battery can't
+# store all of a busy day's peak or fill up usefully on a quiet one, so identical days
+# overstate the saving. Each modelled day is scaled by a fixed pseudo-random factor
+# with this spread (the same every run), keeping each month's total unchanged.
+DAY_TO_DAY_SPREAD = 0.25
+_DAY_SEED = 2013
 
 # Suggested annual kWh by property type and bedroom count.
 # Values sourced from BEIS UK domestic energy consumption statistics.
@@ -80,15 +72,13 @@ SUGGESTED_KWH: dict[str, dict[int, int]] = {
 # ---------------------------------------------------------------------------
 # Seasonal shape — relative daily use by calendar month (index 0 = January).
 #
-# APPROXIMATE, pending calibration against real households (task 3.1).
-# Shaped to match the well-known UK pattern: domestic electricity peaks in
-# Dec/Jan (lighting, longer evenings, more time indoors) and bottoms out in
-# June/July. Homes heated by electricity (no mains gas) swing far more.
-#   gas:      December ≈ 1.5× June
-#   electric: December ≈ 3.2× June
+# gas: measured from the same 3,765 trial homes (task 3.1), almost all heated by gas;
+#   January ≈ 1.5× August.
+# electric: homes heated by electricity (no mains gas) swing far more; December ≈ 3.2×
+#   June. Still an estimate: the trial had too few electrically heated homes to measure.
 # ---------------------------------------------------------------------------
 MONTHLY_FACTORS: dict[str, list[float]] = {
-    "gas":      [1.20, 1.12, 1.05, 0.95, 0.88, 0.83, 0.83, 0.85, 0.90, 1.00, 1.12, 1.22],
+    "gas":      [1.21, 1.18, 1.15, 0.99, 0.90, 0.85, 0.84, 0.82, 0.89, 0.96, 1.08, 1.14],
     "electric": [1.75, 1.60, 1.35, 1.00, 0.70, 0.55, 0.52, 0.55, 0.68, 0.95, 1.40, 1.75],
 }
 HEATING_TYPES = tuple(MONTHLY_FACTORS)
@@ -116,17 +106,30 @@ def generate_days(
 ) -> list[list[float]]:
     """
     Return 365 days (1 Jan → 31 Dec of a typical year) whose total is annual_kwh.
-    Each day uses the property's daily shape, scaled by its month's seasonal factor.
+    Each day uses the typical daily shape, scaled by its month's seasonal factor and
+    by a fixed day-to-day factor (see DAY_TO_DAY_SPREAD) that leaves each month's total as it was.
     """
-    profile = _PROFILES.get(property_type, PROFILE_HOUSE)
+    profile = _PROFILES.get(property_type, PROFILE_TYPICAL)
     factors = monthly_factors(heating)
     dates = model_year_dates()
     weight_total = sum(factors[d.month - 1] for d in dates)
+    day_factor = _day_to_day_factors(dates)
     days: list[list[float]] = []
-    for d in dates:
-        daily_kwh = annual_kwh * factors[d.month - 1] / weight_total
+    for d, f in zip(dates, day_factor):
+        daily_kwh = annual_kwh * factors[d.month - 1] / weight_total * f
         days.append([v * daily_kwh for v in profile])
     return days
+
+
+def _day_to_day_factors(dates: list[date]) -> list[float]:
+    """One factor per day, spread like real homes' daily totals, averaging exactly 1 within each month."""
+    rng = random.Random(_DAY_SEED)
+    raw = [rng.lognormvariate(0.0, DAY_TO_DAY_SPREAD) for _ in dates]
+    month_mean: dict[int, float] = {}
+    for m in {d.month for d in dates}:
+        vals = [r for r, d in zip(raw, dates) if d.month == m]
+        month_mean[m] = sum(vals) / len(vals)
+    return [r / month_mean[d.month] for r, d in zip(raw, dates)]
 
 
 def make_parse_result(

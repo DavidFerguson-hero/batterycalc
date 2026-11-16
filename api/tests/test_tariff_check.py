@@ -66,8 +66,10 @@ def test_standalone_battery_is_not_flagged_switch_first():
 
 
 def test_an_ev_shifts_the_saving_towards_the_tariff():
-    """H18: an EV makes the tariff switch a much bigger part of the saving."""
-    assert check(EV_DAYS)["switch_share_of_best"] > 3 * check()["switch_share_of_best"]
+    """H18: an EV makes the tariff switch a much bigger part of the saving.
+    (Since the measured daily shape (task 3.1), more of a home's use is overnight, so switching
+    already counts for about a fifth of the saving without an EV; an EV roughly triples that.)"""
+    assert check(EV_DAYS)["switch_share_of_best"] > 2.5 * check()["switch_share_of_best"]
     assert check(EV_DAYS)["savings"]["switch_tariff_only"] > 500
 
 

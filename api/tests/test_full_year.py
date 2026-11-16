@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from engine.csv_parser import merge_parse_results, parse_csv_bytes
-from engine.profile_estimator import generate_days, make_parse_result, model_year_dates
+from engine.profile_estimator import generate_days, make_parse_result, model_year_dates, monthly_factors
 from engine.simulator import run_simulation, simulate_day_full
 from engine.tariffs import TARIFFS
 from main import app
@@ -64,6 +64,30 @@ def test_electric_heating_swings_more_than_gas():
         days = generate_days(3500, "semi", h)
         ratio[h] = (month_total(days, dates, 12) / 31) / (month_total(days, dates, 6) / 30)
     assert ratio["electric"] > ratio["gas"] * 1.5, ratio
+
+
+def test_estimate_daily_shape_matches_real_homes():
+    """Task 3.1: about 15% of a day's use is before 06:00 and the 16:00–19:00 peak is about 17%."""
+    day = generate_days(3500, "semi")[100]
+    share = lambda a, b: sum(day[a:b]) / sum(day)   # noqa: E731
+    assert 0.13 < share(0, 12) < 0.17
+    assert 0.15 < share(32, 38) < 0.19
+
+
+def test_estimate_days_vary_like_real_homes_but_months_keep_their_totals():
+    """Task 3.1: days differ (about 25% spread), the same way every run, and each month's total is unchanged."""
+    days, dates = generate_days(3500, "semi"), model_year_dates()
+    totals = [sum(d) for d in days]
+    jan = [t for t, d in zip(totals, dates) if d.month == 1]
+    mean = sum(jan) / len(jan)
+    spread = (sum((t - mean) ** 2 for t in jan) / len(jan)) ** 0.5 / mean
+    assert 0.15 < spread < 0.35
+    assert generate_days(3500, "semi") == days
+    f = monthly_factors("gas")
+    weight = sum(f[d.month - 1] for d in dates)
+    for m in (1, 6, 12):
+        expected = sum(3500 * f[m - 1] / weight for d in dates if d.month == m)
+        assert abs(month_total(days, dates, m) - expected) < 0.01
 
 
 def test_estimate_rejects_unknown_heating():

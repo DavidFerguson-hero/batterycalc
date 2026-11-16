@@ -154,7 +154,7 @@ Build in `frontend/app/check/` with React components in `frontend/components/`. 
 
 ## Phase 3: Quality and launch
 
-- [ ] **3.1 Accuracy check.** Run 10 or more real households (David to source data) through both routes and compare estimated against actual payback. Use the result to set the confidence wording.
+- [x] **3.1 Accuracy check.** Run 10 or more real households (David to source data) through both routes and compare estimated against actual payback. Use the result to set the confidence wording. Done on 61 Low Carbon London homes: see `docs/accuracy-check.md`. Still to add: David's own house, to cover the yearly-use guess.
 - [ ] **3.2 Missing pages.** "How we calculate", "Legal disclaimer", "Privacy" (uploaded data is not stored) and a contact route. The footer links currently all point to the calculator.
 - [ ] **3.3 Monitoring.** Uptime check on `/health` with an email alert, plus privacy-friendly analytics on the funnel (landing → route chosen → result → share).
 - [ ] **3.4 README.** Replace the default Next.js README with: what the project is, how to run the API and frontend locally, how to deploy, and how the tariff check works.
