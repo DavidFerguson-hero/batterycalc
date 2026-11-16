@@ -125,7 +125,7 @@ Build in `frontend/app/check/` with React components in `frontend/components/`. 
   - Postcode → list of EPC addresses → select, which pre-fills property type, floor area, heating and annual use.
   - Ask only for what the EPC can't give (people at home, EV miles).
 - [x] **2.6 Step: confirm** (H5). Tariff picker (searchable list plus "enter my rates"), with an editable summary of everything the model will use.
-- [ ] **2.7 Results page** (H7–H22), in this order:
+- [x] **2.7 Results page** (H7–H22), in this order:
   1. VerdictCard
   2. HeadlineNumbers (cost range, yearly saving range, payback, lifetime gain)
   3. ConfidenceBadge with an "add real data" upgrade link

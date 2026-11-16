@@ -65,3 +65,18 @@ export const BREAKDOWN_LABELS = {
   solar_storage: "Storing your solar instead of selling it for less",
   other: "Selling stored energy back to the grid",
 } as const;
+
+/** "15 November 2026" from an ISO date ("2026-11-15"); anything else is returned as it is. */
+export function ukDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+/** Spell out the acronyms in the API's upgrade labels (e.g. "Solar panels (4 kWp)", "Home EV charger"). */
+export function plainUpgradeLabel(label: string): string {
+  return label
+    .replace(/\((\d+(?:\.\d+)?) kWp\)/, (_, n) => `(${n} kWp, about ${Math.round(Number(n) / 0.4)} panels)`)
+    .replace(/\bEV charger\b/, "electric car charger");
+}
