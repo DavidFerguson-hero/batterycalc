@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import analyse, tariffs, batteries, solar, epc, explain, assess
+from routers import analyse, tariffs, batteries, solar, epc, explain, assess, summary
 
 
 @asynccontextmanager
@@ -52,6 +52,7 @@ app.include_router(solar.router,     prefix="/api")
 app.include_router(epc.router,       prefix="/api")
 app.include_router(explain.router,   prefix="/api")
 app.include_router(assess.router,    prefix="/api")
+app.include_router(summary.router,   prefix="/api")
 
 
 @app.get("/health")

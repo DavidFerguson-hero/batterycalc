@@ -1597,6 +1597,24 @@
     "title": "AssessResponse",
     "type": "object"
   },
+  "summary_response": {
+    "properties": {
+      "model": {
+        "title": "Model",
+        "type": "string"
+      },
+      "summary": {
+        "title": "Summary",
+        "type": "string"
+      }
+    },
+    "required": [
+      "summary",
+      "model"
+    ],
+    "title": "SummaryResponse",
+    "type": "object"
+  },
   "usage_check_response": {
     "$defs": {
       "FileCheck": {

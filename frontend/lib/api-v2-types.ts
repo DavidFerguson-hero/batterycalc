@@ -373,3 +373,9 @@ export interface FileCheck {
   name: string;
   ok: boolean;
 }
+
+
+export interface SummaryResponse {
+  model: string;
+  summary: string;
+}
