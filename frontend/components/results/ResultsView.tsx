@@ -13,6 +13,8 @@ import { useUploads } from "@/lib/uploads";
 
 import { ConfidenceBadge, HeadlineNumbers, SavingBreakdown, VerdictCard } from "./AnswerSections";
 import { Assumptions, ContextPanel, NextSteps, SizeComparison, TariffCheck } from "./ExploreSections";
+import PrintSummary from "./PrintSummary";
+import ShareBar from "./Share";
 import WhatIfs from "./WhatIfs";
 
 // The chart library only runs in the browser.
@@ -106,6 +108,7 @@ export default function ResultsView() {
     <div className="space-y-10">
       <VerdictCard data={data} />
       <HeadlineNumbers data={data} />
+      <ShareBar route={data.usage.route} compact />
       <ConfidenceBadge data={data} query={query} />
       <BreakEvenChart data={data} />
       <SavingBreakdown data={data} />
@@ -116,6 +119,7 @@ export default function ResultsView() {
       <ContextPanel data={data} />
       <NextSteps data={data} />
       <Assumptions data={data} />
+      <PrintSummary data={data} />
       <p className="text-sm text-slate-400">
         Prices as of {ukDate(data.assumptions.costs_as_of)}; tariffs checked {ukDate(data.assumptions.tariffs_checked)}.
         Figures are estimates, not financial advice.{" "}

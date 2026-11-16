@@ -24,3 +24,30 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── Printing the results page (task 2.8) ───────────────────────────────────
+   The results page adds a .print-root summary directly under <body>. On screen it's
+   hidden; when printing (or saving as PDF) it's the only thing shown. Pages without
+   it print as normal. */
+.print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body:has(> .print-root) {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body:has(> .print-root) > :not(.print-root) {
+    display: none !important;
+  }
+  .print-root {
+    display: block;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

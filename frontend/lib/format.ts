@@ -80,3 +80,9 @@ export function plainUpgradeLabel(label: string): string {
     .replace(/\((\d+(?:\.\d+)?) kWp\)/, (_, n) => `(${n} kWp, about ${Math.round(Number(n) / 0.4)} panels)`)
     .replace(/\bEV charger\b/, "electric car charger");
 }
+
+/** The "could be…" line under a payback figure; plain words when no case pays back. */
+export function paybackNote(low: number | null, high: number | null, life = 15): string {
+  if (low === null && high === null) return `Not in any of our cases, even the optimistic one`;
+  return `Could be ${yearsRange(low, high, life)}`;
+}
