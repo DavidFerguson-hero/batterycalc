@@ -35,6 +35,7 @@ const parts = [
   "/* eslint-disable */",
   await compile(stripFieldTitles(schema.request, true), "AssessRequest", opts),
   await compile(stripFieldTitles(schema.response, true), "AssessResponse", opts),
+  await compile(stripFieldTitles(schema.usage_check_response, true), "UsageCheckResponse", opts),
 ];
 const text = parts.join("\n\n");
 

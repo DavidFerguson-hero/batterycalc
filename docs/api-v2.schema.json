@@ -1417,5 +1417,254 @@
     ],
     "title": "AssessResponse",
     "type": "object"
+  },
+  "usage_check_response": {
+    "$defs": {
+      "FileCheck": {
+        "properties": {
+          "days_found": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Days Found"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Plain-English reason the file couldn't be used.",
+            "title": "Error"
+          },
+          "first_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Date"
+          },
+          "last_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Date"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "ok"
+        ],
+        "title": "FileCheck",
+        "type": "object"
+      },
+      "UsageCoverage": {
+        "properties": {
+          "annual_kwh_estimate": {
+            "title": "Annual Kwh Estimate",
+            "type": "number"
+          },
+          "complete_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complete Days"
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "estimate"
+            ],
+            "title": "Confidence",
+            "type": "string"
+          },
+          "days_dropped_older_than_a_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Dropped Older Than A Year"
+          },
+          "days_found": {
+            "title": "Days Found",
+            "type": "integer"
+          },
+          "days_scaled_from_estimate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Scaled From Estimate"
+          },
+          "first_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Date"
+          },
+          "half_hours_filled": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Half Hours Filled"
+          },
+          "has_dates": {
+            "title": "Has Dates",
+            "type": "boolean"
+          },
+          "inferred_unit_rate_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From a cost column, if the file has one.",
+            "title": "Inferred Unit Rate P"
+          },
+          "last_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Date"
+          },
+          "missing_days_filled": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Days Filled"
+          },
+          "partial_days_filled": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partial Days Filled"
+          }
+        },
+        "required": [
+          "has_dates",
+          "first_date",
+          "last_date",
+          "days_found",
+          "complete_days",
+          "partial_days_filled",
+          "missing_days_filled",
+          "half_hours_filled",
+          "days_scaled_from_estimate",
+          "days_dropped_older_than_a_year",
+          "confidence",
+          "annual_kwh_estimate",
+          "inferred_unit_rate_p"
+        ],
+        "title": "UsageCoverage",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "combined": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/UsageCoverage"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "None when no file could be used."
+      },
+      "files": {
+        "items": {
+          "$ref": "#/$defs/FileCheck"
+        },
+        "title": "Files",
+        "type": "array"
+      },
+      "schema_version": {
+        "const": "2.0",
+        "default": "2.0",
+        "enum": [
+          "2.0"
+        ],
+        "title": "Schema Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "files",
+      "combined"
+    ],
+    "title": "UsageCheckResponse",
+    "type": "object"
   }
 }

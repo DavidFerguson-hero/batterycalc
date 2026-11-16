@@ -24,7 +24,7 @@ from engine.simulator import IMPLIED_RATE, calc_day_flows, run_simulation
 from engine.size_comparison import compare_sizes, options_from_matrix
 from engine.tariff_check import tariff_check
 from engine.tariffs import TARIFFS, TARIFFS_CHECKED
-from models.assess import AssessRequest, AssessResponse
+from models.assess import AssessRequest, AssessResponse, UsageCheckResponse
 from routers.analyse import _pay_back_levers
 
 router = APIRouter(tags=["v2"])
@@ -245,3 +245,71 @@ async def assess(request: Request) -> AssessResponse:
             "tariffs_checked": TARIFFS_CHECKED,
         },
     )
+
+
+MAX_FILES = 20
+MAX_FILE_BYTES = 10 * 1024 * 1024   # a year of half-hourly data is well under 1 MB
+
+
+@router.post(
+    "/v2/usage/check",
+    response_model=UsageCheckResponse,
+    openapi_extra={"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {
+        "type": "object", "required": ["files"],
+        "properties": {"files": {"type": "array", "items": {"type": "string", "format": "binary"}}},
+    }}}}},
+)
+async def usage_check(request: Request) -> UsageCheckResponse:
+    """
+    Read uploaded CSV files and say what was found (dates, days, gaps, confidence),
+    without running the assessment. In memory only; nothing is stored.
+    """
+    if not request.headers.get("content-type", "").startswith("multipart/form-data"):
+        _bad('Send the CSV files as multipart/form-data in a "files" part.')
+    form = await request.form()
+    uploads = form.getlist("files")
+    if not uploads:
+        _bad('Add at least one CSV in the "files" part.')
+    if len(uploads) > MAX_FILES:
+        _bad(f"Please upload {MAX_FILES} files or fewer.")
+
+    files, parsed = [], []
+    for f in uploads:
+        name = getattr(f, "filename", None) or "file"
+        raw = await f.read()
+        if len(raw) > MAX_FILE_BYTES:
+            files.append({"name": name, "ok": False, "error": "This file is too big. A year of half-hourly readings is usually under 1 MB."})
+            continue
+        try:
+            p = parse_csv_bytes(raw)
+        except ValueError as e:
+            files.append({"name": name, "ok": False, "error": str(e)})
+            continue
+        except Exception:
+            files.append({"name": name, "ok": False, "error": "We couldn't read this file. Please check it's a CSV export of your usage."})
+            continue
+        cov = p.coverage or {}
+        files.append({"name": name, "ok": True, "days_found": p.days_count,
+                      "first_date": cov.get("first_date"), "last_date": cov.get("last_date")})
+        parsed.append(p)
+
+    combined = None
+    if parsed:
+        m = merge_parse_results(parsed)
+        c = m.coverage or {}
+        combined = {
+            "has_dates": bool(c.get("has_dates")),
+            "first_date": c.get("first_date"),
+            "last_date": c.get("last_date"),
+            "days_found": m.days_count,
+            "complete_days": c.get("complete_days"),
+            "partial_days_filled": c.get("partial_days_filled"),
+            "missing_days_filled": c.get("missing_days_filled"),
+            "half_hours_filled": c.get("half_hours_filled"),
+            "days_scaled_from_estimate": c.get("days_scaled_from_estimate"),
+            "days_dropped_older_than_a_year": c.get("days_dropped_older_than_a_year"),
+            "confidence": m.confidence or "low",
+            "annual_kwh_estimate": m.annual_kwh_estimate,
+            "inferred_unit_rate_p": round(m.inferred_rate * 100, 2) if m.inferred_rate else None,
+        }
+    return UsageCheckResponse(files=files, combined=combined)

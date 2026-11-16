@@ -125,3 +125,33 @@ Estimate route, 3,500 kWh a year, semi-detached, no battery specified:
   }
 }
 ```
+
+---
+
+## `POST /api/v2/usage/check`
+
+Reads uploaded usage files and says what was found, **without** running the assessment, so the upload step can show "We found 342 days from …" in a second or two. In memory only; nothing is stored.
+
+```http
+POST /api/v2/usage/check
+Content-Type: multipart/form-data
+```
+
+Send one or more CSV files as `files` parts (up to 20 files, 10 MB each).
+
+**Response** (`usage_check_response` in [`api-v2.schema.json`](api-v2.schema.json)):
+
+| Field | What it holds |
+|---|---|
+| `files[]` | Per file: `name`, `ok`, and either `days_found`, `first_date`, `last_date`, or a plain-English `error` |
+| `combined` | All good files together: `first_date`, `last_date`, `days_found`, days and half-hours filled, days scaled from the seasonal shape, days dropped (older than a year), `confidence`, `annual_kwh_estimate`, and `inferred_unit_rate_p` if a file had a cost column. `null` when no file could be used. |
+
+One unreadable file doesn't stop the others: it gets `ok: false` with a reason.
+
+### Which CSV layouts are understood
+
+Column names are matched by what they contain, so exports from Octopus, OVO, the Bright app (Glowmarkt), n3rgy and most others work:
+
+- **Usage:** a column whose name contains `kWh`, `consumption`, `usage` or `import`, but not `export`, `generation`, `cost`, `price`, `rate`, `cumulative` or `register`.
+- **Time:** a start/timestamp column, an end column (read as the end of the half-hour), or separate date and time columns. Times with an offset or `Z` are honoured; a column whose name says `UTC` is read as UTC; otherwise times are UK clock time.
+- **Interval:** half-hourly readings are used as they are; **hourly readings are split evenly into two half-hours**; daily (or coarser) readings are rejected with a message asking for half-hourly data.
