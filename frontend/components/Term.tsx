@@ -17,6 +17,8 @@ export default function Term({ k, children }: { k: GlossaryKey; children?: React
   const id = useId();
   const wrap = useRef<HTMLSpanElement>(null);
   const tip = useRef<HTMLSpanElement>(null);
+  // Opened by a mouse hover: the click that usually follows should keep it open, not close it.
+  const hoverOpened = useRef(false);
   const [shift, setShift] = useState(0);
 
   // Keep the definition on screen: centred under the word, nudged sideways near the edges.
@@ -52,15 +54,22 @@ export default function Term({ k, children }: { k: GlossaryKey; children?: React
     <span
       ref={wrap}
       className="relative inline-block"
-      onPointerEnter={(e) => e.pointerType === "mouse" && setOpen(true)}
-      onPointerLeave={(e) => e.pointerType === "mouse" && setOpen(false)}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse" && !open) { hoverOpened.current = true; setOpen(true); }
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse" && hoverOpened.current) { hoverOpened.current = false; setOpen(false); }
+      }}
       onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setOpen(false)}
     >
       <button
         type="button"
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (hoverOpened.current) { hoverOpened.current = false; setOpen(true); }   // pin it open
+          else setOpen((v) => !v);
+        }}
         className="underline decoration-dotted decoration-2 underline-offset-4 decoration-[#f97316] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316] rounded-sm cursor-help"
       >
         {children ?? entry.label}

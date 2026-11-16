@@ -14,8 +14,13 @@ export type HomeItem = (typeof HOME_ITEMS)[number];
 
 export type HomeSetup = Record<HomeItem, Ownership>;
 
+/** How we'll learn the home's electricity use: real smart meter data, or a quick estimate. */
+export type Route = "upload" | "estimate";
+export const ROUTES: readonly Route[] = ["upload", "estimate"];
+
 export interface Journey {
   home: HomeSetup;
+  route: Route | null;   // null until chosen
 }
 
 /** Query-string keys for each home item (short, so shared links stay tidy). */
@@ -30,6 +35,15 @@ const OWNERSHIP: readonly Ownership[] = ["none", "have", "planning"];
 
 export const DEFAULT_JOURNEY: Journey = {
   home: { solar: "none", heat_pump: "none", ev: "none", battery: "none" },
+  route: null,
+};
+
+const ROUTE_KEY = "route";
+
+/** Where each route's own step lives. */
+export const ROUTE_PATHS: Record<Route, string> = {
+  upload: "/check/usage/upload",
+  estimate: "/check/usage/estimate",
 };
 
 type QueryLike = URLSearchParams | string | { toString(): string };
@@ -47,7 +61,9 @@ export function parseJourney(q: QueryLike): Journey {
   const p = asParams(q);
   const home = { ...DEFAULT_JOURNEY.home };
   for (const item of HOME_ITEMS) home[item] = ownership(p.get(HOME_KEYS[item]));
-  return { home };
+  const r = p.get(ROUTE_KEY);
+  const route = ROUTES.includes(r as Route) ? (r as Route) : null;
+  return { home, route };
 }
 
 /**
@@ -62,6 +78,8 @@ export function writeJourney(j: Journey, existing: QueryLike = ""): string {
     if (j.home[item] === "none") out.delete(key);
     else out.set(key, j.home[item]);
   }
+  if (j.route) out.set(ROUTE_KEY, j.route);
+  else out.delete(ROUTE_KEY);
   out.sort();
   return out.toString();
 }
@@ -69,6 +87,11 @@ export function writeJourney(j: Journey, existing: QueryLike = ""): string {
 /** A link to a step that carries the current answers. */
 export function stepHref(path: string, query: string): string {
   return query ? `${path}?${query}` : path;
+}
+
+/** The query with the route set, ready to link to that route's step. */
+export function withRoute(route: Route, query: QueryLike): string {
+  return writeJourney({ ...parseJourney(query), route }, query);
 }
 
 /** True when the homeowner hasn't picked anything (all "none"). */
