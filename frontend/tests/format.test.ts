@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { BREAKDOWN_LABELS, CONFIDENCE, VERDICT, gbp, gbpRange, kwh, years, yearsRange } from "../lib/format.ts";
+import { BREAKDOWN_LABELS, CONFIDENCE, VERDICT, gbp, gbpRange, kwh, plainUpgradeLabel, ukDate, years, yearsRange } from "../lib/format.ts";
 
 test("pounds", () => {
   assert.equal(gbp(6500), "£6,500");
@@ -51,4 +51,16 @@ test("every confidence level the API returns is explained", () => {
 test("saving breakdown labels are plain English (no 'other')", () => {
   assert.ok(!Object.values(BREAKDOWN_LABELS).some((l) => /^other$/i.test(l)));
   assert.match(BREAKDOWN_LABELS.other, /Selling stored energy/);
+});
+
+test("dates in words", () => {
+  assert.equal(ukDate("2026-11-15"), "15 November 2026");
+  assert.equal(ukDate("2026-01-03T10:00:00Z"), "3 January 2026");
+  assert.equal(ukDate("soon"), "soon");
+});
+
+test("upgrade labels explain their acronyms", () => {
+  assert.equal(plainUpgradeLabel("Solar panels (4 kWp)"), "Solar panels (4 kWp, about 10 panels)");
+  assert.equal(plainUpgradeLabel("Home EV charger (7 kW)"), "Home electric car charger (7 kW)");
+  assert.equal(plainUpgradeLabel("Air source heat pump"), "Air source heat pump");
 });

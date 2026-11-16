@@ -6,14 +6,21 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import { ApiError, type AssessResponse, assess } from "@/lib/api";
+import { ukDate } from "@/lib/format";
 import { buildAssessRequest } from "@/lib/request";
-import { stepHref } from "@/lib/journey";
+import { parseJourney, stepHref } from "@/lib/journey";
 import { useUploads } from "@/lib/uploads";
 
 import { ConfidenceBadge, HeadlineNumbers, SavingBreakdown, VerdictCard } from "./AnswerSections";
+import { Assumptions, ContextPanel, NextSteps, SizeComparison, TariffCheck } from "./ExploreSections";
+import WhatIfs from "./WhatIfs";
 
 // The chart library only runs in the browser.
 const BreakEvenChart = dynamic(() => import("./BreakEvenChart"), {
+  ssr: false,
+  loading: () => <div className="h-72 rounded-xl border border-slate-700 bg-[#0f1f38]" aria-hidden="true" />,
+});
+const DayInLife = dynamic(() => import("./DayInLife"), {
   ssr: false,
   loading: () => <div className="h-72 rounded-xl border border-slate-700 bg-[#0f1f38]" aria-hidden="true" />,
 });
@@ -94,6 +101,7 @@ export default function ResultsView() {
   }
 
   const data = current.data;
+  const home = parseJourney(query).home;
   return (
     <div className="space-y-10">
       <VerdictCard data={data} />
@@ -101,8 +109,15 @@ export default function ResultsView() {
       <ConfidenceBadge data={data} query={query} />
       <BreakEvenChart data={data} />
       <SavingBreakdown data={data} />
+      <SizeComparison data={data} />
+      <TariffCheck data={data} />
+      <WhatIfs key={requestKey} data={data} base={built.request} files={files} ev={home.ev} heatPump={home.heat_pump} />
+      <DayInLife data={data} />
+      <ContextPanel data={data} solar={home.solar} />
+      <NextSteps data={data} />
+      <Assumptions data={data} solar={home.solar} />
       <p className="text-sm text-slate-400">
-        Prices as of {data.assumptions.costs_as_of}; tariffs checked {data.assumptions.tariffs_checked}.
+        Prices as of {ukDate(data.assumptions.costs_as_of)}; tariffs checked {ukDate(data.assumptions.tariffs_checked)}.
         Figures are estimates, not financial advice.{" "}
         <Link href={stepHref("/check/confirm", query)} className="underline underline-offset-4 hover:text-white">Change your details</Link>
       </p>
