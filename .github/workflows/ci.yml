@@ -62,7 +62,7 @@ jobs:
         run: pytest -v
 
   frontend:
-    name: Frontend lint and build
+    name: Frontend tests, lint and build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,6 +82,9 @@ jobs:
 
       - name: API types match the published v2 schema
         run: npm run check:api-types
+
+      - name: Unit tests
+        run: npm test
 
       - name: Lint
         run: npm run lint
