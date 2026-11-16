@@ -103,7 +103,7 @@ All new engine code lives in `api/engine/` with pytest tests. Existing endpoints
   - Move `OPT_BATTERIES` and `DEFAULT_COSTS` out of `tariffs.py` into `api/data/costs.json`, with low/typical/high, components (unit, inverter, install, VAT), source and as-of date.
   - Add context costs for solar, heat pump and EV charger.
   - The API returns a "fair price range" for the recommended size.
-- [ ] **1.9 One assessment endpoint.** `POST /api/v2/assess`: one request with all inputs, one response holding everything the results page needs (sections below).
+- [x] **1.9 One assessment endpoint.** `POST /api/v2/assess`: one request with all inputs, one response holding everything the results page needs (sections below).
   - Document the request/response schema in `docs/api-v2.md`.
   - Add a contract test that validates a sample response against the schema.
   - Keep `/api/epc/lookup` and `/api/solar` as they are.

@@ -103,6 +103,9 @@ def _make_octopus_flux_import() -> list[float]:
 # Ofgem Q1 2026 standard variable — fallback when CSV has no cost column
 IMPLIED_RATE = 0.2816
 
+# When the time-of-use rates below were last checked against the suppliers (task 0.4).
+TARIFFS_CHECKED = "2026-11-15"
+
 TARIFFS: dict[str, Tariff] = {
     "currentFlat": Tariff(
         key="currentFlat",
