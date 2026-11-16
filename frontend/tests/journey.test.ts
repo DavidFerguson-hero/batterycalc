@@ -62,7 +62,8 @@ test("step links carry the answers", () => {
 
 test("maps EV and heat pump onto the API request", () => {
   const home = parseJourney("ev=planning&hp=have&solar=have").home;
-  assert.deepEqual(homeToRequest(home), { ev: { status: "planning" }, heat_pump: { status: "have" } });
+  assert.deepEqual(homeToRequest(home),
+    { ev: { status: "planning" }, heat_pump: { status: "have" }, solar: { status: "have" } });
 });
 
 test("route: none until chosen, invalid values ignored", () => {

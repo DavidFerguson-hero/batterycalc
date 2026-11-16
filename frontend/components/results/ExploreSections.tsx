@@ -5,6 +5,7 @@ import Term from "@/components/Term";
 import ShareBar from "@/components/results/Share";
 import type { AssessResponse } from "@/lib/api";
 import { VERDICT, gbp, gbpRange, plainUpgradeLabel, ukDate, years } from "@/lib/format";
+import { solarAssumption, solarContextNote } from "@/lib/solar";
 
 const card = "rounded-xl border border-slate-700 bg-[#0f1f38]";
 const sub = "text-sm text-slate-300";
@@ -157,14 +158,15 @@ export function TariffCheck({ data }: { data: AssessResponse }) {
 
 // ── 10. Context: other upgrades ───────────────────────────────────────────────
 
-export function ContextPanel({ data, solar }: { data: AssessResponse; solar: "none" | "have" | "planning" }) {
+export function ContextPanel({ data }: { data: AssessResponse }) {
+  const solarNote = solarContextNote(data.usage.solar);
   const items = Object.entries(data.context_costs).filter((e): e is [string, NonNullable<(typeof e)[1]>] => !!e[1]);
   return (
     <section aria-labelledby="context-heading" className="text-sm">
       <h2 id="context-heading" className="mb-1 text-lg font-semibold">Other upgrades, for context</h2>
       <p className={`mb-3 ${sub}`}>
         Typical fitted prices, in case you&apos;re weighing a battery against other changes.
-        {solar !== "none" && " We don't model solar panels yet, so your answer above doesn't include any solar."}
+        {solarNote && ` ${solarNote}`}
       </p>
       <ul className="grid gap-3 sm:grid-cols-3">
         {items.map(([key, c]) => (
@@ -232,7 +234,8 @@ export function NextSteps({ data }: { data: AssessResponse }) {
 
 // ── 12. Assumptions ───────────────────────────────────────────────────────────
 
-export function Assumptions({ data, solar }: { data: AssessResponse; solar: "none" | "have" | "planning" }) {
+export function Assumptions({ data }: { data: AssessResponse }) {
+  const solar = solarAssumption(data.usage.solar);
   const a = data.assumptions;
   const g = a.price_growth_pct;
   const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -251,7 +254,9 @@ export function Assumptions({ data, solar }: { data: AssessResponse; solar: "non
     ...((data.tariff_check.current as { key?: string }).key === "current"
       ? [["Your electricity rate", `${data.usage.unit_rate_p}p per kWh`] as [string, string]]
       : []),
-    ["Electricity use modelled", `${Math.round(data.usage.annual_kwh).toLocaleString("en-GB")} kWh a year`],
+    [data.usage.solar?.modelled ? "Electricity use modelled (before solar)" : "Electricity use modelled",
+      `${Math.round(data.usage.annual_kwh).toLocaleString("en-GB")} kWh a year`],
+    ...(solar ? [["Solar panels", solar] as [string, string]] : []),
     ["Battery and fitting prices", `As of ${ukDate(a.costs_as_of)}`],
     ["Tariffs", `Checked ${ukDate(a.tariffs_checked)}`],
   ];
@@ -271,7 +276,7 @@ export function Assumptions({ data, solar }: { data: AssessResponse; solar: "non
         </dl>
         <p className={`mt-4 ${sub}`}>
           Savings are compared with the best tariff you could switch to without a battery.
-          {solar !== "none" && " Solar panels aren't modelled yet."} Figures are estimates, not financial advice.
+          Figures are estimates, not financial advice.
         </p>
       </details>
     </section>

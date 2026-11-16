@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 import type { AssessRequest } from "../lib/api-v2-types.ts";
 import { chargeWindow, slotTime, summariseDay } from "../lib/dayinlife.ts";
-import { applyWhatIf, initialWhatIf, sameWhatIf } from "../lib/whatif.ts";
+import { alreadyIncludedNote, applyWhatIf, initialWhatIf, sameWhatIf } from "../lib/whatif.ts";
 
 const base: AssessRequest = {
   usage: { route: "estimate", annual_kwh: 3500, property_type: "semi", heating_type: "gas" },
@@ -16,13 +16,13 @@ const base: AssessRequest = {
 
 test("the starting what-if matches the answer they already have", () => {
   const w = initialWhatIf({ battery_kwh: 10, installed_price: 6500 }, "none", "planning");
-  assert.deepEqual(w, { sizeKwh: 10, priceGbp: 6500, ev: false, heatPump: true });
+  assert.deepEqual(w, { sizeKwh: 10, priceGbp: 6500, ev: false, heatPump: true, solar: false });
   assert.ok(sameWhatIf(w, { ...w }));
   assert.ok(!sameWhatIf(w, { ...w, priceGbp: 6000 }));
 });
 
 test("a what-if fixes the battery size and price, and keeps their other answers", () => {
-  const r = applyWhatIf(base, { sizeKwh: 13.5, priceGbp: 7999.6, ev: false, heatPump: true });
+  const r = applyWhatIf(base, { sizeKwh: 13.5, priceGbp: 7999.6, ev: false, heatPump: true, solar: false });
   assert.deepEqual(r.battery, { size_kwh: 13.5, price_gbp: 8000 });
   assert.deepEqual(r.heat_pump, base.heat_pump);
   assert.deepEqual(r.tariff, base.tariff);
@@ -30,20 +30,51 @@ test("a what-if fixes the battery size and price, and keeps their other answers"
 });
 
 test("adding a car plans one; removing a planned heat pump drops it", () => {
-  const r = applyWhatIf(base, { sizeKwh: 10, priceGbp: 6500, ev: true, heatPump: false });
+  const r = applyWhatIf(base, { sizeKwh: 10, priceGbp: 6500, ev: true, heatPump: false, solar: false });
   assert.deepEqual(r.ev, { status: "planning" });
   assert.deepEqual(r.heat_pump, { status: "none" });
 });
 
 test("a car or heat pump they already have can't be switched off", () => {
   const have = { ...base, ev: { status: "have" as const, annual_miles: 9000 } };
-  const r = applyWhatIf(have, { sizeKwh: 10, priceGbp: 6500, ev: false, heatPump: true });
+  const r = applyWhatIf(have, { sizeKwh: 10, priceGbp: 6500, ev: false, heatPump: true, solar: false });
   assert.deepEqual(r.ev, { status: "have", annual_miles: 9000 });
 });
 
 test("prices are kept inside what the API accepts", () => {
-  assert.equal(applyWhatIf(base, { sizeKwh: 5, priceGbp: 10, ev: false, heatPump: false }).battery?.price_gbp, 500);
-  assert.equal(applyWhatIf(base, { sizeKwh: 5, priceGbp: 1e6, ev: false, heatPump: false }).battery?.price_gbp, 50000);
+  assert.equal(applyWhatIf(base, { sizeKwh: 5, priceGbp: 10, ev: false, heatPump: false, solar: false }).battery?.price_gbp, 500);
+  assert.equal(applyWhatIf(base, { sizeKwh: 5, priceGbp: 1e6, ev: false, heatPump: false, solar: false }).battery?.price_gbp, 50000);
+});
+
+// ── Solar what-ifs (H17) ──────────────────────────────────────────────────────
+
+const noSolar = { sizeKwh: 10, priceGbp: 6500, ev: false, heatPump: true, solar: false };
+
+test("solar they have or plan starts ticked", () => {
+  assert.equal(initialWhatIf({ battery_kwh: 10, installed_price: 6500 }, "none", "none", "planning").solar, true);
+  assert.equal(initialWhatIf({ battery_kwh: 10, installed_price: 6500 }, "none", "none", "have").solar, true);
+  assert.equal(initialWhatIf({ battery_kwh: 10, installed_price: 6500 }, "none", "none").solar, false);
+  assert.ok(!sameWhatIf(noSolar, { ...noSolar, solar: true }));
+});
+
+test("ticking solar plans panels; unticking drops planned ones", () => {
+  assert.deepEqual(applyWhatIf(base, { ...noSolar, solar: true }).solar, { status: "planning" });
+  const planned = { ...base, solar: { status: "planning" as const, kwp: 3 } };
+  assert.deepEqual(applyWhatIf(planned, { ...noSolar, solar: true }).solar, { status: "planning", kwp: 3 });
+  assert.deepEqual(applyWhatIf(planned, noSolar).solar, { status: "none" });
+});
+
+test("solar panels they already have can't be switched off", () => {
+  const have = { ...base, solar: { status: "have" as const } };
+  assert.deepEqual(applyWhatIf(have, noSolar).solar, { status: "have" });
+});
+
+test("the already-included note", () => {
+  assert.equal(alreadyIncludedNote("none", "none", "planning"), null);
+  assert.equal(alreadyIncludedNote("have", "none", "none"), "Your electric car is already included.");
+  assert.equal(alreadyIncludedNote("none", "none", "have"), "Your solar panels are already included.");
+  assert.equal(alreadyIncludedNote("have", "have", "have"),
+    "Your electric car, heat pump and solar panels are already included.");
 });
 
 test("half-hour slot times", () => {

@@ -18,6 +18,7 @@ HeatingType = Literal["gas", "electric"]
 LoadStatus = Literal["none", "have", "planning"]
 Verdict = Literal["worth_it", "borderline", "not_yet"]
 Confidence = Literal["high", "medium", "low", "estimate"]
+Orientation = Literal["south", "south_east", "south_west", "east", "west"]
 _HHMM = r"^([01]\d|2[0-3]):(00|30)$"
 
 
@@ -51,13 +52,21 @@ class HeatPumpInput(_Strict):
     efficiency: float = Field(3.0, ge=1.5, le=6.0)
 
 
+class SolarInput(_Strict):
+    status: LoadStatus = Field(
+        "none", description='"have": panels already fitted. "planning": panels you plan to add.')
+    kwp: float = Field(4.0, ge=0.5, le=20, description="Size of the panels in kWp (kilowatts peak).")
+    orientation: Orientation = Field("south", description="Which way the panels face.")
+
+
 class TariffInput(_Strict):
     current_tariff_key: Optional[str] = Field(
         None, description="Leave empty for a flat rate at unit_rate_p and standing_charge_p.")
     unit_rate_p: Optional[float] = Field(
         None, ge=5, le=100, description="Pence per kWh. Empty: inferred from the CSV cost column, else the price cap rate.")
     standing_charge_p: float = Field(53.0, ge=0, le=200, description="Pence per day.")
-    export_rate_p: float = Field(0.0, ge=0, le=100, description="Pence per kWh for stored energy sold back.")
+    export_rate_p: float = Field(
+        0.0, ge=0, le=100, description="Pence per kWh for electricity sold back: spare solar and stored energy.")
 
 
 class BatteryInput(_Strict):
@@ -72,6 +81,7 @@ class AssessRequest(_Strict):
     usage: UsageInput
     ev: EVInput = EVInput()
     heat_pump: HeatPumpInput = HeatPumpInput()
+    solar: SolarInput = SolarInput()
     tariff: TariffInput = TariffInput()
     battery: BatteryInput = BatteryInput()
 
@@ -91,6 +101,18 @@ class OptionalRange(BaseModel):
     high: Optional[float]
 
 
+class SolarSummary(BaseModel):
+    status: LoadStatus
+    kwp: float
+    orientation: Orientation
+    annual_generation_kwh: float = Field(description="Typical yearly generation for this size and direction.")
+    modelled: bool = Field(
+        description="True when generation was taken off the usage. False on the upload route with "
+                    "panels already fitted: the meter readings already include them.")
+    used_at_home_kwh: Optional[float] = Field(description="Solar used as it's made, no battery. None when not modelled.")
+    spare_kwh: Optional[float] = Field(description="Solar left over with no battery, exported or stored. None when not modelled.")
+
+
 class UsageSummary(BaseModel):
     route: Literal["estimate", "upload"]
     annual_kwh: float = Field(description="Modelled year, including any planned EV or heat pump.")
@@ -100,6 +122,7 @@ class UsageSummary(BaseModel):
     coverage: Optional[dict] = Field(description="Upload route: dates found, gaps filled, days scaled.")
     extra_loads: Optional[dict]
     unit_rate_p: float = Field(description="Current unit rate used, pence per kWh.")
+    solar: Optional[SolarSummary] = Field(None, description="None when there are no solar panels.")
 
 
 class Recommendation(BaseModel):
@@ -220,6 +243,9 @@ class DayFlows(BaseModel):
     from_battery: list[float]
     grid_to_home: list[float]
     battery_level: list[float]
+    solar_generation: Optional[list[float]] = Field(None, description="Only when solar is modelled.")
+    solar_to_battery: Optional[list[float]] = None
+    exported: Optional[list[float]] = Field(None, description="Spare solar sent to the grid.")
 
 
 class DayInLife(BaseModel):

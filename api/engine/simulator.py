@@ -19,6 +19,8 @@ class DayResult:
     export_kwh: float = 0.0
     export_revenue: float = 0.0
     end_soc: float = 0.0        # SoC (kWh) left at midnight, carried into the next day
+    end_solar_kwh: float = 0.0  # how much of end_soc is stored solar
+    solar_storage_value: float = 0.0   # £: stored solar used at home, less export income given up
 
 
 @dataclass
@@ -33,20 +35,23 @@ class SimResult:
     avg_kwh_shifted_per_day: float
     ann_export_revenue: float = 0.0
     ann_kwh_exported: float = 0.0
+    ann_solar_storage: float = 0.0
 
     def saving_breakdown(self) -> dict:
         """
-        Where the battery's saving (saving_battery_only) comes from, battery without solar.
+        Where the battery's saving (saving_battery_only) comes from.
           time_shifting  — grid electricity charged cheaply and used at dearer times, net of
                            what charging it cost (losses included)
-          solar_storage  — none without solar
+          solar_storage  — spare solar stored and used at home, net of the export income
+                           given up (0 without solar)
           other          — stored energy sold back to the grid
         The parts add up to saving_battery_only exactly.
         """
         other = self.ann_export_revenue
+        solar = self.ann_solar_storage
         return {
-            "time_shifting": round(self.saving_battery_only - other, 2),
-            "solar_storage": 0.0,
+            "time_shifting": round(self.saving_battery_only - other - solar, 2),
+            "solar_storage": round(solar, 2),
             "other": round(other, 2),
             "total": round(self.saving_battery_only, 2),
         }
@@ -82,6 +87,14 @@ class SolarResult:
         }
 
 
+def day_import_cost(day_kwh: list[float], rates: list[float], export_rate: float = 0.0) -> float:
+    """
+    A day's cost with no battery. Negative half-hours are spare solar (net load), which is
+    exported at export_rate.
+    """
+    return sum(k * r if k > 0 else k * export_rate for k, r in zip(day_kwh, rates))
+
+
 def simulate_day_full(
     day_kwh: list[float],
     tariff: Tariff,
@@ -90,21 +103,43 @@ def simulate_day_full(
     efficiency: float,          # round-trip, e.g. 0.90
     export_rate: float = 0.0,   # £/kWh — 0 means no export
     start_soc: float | None = None,
+    start_solar_kwh: float = 0.0,
 ) -> DayResult:
     """
     Simulate one day of battery operation.
 
-    Charging: efficiency loss applied on grid-side (importing more than stored).
+    day_kwh is the net load: what the home uses less any solar generation. A negative
+    half-hour is spare solar.
+
+    Charging: efficiency loss applied on the way in (grid: importing more than stored;
+    solar: storing less than was generated).
     Discharging: 1-to-1 offset of consumption (efficiency already paid on charge).
     Battery starts at start_soc (default 30% SoC, used for the first day of a run),
     respects 10% minimum reserve, and reports end_soc for the next day.
+
+    Spare solar charges the battery first; what doesn't fit is exported at export_rate.
+    On a day with spare solar, cheap-rate grid charging stops short of full so the solar
+    has room (the model knows the day's generation in advance, as a forecast would).
+    Grid-charged energy is used in the tariff's discharge slots; stored solar can also be
+    used in any half-hour that isn't a charge slot. Without solar the result is the same as
+    a battery-only run.
     """
     max_per_slot = max_rate_kw * 0.5    # kWh limit per 30-min slot
     min_soc = cap_kwh * 0.10
     soc = cap_kwh * 0.30 if start_soc is None else min(max(start_soc, min_soc), cap_kwh)
+    solar_kwh = min(max(start_solar_kwh, 0.0), max(0.0, soc - min_soc))   # stored solar
+
+    # Spare solar still to come after each half-hour, for the grid-charge ceiling.
+    spare_after = [0.0] * 48
+    acc = 0.0
+    for i in range(47, -1, -1):
+        spare_after[i] = acc
+        acc += max(0.0, -day_kwh[i])
+    has_solar = acc > 0
 
     cost_no_battery = 0.0
     cost_with_battery = 0.0
+    solar_value = 0.0
     soc_profile: list[float] = []
     grid_profile: list[float] = []
 
@@ -113,16 +148,38 @@ def simulate_day_full(
     for i in range(48):
         kwh = day_kwh[i]
         rate = tariff.slot_rates[i]
+
+        if kwh < 0:   # spare solar: store what fits, export the rest
+            spare = -kwh
+            cost_no_battery -= spare * export_rate
+            stored_in = 0.0
+            if soc < cap_kwh - 0.01:
+                taken = min(spare, max_per_slot, (cap_kwh - soc) / efficiency)
+                stored_in = taken * efficiency
+                soc += stored_in
+                solar_kwh += stored_in
+                spare -= taken
+                solar_value -= taken * export_rate
+            cost_with_battery -= spare * export_rate
+            soc_profile.append(soc)
+            grid_profile.append(0.0)
+            continue
+
         cost_no_battery += kwh * rate
-
         grid_import = kwh
+        ceiling = max(min_soc, cap_kwh - spare_after[i]) if has_solar else cap_kwh
 
-        if tariff.charge_slots[i] and soc < cap_kwh - 0.01:
-            to_add = min(max_per_slot, cap_kwh - soc)
+        if tariff.charge_slots[i] and soc < ceiling - 0.01:
+            to_add = min(max_per_slot, ceiling - soc)
             soc += to_add
             grid_import = kwh + to_add / efficiency    # extra draw to account for losses
-        elif tariff.discharge_slots[i] and soc > min_soc:
-            disc = min(soc - min_soc, kwh, max_per_slot)
+        elif soc > min_soc and kwh > 0 and (tariff.discharge_slots[i] or (
+                solar_kwh > 0 and not tariff.charge_slots[i])):
+            avail = soc - min_soc if tariff.discharge_slots[i] else min(solar_kwh, soc - min_soc)
+            disc = min(avail, kwh, max_per_slot)
+            from_solar = disc if not tariff.discharge_slots[i] else disc * solar_kwh / (soc - min_soc)
+            solar_kwh -= from_solar
+            solar_value += from_solar * rate
             soc -= disc
             grid_import = kwh - disc
 
@@ -147,6 +204,8 @@ def simulate_day_full(
 
     # Energy sold as export has left the battery, so it can't also carry into tomorrow.
     end_soc = max(min_soc, soc - total_export_kwh)
+    if total_export_kwh > 0 and soc > min_soc:
+        solar_kwh *= (end_soc - min_soc) / (soc - min_soc)
 
     return DayResult(
         cost_no_battery=cost_no_battery,
@@ -156,6 +215,8 @@ def simulate_day_full(
         export_kwh=total_export_kwh,
         export_revenue=total_export_revenue,
         end_soc=end_soc,
+        end_solar_kwh=max(0.0, solar_kwh),
+        solar_storage_value=solar_value,
     )
 
 
@@ -193,6 +254,8 @@ def run_simulation(
     avg_soc = [0.0] * 48
     tot_export_kwh = 0.0
     tot_export_revenue = 0.0
+    tot_solar_value = 0.0
+    solar_kwh = 0.0   # stored solar carried from one day to the next
     soc = None   # first day starts at the default 30%; each later day starts where the last ended
     rates = tariff.slot_rates
     discharge = tariff.discharge_slots
@@ -202,22 +265,27 @@ def run_simulation(
     # day in a month is the same) about as fast as it was with 35 days.
     prev_day: list[float] | None = None
     prev_soc: float | None = None
+    prev_solar: float | None = None
     prev = None   # (result, cost_no_batt, cost_current, shifted)
 
     for day_kwh in days:
-        if prev is not None and soc == prev_soc and (day_kwh is prev_day or day_kwh == prev_day):
+        if (prev is not None and soc == prev_soc and solar_kwh == prev_solar
+                and (day_kwh is prev_day or day_kwh == prev_day)):
             result, day_no_batt, day_curr, day_shifted = prev
         else:
-            day_curr = sum(day_kwh) * cur_rate
-            day_no_batt = sum(k * r for k, r in zip(day_kwh, rates))
-            result = simulate_day_full(day_kwh, tariff, cap_kwh, max_rate_kw, efficiency, export_rate, soc)
+            day_curr = sum(k * cur_rate if k > 0 else k * export_rate for k in day_kwh)
+            day_no_batt = day_import_cost(day_kwh, rates, export_rate)
+            result = simulate_day_full(day_kwh, tariff, cap_kwh, max_rate_kw, efficiency,
+                                       export_rate, soc, solar_kwh)
             day_shifted = sum(
                 max(0.0, k - g) for k, g, dis in zip(day_kwh, result.grid_profile, discharge) if dis
             )
-            prev_day, prev_soc = day_kwh, soc
+            prev_day, prev_soc, prev_solar = day_kwh, soc, solar_kwh
             prev = (result, day_no_batt, day_curr, day_shifted)
 
         soc = result.end_soc
+        solar_kwh = result.end_solar_kwh
+        tot_solar_value += result.solar_storage_value
         tot_curr += day_curr
         tot_no_batt += day_no_batt
         tot_with_batt += result.cost_with_battery
@@ -244,6 +312,7 @@ def run_simulation(
         avg_kwh_shifted_per_day=kwh_shifted / n_days,
         ann_export_revenue=tot_export_revenue * scale,
         ann_kwh_exported=tot_export_kwh * scale,
+        ann_solar_storage=tot_solar_value * scale,
     )
 
 

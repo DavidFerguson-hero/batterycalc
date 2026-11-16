@@ -58,6 +58,7 @@ test("estimate route with EV, heat pump and a flat tariff", () => {
     usage: { route: "estimate", annual_kwh: 3800, property_type: "semi", heating_type: "electric" },
     ev: { status: "planning", annual_miles: 9000 },
     heat_pump: { status: "have", floor_area_m2: 92, epc_rating: "C" },
+    solar: { status: "none" },
     tariff: { unit_rate_p: 24.5, standing_charge_p: 60, export_rate_p: 15 },
     battery: {},
   });
@@ -81,4 +82,23 @@ test("upload route needs files loaded, then sends no annual kWh", () => {
   const { request } = buildAssessRequest("route=upload&ev=have", true);
   assert.deepEqual(request!.usage, { route: "upload", property_type: "semi", heating_type: "gas" });
   assert.deepEqual(request!.ev, { status: "have" });   // typical miles assumed by the API
+});
+
+// ── Solar (H17) ───────────────────────────────────────────────────────────────
+
+test("no solar answer sends solar as none", () => {
+  assert.deepEqual(buildAssessRequest("route=estimate&prop=flat&kwh=2500").request!.solar, { status: "none" });
+});
+
+test("solar they have or plan is sent with its status, on both routes", () => {
+  for (const status of ["have", "planning"] as const) {
+    const est = buildAssessRequest(`route=estimate&prop=semi&kwh=3000&solar=${status}`).request!;
+    assert.deepEqual(est.solar, { status });
+    const up = buildAssessRequest(`route=upload&solar=${status}`, true).request!;
+    assert.deepEqual(up.solar, { status });
+  }
+});
+
+test("a bad solar answer is treated as none", () => {
+  assert.deepEqual(buildAssessRequest("route=estimate&prop=semi&kwh=3000&solar=lots").request!.solar, { status: "none" });
 });
