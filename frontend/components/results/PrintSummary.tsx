@@ -161,7 +161,7 @@ export default function PrintSummary({ data }: { data: AssessResponse }) {
           Assumes a {life}-year battery life, a {a.warranty_years}-year warranty, {a.capacity_loss_pct_per_year}% capacity lost each year,
           electricity prices rising {growth.central}% a year ({growth.low}% to {growth.high}%)
           {a.inverter_replacement_year ? ` and the inverter replaced in year ${a.inverter_replacement_year} (about ${gbp(a.inverter_replacement_cost)})` : ""}.
-          {data.usage.solar && ` Solar panels: ${solarAssumption(data.usage.solar)}${data.usage.solar.modelled ? "" : "."}`}
+          {data.usage.solar && ` Solar panels: ${solarAssumption(data.usage.solar)}${data.usage.solar.modelled ? "" : "."} `}
           Prices as of {ukDate(a.costs_as_of)}; tariffs checked {ukDate(a.tariffs_checked)}. Figures are estimates, not financial advice.
         </p>
         {href && <p className="mt-[1mm] break-all">See the full answer: {printableUrl(href)}</p>}
