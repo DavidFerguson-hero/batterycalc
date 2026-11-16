@@ -57,7 +57,12 @@ export const CONFIDENCE: Record<string, { label: string; text: string }> = {
   high: { label: "Based on a year of your data", text: "We used about a year of your real smart meter readings." },
   medium: { label: "Based on some of your data", text: "We used a few months of your real readings and filled in the rest of the year from typical seasonal patterns." },
   low: { label: "Based on a little of your data", text: "We had only a short stretch of your readings, so most of the year comes from typical patterns. Treat this as a rough guide." },
-  estimate: { label: "Estimate", text: "We estimated your use from your home's details and typical patterns for homes like yours." },
+  // Accuracy figures from the task 3.1 check: 61 London homes, estimate vs a year of their real readings
+  // (api/scripts/accuracy_check.py). Re-run it and update these if the model changes.
+  estimate: {
+    label: "Estimate",
+    text: "We estimated your use from your home's details and the daily pattern of real UK homes. When we tested this against a year of real smart meter readings from 61 homes, the estimated yearly saving was within 10% for three in four homes and within 20% for nine in ten, as long as the yearly use was right.",
+  },
 };
 
 export const BREAKDOWN_LABELS = {
