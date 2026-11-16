@@ -94,3 +94,19 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: https://batterysizer-api.onrender.com
           NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Install Chromium for the accessibility checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Accessibility and phone-width checks (axe, WCAG 2.1 AA)
+        run: npm run test:a11y
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Keep the accessibility report if a check fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-test-results
+          path: frontend/test-results/
+          retention-days: 7

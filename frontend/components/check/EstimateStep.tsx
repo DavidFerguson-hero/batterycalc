@@ -11,7 +11,7 @@ import {
 } from "@/lib/estimate";
 import { parseJourney, stepHref, writeJourney } from "@/lib/journey";
 
-const field = "w-full rounded-lg border border-slate-500 bg-[#0a1628] px-3 py-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316]";
+const field = "w-full rounded-lg border border-slate-500 bg-[#0a1628] px-3 py-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 const primary = "rounded-full bg-[#f97316] px-6 py-3 font-semibold text-[#0a1628] transition-colors hover:bg-[#fb8a3c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-200";
 
 type Lookup =
@@ -40,7 +40,7 @@ function Choice<T extends string | number>({
               <input type="radio" id={id} name={name} checked={checked} onChange={() => onChange(o.value)} className="peer sr-only" />
               <label
                 htmlFor={id}
-                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#f97316] ${
+                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white ${
                   checked ? "border-[#f97316] bg-[#f97316]/10 font-semibold text-white" : "border-slate-600 text-slate-100 hover:border-slate-400"
                 }`}
               >
@@ -196,7 +196,7 @@ export default function EstimateStep() {
                       <input type="radio" id={id} name="home" checked={checked} onChange={() => pick(h)} className="peer sr-only" />
                       <label
                         htmlFor={id}
-                        className={`block cursor-pointer rounded-lg border px-4 py-3 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#f97316] ${
+                        className={`block cursor-pointer rounded-lg border px-4 py-3 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white ${
                           checked ? "border-[#f97316] bg-[#f97316]/10" : "border-slate-600 hover:border-slate-400"
                         }`}
                       >

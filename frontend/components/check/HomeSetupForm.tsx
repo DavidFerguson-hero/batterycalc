@@ -94,7 +94,7 @@ export default function HomeSetupForm() {
                       />
                       <label
                         htmlFor={id}
-                        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#f97316] ${
+                        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white ${
                           checked
                             ? "border-[#f97316] bg-[#f97316]/10 font-semibold text-white"
                             : "border-slate-600 text-slate-100 hover:border-slate-400"

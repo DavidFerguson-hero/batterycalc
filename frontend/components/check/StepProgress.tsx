@@ -70,7 +70,7 @@ export default function StepProgress() {
               {state === "done" ? (
                 <Link
                   href={query ? `${s.path}?${query}` : s.path}
-                  className="block rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f97316]"
+                  className="block rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >
                   {content}
                 </Link>

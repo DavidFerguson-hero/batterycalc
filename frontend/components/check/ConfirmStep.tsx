@@ -14,7 +14,7 @@ import {
 } from "@/lib/tariff";
 import { useUploads } from "@/lib/uploads";
 
-const field = "w-full rounded-lg border border-slate-500 bg-[#0a1628] px-3 py-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316]";
+const field = "w-full rounded-lg border border-slate-500 bg-[#0a1628] px-3 py-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 const link = "text-sm text-slate-200 underline underline-offset-4 hover:text-white";
 
 const HOME_NAMES: Record<HomeItem, string> = { solar: "Solar panels", heat_pump: "Heat pump", ev: "Electric car", battery: "Home battery" };
@@ -49,7 +49,7 @@ function RadioCard({ id, name, checked, onChange, children }: {
       <input type="radio" id={id} name={name} checked={checked} onChange={onChange} className="peer sr-only" />
       <label
         htmlFor={id}
-        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#f97316] ${
+        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white ${
           checked ? "border-[#f97316] bg-[#f97316]/10 font-semibold text-white" : "border-slate-600 text-slate-100 hover:border-slate-400"
         }`}
       >

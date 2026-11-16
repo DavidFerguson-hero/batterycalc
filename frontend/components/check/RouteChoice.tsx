@@ -59,7 +59,7 @@ export default function RouteChoice() {
               {/* "Stretched link": the heading's link covers the whole card, while the term
                   buttons sit above it, so there's no button nested inside a link. */}
               <div
-                className={`relative flex w-full flex-col rounded-xl border p-5 transition-colors hover:border-[#f97316] has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-4 has-[a:focus-visible]:outline-[#f97316] ${
+                className={`relative flex w-full flex-col rounded-xl border p-5 transition-colors hover:border-[#f97316] has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-4 has-[a:focus-visible]:outline-white ${
                   chosen ? "border-[#f97316] bg-[#f97316]/10" : "border-slate-700 bg-[#0f1f38]"
                 }`}
               >
