@@ -1,27 +1,18 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
-import BackLink from "@/components/check/BackLink";
+import ConfirmStep from "@/components/check/ConfirmStep";
 
-/** Placeholder: step 3, check your details, is built in task 2.6. */
+/** Step 3 — check your details: summary of the answers and the current tariff (story H5). */
 export default function CheckConfirm() {
   return (
     <section aria-labelledby="confirm-heading">
-      <h1 id="confirm-heading" className="mb-4 text-3xl font-bold tracking-tight">Check your details</h1>
-      <p className="mb-6 text-lg text-slate-300">
-        This step is still being built. Until it&apos;s ready, please use the classic calculator.
+      <h1 id="confirm-heading" className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Check your details</h1>
+      <p className="mb-8 text-lg leading-relaxed text-slate-300">
+        Here&apos;s everything we&apos;ll use to work out your answer. Change anything that&apos;s not right.
       </p>
-      <Link
-        href="/calculator"
-        className="mb-8 inline-block rounded-full bg-[#f97316] px-6 py-3 font-semibold text-[#0a1628] hover:bg-[#fb8a3c]"
-      >
-        Go to the classic calculator
-      </Link>
-      <p>
-        <Suspense>
-          <BackLink href="/check/usage">Back to your usage</BackLink>
-        </Suspense>
-      </p>
+      <Suspense fallback={<p className="text-slate-300">Loading…</p>}>
+        <ConfirmStep />
+      </Suspense>
     </section>
   );
 }
