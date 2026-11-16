@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 
 import Term from "@/components/Term";
+import ShareBar from "@/components/results/Share";
 import type { AssessResponse } from "@/lib/api";
 import { VERDICT, gbp, gbpRange, plainUpgradeLabel, ukDate, years } from "@/lib/format";
 
@@ -185,7 +185,7 @@ export function ContextPanel({ data, solar }: { data: AssessResponse; solar: "no
 
 // ── 11. Next steps ────────────────────────────────────────────────────────────
 
-const INSTALLER_QUESTIONS = [
+export const INSTALLER_QUESTIONS = [
   "Is the price fully fitted: battery, inverter, wiring, any scaffolding, and VAT?",
   "How much of the battery's capacity can I actually use, in kWh?",
   "How long is the warranty, and how much capacity is guaranteed at the end of it?",
@@ -198,15 +198,6 @@ const INSTALLER_QUESTIONS = [
 
 export function NextSteps({ data }: { data: AssessResponse }) {
   const fp = data.fair_price;
-  const [copied, setCopied] = useState<"" | "ok" | "fail">("");
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied("ok");
-    } catch {
-      setCopied("fail");
-    }
-  };
   const priceNote =
     data.recommendation.chosen_by === "you" && fp.your_price_is && fp.your_price_is !== "within_range" && fp.your_price
       ? ` The ${gbp(fp.your_price)} you entered is ${fp.your_price_is === "above_range" ? "above" : "below"} that range${
@@ -225,17 +216,8 @@ export function NextSteps({ data }: { data: AssessResponse }) {
           <p className={`mt-2 ${sub}`}>Prices as of {ukDate(fp.as_of)}. Get at least three quotes.</p>
         </div>
         <div className={`${card} p-5`}>
-          <h3 className="mb-2 font-semibold text-white">Share your answer</h3>
-          <p className="mb-3 text-slate-200">
-            The link holds your answers (not any uploaded file), so anyone who opens it sees the same result.
-          </p>
-          <button type="button" onClick={copy}
-            className="rounded-full bg-[#f97316] px-5 py-2 font-semibold text-[#0a1628] hover:bg-[#fb8a3c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-            Copy link
-          </button>
-          <p role="status" className="mt-2 text-sm text-slate-300">
-            {copied === "ok" ? "Link copied." : copied === "fail" ? "Couldn't copy. Copy the address from your browser's address bar instead." : ""}
-          </p>
+          <h3 className="mb-2 font-semibold text-white">Share or save your answer</h3>
+          <ShareBar route={data.usage.route} />
         </div>
       </div>
       <div className={`mt-4 ${card} p-5`}>

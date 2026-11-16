@@ -3,7 +3,7 @@ import Link from "next/link";
 import Term from "@/components/Term";
 import type { AssessResponse } from "@/lib/api";
 import {
-  BREAKDOWN_LABELS, CONFIDENCE, VERDICT, gbp, gbpRange, kwh, years, yearsRange,
+  BREAKDOWN_LABELS, CONFIDENCE, VERDICT, gbp, gbpRange, kwh, paybackNote, years,
 } from "@/lib/format";
 import { ROUTE_PATHS, stepHref, withRoute } from "@/lib/journey";
 
@@ -54,7 +54,7 @@ export function HeadlineNumbers({ data }: { data: AssessResponse }) {
         <Stat label="Saving in the first year" value={`${gbp(h.year1_battery_saving)} a year`}
           note={`About ${gbpRange(h.average_yearly_saving.low, h.average_yearly_saving.high)} a year on average over ${life} years`} />
         <Stat label={<><Term k="payback">Pays back</Term> in</>} value={years(h.payback_years.likely, life)}
-          note={`Could be ${yearsRange(h.payback_years.low, h.payback_years.high, life)}`} />
+          note={paybackNote(h.payback_years.low, h.payback_years.high, life)} />
         <Stat label={`Money ahead after ${life} years`} value={gbp(h.lifetime_net_gain.likely)}
           note={`Could be ${gbpRange(h.lifetime_net_gain.low, h.lifetime_net_gain.high)}`} />
       </dl>
