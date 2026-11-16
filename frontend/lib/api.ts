@@ -106,6 +106,39 @@ export async function checkUsage(files: File[], signal?: AbortSignal): Promise<U
   return request<UsageCheckResponse>("/api/v2/usage/check", { method: "POST", body: form }, signal);
 }
 
+/** A home at a postcode, from GET /api/epc/lookup (the EPC register). */
+export interface EpcHome {
+  certificate_number: string;
+  address: string;
+  dwelling_type: string | null;
+  property_type: "flat" | "terraced" | "semi" | "detached";
+  bedrooms: number;
+  floor_area_m2: number | null;
+  epc_rating: string | null;
+  registration_date: string | null;
+  heating_kind: "heat_pump" | "electric" | "gas" | "other_fuel" | "unknown";
+  heating_description: string | null;
+  heating_type: "gas" | "electric";
+  has_gas: boolean;
+  has_heat_pump: boolean;
+  has_solar: boolean;
+  has_battery: boolean;
+  annual_kwh: number;
+  confidence: "medium" | "low";
+}
+
+/**
+ * Homes at a postcode on the EPC register. Resolves to [] when there are none.
+ * Throws ApiError (503) when the lookup isn't available, so callers can offer manual entry.
+ * The postcode is sent to the API only to search the register; it's never stored.
+ */
+export async function lookupEpc(postcode: string, signal?: AbortSignal): Promise<EpcHome[]> {
+  const res = await request<{ found: boolean; properties: EpcHome[] }>(
+    `/api/epc/lookup?postcode=${encodeURIComponent(postcode.trim())}`, { method: "GET" }, signal,
+  );
+  return res.found ? res.properties : [];
+}
+
 /** A tariff as listed by GET /api/tariffs (for the tariff picker). */
 export interface TariffSummary {
   key: string;

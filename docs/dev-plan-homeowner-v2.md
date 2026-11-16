@@ -121,7 +121,7 @@ Build in `frontend/app/check/` with React components in `frontend/components/`. 
   - Supplier-specific how-to panels (Octopus, British Gas, EDF, E.ON, OVO, other suppliers).
   - Drag-and-drop upload.
   - Validation showing date range, days found and gaps.
-- [ ] **2.5 Route B: estimate** (H3).
+- [x] **2.5 Route B: estimate** (H3).
   - Postcode → list of EPC addresses → select, which pre-fills property type, floor area, heating and annual use.
   - Ask only for what the EPC can't give (people at home, EV miles).
 - [ ] **2.6 Step: confirm** (H5). Tariff picker (searchable list plus "enter my rates"), with an editable summary of everything the model will use.
