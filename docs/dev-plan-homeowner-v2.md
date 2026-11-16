@@ -145,10 +145,10 @@ Build in `frontend/app/check/` with React components in `frontend/components/`. 
   - Keyboard navigable.
   - Colour is never the only signal (the verdict has words too).
   - Meets WCAG (Web Content Accessibility Guidelines) 2.1 AA contrast.
-- [ ] **2.11 Switch over.**
+- [x] **2.11 Switch over.**
   - Landing page call-to-action → `/check`.
   - Once 2.1–2.8 are done and checked against the old calculator on 3 sample inputs, redirect `/calculator` → `/check`.
-  - Keep the old page at `/calculator-classic` for one month.
+  - Keep the old page at `/calculator-classic` for one month (remove after 16 December 2026, with `public/calculator.html`).
 
 ---
 

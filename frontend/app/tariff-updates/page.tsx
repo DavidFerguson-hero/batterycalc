@@ -275,10 +275,10 @@ export default function TariffUpdatesPage() {
           <Image src="/batterysizer-logo.png" alt="BatterySizer" width={260} height={60} priority />
         </Link>
         <Link
-          href="/calculator"
+          href="/check"
           className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
         >
-          ← Calculator
+          ← Check your home
         </Link>
       </nav>
 
@@ -372,7 +372,7 @@ export default function TariffUpdatesPage() {
           <span>© {new Date().getFullYear()} BatterySizer</span>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-slate-300 transition-colors">Home</Link>
-            <Link href="/calculator" className="hover:text-slate-300 transition-colors">Calculator</Link>
+            <Link href="/check" className="hover:text-slate-300 transition-colors">Check your home</Link>
           </div>
         </div>
       </footer>

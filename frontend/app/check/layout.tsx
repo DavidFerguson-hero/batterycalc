@@ -10,8 +10,7 @@ export const metadata: Metadata = {
   title: "Is a home battery worth it for you?",
   description:
     "Find out whether a home battery makes financial sense for your home, and when it pays back. Free, independent, and your data is never stored.",
-  // Not indexed until it replaces the classic calculator (task 2.11).
-  robots: { index: false, follow: false },
+  alternates: { canonical: "https://www.batterysizer.co.uk/check" },
 };
 
 export default function CheckLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +29,7 @@ export default function CheckLayout({ children }: { children: React.ReactNode })
             <Image src="/batterysizer-logo.png" alt="BatterySizer" width={180} height={42} priority />
           </Link>
           <Link
-            href="/calculator"
+            href="/calculator-classic"
             className="text-sm text-slate-300 underline-offset-4 hover:text-white hover:underline"
           >
             Classic calculator

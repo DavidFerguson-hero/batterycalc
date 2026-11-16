@@ -60,7 +60,7 @@ export default function Home() {
             />
           </Link>
           <Link
-            href="/calculator"
+            href="/check"
             className="hidden sm:inline-flex items-center gap-2 bg-[#f97316] hover:bg-[#fb8a3c] text-[#0a1628] font-semibold px-5 py-2.5 rounded-full transition-colors text-sm"
           >
             Get My Recommendation
@@ -82,7 +82,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/calculator"
+              href="/check"
               className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#fb8a3c] text-[#0a1628] font-semibold px-8 py-4 rounded-full transition-colors text-lg"
             >
               Get My Free Recommendation
@@ -249,7 +249,7 @@ export default function Home() {
             Takes less than 2 minutes. Free, instant, and no sign-up required.
           </p>
           <Link
-            href="/calculator"
+            href="/check"
             className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#fb8a3c] text-[#0a1628] font-bold px-10 py-5 rounded-full transition-colors text-xl"
           >
             Get My Free Recommendation
@@ -275,8 +275,8 @@ export default function Home() {
           <p>© {new Date().getFullYear()} BatterySizer. All rights reserved.</p>
           <nav aria-label="Footer navigation">
             <ul className="flex gap-5 text-xs list-none">
-              <li><Link href="/calculator" className="hover:text-slate-300 transition-colors">How we calculate</Link></li>
-              <li><Link href="/calculator" className="hover:text-slate-300 transition-colors">Legal disclaimer</Link></li>
+              <li><Link href="/check" className="hover:text-slate-300 transition-colors">Check your home</Link></li>
+              <li><Link href="/tariff-updates" className="hover:text-slate-300 transition-colors">Tariff updates</Link></li>
             </ul>
           </nav>
         </div>
