@@ -22,7 +22,8 @@ def test_price_hand_calculation():
 
 
 def test_inverter_in_year_10_lowers_the_price():
-    a = LifetimeAssumptions(capacity_loss_per_year=0.0, price_growth={"low": 0, "central": 0, "high": 0})
+    a = LifetimeAssumptions(capacity_loss_per_year=0.0, price_growth={"low": 0, "central": 0, "high": 0},
+                            inverter_replacement_cost=1000)
     # Year-10 cumulative = 10 × 500 − 1,000 inverter = 4,000.
     assert max_price_for_payback(500, 10, a) == pytest.approx(4000)
 
@@ -64,7 +65,8 @@ def test_verdict_change_only_counts_improvements():
 # ── API ───────────────────────────────────────────────────────────────────────
 
 client = TestClient(app)
-BODY = {"annual_kwh": 3500, "property_type": "semi"}
+# Prices are given explicitly so these tests don't move when api/data/costs.json is updated.
+BODY = {"annual_kwh": 3500, "property_type": "semi", "battery_cost_gbp": 5000}
 
 
 def test_levers_only_when_not_yet():
@@ -78,13 +80,13 @@ def test_not_yet_battery_gets_all_three_levers():
     assert j["lifetime"]["verdict"] == "not_yet"
     lv = j["what_would_make_it_pay_back"]
     p = lv["price"]
-    assert p["current_price"] == 6000
-    assert p["price_for_worth_it"] < p["price_for_payback_within_warranty"] < 6000
+    assert p["current_price"] == 5000
+    assert p["price_for_worth_it"] < p["price_for_payback_within_warranty"] < 5000
     # Lowering the price to the quoted figure does change the verdict.
     at_price = client.post("/api/estimate", json={
         **BODY, "tariff_key": "octopusGo", "battery_cost_gbp": p["price_for_payback_within_warranty"]}).json()
     assert at_price["lifetime"]["verdict"] in ("borderline", "worth_it")
-    # The best tariff for a 10 kWh battery here is FreePhase Dynamic, which is borderline.
+    # The best tariff for a 10 kWh battery here is FreePhase Dynamic, which changes the verdict.
     sw = lv["switch_tariff"]
     assert sw["tariff_key"] == "edfFreePhaseDynamic" and sw["changes_verdict"] is True
     ev = lv["add_ev"]

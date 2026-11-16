@@ -1,0 +1,86 @@
+{
+  "_about": "Installed cost figures for BatterySizer (decision D4, approved by David on 16 Nov 2026). All £, installed, as of the date given. Update figures here only; the engine reads nothing else.",
+  "as_of": "2026-11-15",
+  "currency": "GBP",
+
+  "vat": {
+    "battery_rate_pct": 0,
+    "battery_rate_until": "2027-03-31",
+    "battery_rate_after_pct": 5,
+    "note": "Home batteries (with solar, retrofitted or standalone) are zero-rated as energy-saving materials until 31 March 2027, then 5%. Confirm against HMRC VAT Notice 708/6.",
+    "sources": [
+      {"name": "pv magazine: UK VAT relief on residential batteries comes into effect", "url": "https://pv-magazine.com/2024/02/01/uk-vat-relief-on-residential-batteries-comes-into-effect", "date": "2024-02-01"},
+      {"name": "Armstrong Watson: VAT and renewables, key issues 2026", "url": "https://www.armstrongwatson.co.uk/news/2026/08/vat-and-renewables-key-issues-energy-sector-2026", "date": "2026-08"}
+    ]
+  },
+
+  "battery": {
+    "note": "Low = online and installer packages; high = DESNZ median for MCS-certified installs (Apr 2025 to Mar 2026: about £1,300/kWh under 6 kWh, £890/kWh for 6-11 kWh, £630/kWh above); typical in between. Prices include VAT at 0%.",
+    "components_note": "Quotes are rarely itemised. The split below is an estimate: hybrid inverter and installation labour, with the battery unit as the remainder.",
+    "sizes": [
+      {"kwh": 5.0,  "label": "5 kWh",    "low": 3500, "typical": 4500,  "high": 6500,
+       "components_typical": {"unit": 2300, "inverter": 1200, "install": 1000, "vat": 0}},
+      {"kwh": 7.5,  "label": "7.5 kWh",  "low": 4000, "typical": 5500,  "high": 7500,
+       "components_typical": {"unit": 3200, "inverter": 1250, "install": 1050, "vat": 0}},
+      {"kwh": 10.0, "label": "10 kWh",   "low": 4500, "typical": 6500,  "high": 8900,
+       "components_typical": {"unit": 4100, "inverter": 1300, "install": 1100, "vat": 0}},
+      {"kwh": 13.5, "label": "13.5 kWh", "low": 6500, "typical": 8500,  "high": 11000,
+       "components_typical": {"unit": 5900, "inverter": 1400, "install": 1200, "vat": 0}},
+      {"kwh": 15.0, "label": "15 kWh",   "low": 7000, "typical": 9000,  "high": 11500,
+       "components_typical": {"unit": 6400, "inverter": 1400, "install": 1200, "vat": 0}},
+      {"kwh": 20.0, "label": "20 kWh",   "low": 8500, "typical": 11000, "high": 13500,
+       "components_typical": {"unit": 8300, "inverter": 1500, "install": 1200, "vat": 0}}
+    ],
+    "sources": [
+      {"name": "Solar Power Portal: DESNZ domestic battery cost data (MCS installs)", "url": "https://www.solarpowerportal.co.uk/desnz-over-22000-domestic-batteries-installed-in-past-year/", "date": "2026-05"},
+      {"name": "Clearline Home Energy: home battery cost UK 2026", "url": "https://clearlinehomeenergy.co.uk/battery-storage/cost", "date": "2026"},
+      {"name": "Battery Storage Quotes: solar battery cost UK 2026", "url": "https://batterystoragequotes.co.uk/cost/", "date": "2026"},
+      {"name": "SelfGen Connect: home battery storage cost UK 2026", "url": "https://www.selfgenconnectltd.co.uk/home-battery-storage-cost", "date": "2026"},
+      {"name": "Heatable: home battery storage cost 2026", "url": "https://heatable.co.uk/solar/advice/battery-storage-costs", "date": "2026"},
+      {"name": "EnergyPlus: Tesla Powerwall 3 installation cost UK", "url": "https://www.energyplus.co.uk/solar/tesla-powerwall-3-installation-cost-uk", "date": "2026-07"},
+      {"name": "iHeat: Tesla Powerwall 3 price UK 2026", "url": "https://iheat.co.uk/solar-help/tesla-powerwall-3-price-uk", "date": "2026"}
+    ]
+  },
+
+  "inverter_replacement": {
+    "low": 800, "typical": 1200, "high": 2000,
+    "note": "Hybrid inverter swap at end of warranty, fitted. Used in the lifetime model in its replacement year.",
+    "sources": [
+      {"name": "EnergyPlus: adding a battery to existing solar, costs", "url": "https://www.energyplus.co.uk/solar/add-battery-to-existing-solar-panels-cost-uk", "date": "2026"},
+      {"name": "Renewable Energy Hub: upgrading an existing solar system", "url": "https://www.renewableenergyhub.co.uk/blog/how-to-upgrade-your-existing-solar-panel-system-in-the-uk-guide", "date": "2026"}
+    ]
+  },
+
+  "context": {
+    "solar_4kwp": {
+      "label": "Solar panels (4 kWp)",
+      "low": 5500, "typical": 7000, "high": 9000,
+      "note": "About £1,550-1,700 per kW for MCS installs in 2026; VAT 0%.",
+      "sources": [
+        {"name": "solar4good: solar panel costs from government data 2026", "url": "https://solar4good.co.uk/solar-panel-costs-uk-government-data-2026/", "date": "2026"},
+        {"name": "The Eco Experts: solar panel cost", "url": "https://www.theecoexperts.co.uk/solar-panels/cost", "date": "2026"}
+      ]
+    },
+    "heat_pump_ashp": {
+      "label": "Air source heat pump",
+      "low": 10700, "typical": 12800, "high": 15500,
+      "grant": 7500,
+      "grant_name": "Boiler Upgrade Scheme",
+      "note": "Before grant. DESNZ BUS statistics Jul-Sep 2026: median £12,826, quartiles £10,717 and £15,461.",
+      "sources": [
+        {"name": "DESNZ: Boiler Upgrade Scheme statistics", "url": "https://www.gov.uk/government/collections/boiler-upgrade-scheme-statistics", "date": "2026-09"},
+        {"name": "Grantsights: Boiler Upgrade Scheme 2026", "url": "https://grantsights.com/blog/boiler-upgrade-scheme", "date": "2026"},
+        {"name": "Nesta: four years of the Boiler Upgrade Scheme", "url": "https://www.nesta.org.uk/blog/four-years-boiler-upgrade-scheme-four-charts/", "date": "2026"}
+      ]
+    },
+    "ev_charger_7kw": {
+      "label": "Home EV charger (7 kW)",
+      "low": 800, "typical": 1000, "high": 1500,
+      "note": "Standard install; complex jobs or London and the South East cost more. The OZEV grant covers renters and flats, not homeowners with a driveway.",
+      "sources": [
+        {"name": "Heatable: EV charger installation cost 2026", "url": "https://heatable.co.uk/ev-chargers/advice/ev-charger-costs", "date": "2026"},
+        {"name": "Selectra: what a home EV charger costs in 2026", "url": "https://selectra.co.uk/energy/guides/environment/electric-car-home-charger", "date": "2026"}
+      ]
+    }
+  }
+}

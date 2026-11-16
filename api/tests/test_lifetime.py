@@ -69,7 +69,8 @@ def test_mid_life_inverter_dip():
 
 
 def test_inverter_cost_lands_in_its_year_only():
-    a = LifetimeAssumptions(capacity_loss_per_year=0.0, price_growth={"low": 0, "central": 0, "high": 0})
+    a = LifetimeAssumptions(capacity_loss_per_year=0.0, price_growth={"low": 0, "central": 0, "high": 0},
+                            inverter_replacement_cost=1000)
     cash = cash_by_year(0, 800, 0.0, a)
     steps = [b - a_ for a_, b in zip(cash, cash[1:])]
     assert steps[9] == pytest.approx(800 - 1000)
@@ -133,4 +134,6 @@ def test_estimate_returns_lifetime_block():
     expected = j["tariff_check"]["best_no_battery"]["annual_cost"] - f["ann_cost_with_battery"]
     assert lt["year1_battery_saving"] == pytest.approx(expected, abs=0.02)
     assert lt["verdict"] in ("worth_it", "borderline", "not_yet")
-    assert lt["installed_cost"]["typical"] == 6000
+    # No price given: the typical price for 10 kWh from api/data/costs.json.
+    from engine.costs import battery_price
+    assert lt["installed_cost"]["typical"] == round(battery_price(10)["typical"], -1)
