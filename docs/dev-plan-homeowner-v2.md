@@ -116,7 +116,7 @@ Build in `frontend/app/check/` with React components in `frontend/components/`. 
 
 - [x] **2.1 Foundations.** Shared layout, progress indicator, typed API client for `/api/v2/assess` in `frontend/lib/api.ts`, and a `Term` tooltip component for plain-English definitions (kWh, EPC, tariff, payback).
 - [x] **2.2 Step: your home setup** `/check` (H1, H6). Pick what you have now and what you're planning: solar, heat pump, EV, existing battery, none.
-- [ ] **2.3 Step: choose a route** (H2). Two cards: "I have my usage data" and "Quick estimate (2 minutes)".
+- [x] **2.3 Step: choose a route** (H2). Two cards: "I have my usage data" and "Quick estimate (2 minutes)".
 - [ ] **2.4 Route A: upload** (H4).
   - Supplier-specific how-to panels (Octopus, British Gas, EDF, E.ON, OVO, other suppliers).
   - Drag-and-drop upload.

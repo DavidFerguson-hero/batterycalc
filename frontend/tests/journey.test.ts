@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  DEFAULT_JOURNEY, hasNothing, homeToRequest, parseJourney, stepHref, writeJourney,
+  DEFAULT_JOURNEY, ROUTE_PATHS, hasNothing, homeToRequest, parseJourney, stepHref, withRoute, writeJourney,
 } from "../lib/journey.ts";
 
 test("an empty query gives the defaults", () => {
@@ -23,17 +23,22 @@ test("invalid values fall back to none", () => {
 
 test("defaults are left out so links stay short", () => {
   assert.equal(writeJourney(DEFAULT_JOURNEY), "");
-  const q = writeJourney({ home: { ...DEFAULT_JOURNEY.home, ev: "planning" } });
+  const q = writeJourney({ ...DEFAULT_JOURNEY, home: { ...DEFAULT_JOURNEY.home, ev: "planning" } });
   assert.equal(q, "ev=planning");
 });
 
 test("round trip", () => {
-  const home = { solar: "planning", heat_pump: "have", ev: "none", battery: "have" } as const;
-  assert.deepEqual(parseJourney(writeJourney({ home })).home, home);
+  const j = {
+    home: { solar: "planning", heat_pump: "have", ev: "none", battery: "have" },
+    route: "upload",
+  } as const;
+  assert.deepEqual(parseJourney(writeJourney(j)), j);
 });
 
 test("other steps' answers in the query are kept", () => {
-  const q = writeJourney({ home: { ...DEFAULT_JOURNEY.home, ev: "have" } }, "kwh=3500&route=estimate&ev=planning");
+  const existing = "kwh=3500&route=estimate&ev=planning";
+  const j = parseJourney(existing);
+  const q = writeJourney({ ...j, home: { ...j.home, ev: "have" } }, existing);
   const p = new URLSearchParams(q);
   assert.equal(p.get("ev"), "have");
   assert.equal(p.get("kwh"), "3500");
@@ -58,4 +63,22 @@ test("step links carry the answers", () => {
 test("maps EV and heat pump onto the API request", () => {
   const home = parseJourney("ev=planning&hp=have&solar=have").home;
   assert.deepEqual(homeToRequest(home), { ev: { status: "planning" }, heat_pump: { status: "have" } });
+});
+
+test("route: none until chosen, invalid values ignored", () => {
+  assert.equal(parseJourney("").route, null);
+  assert.equal(parseJourney("route=guess").route, null);
+  assert.equal(parseJourney("route=estimate").route, "estimate");
+});
+
+test("withRoute sets the route and keeps everything else", () => {
+  const q = withRoute("upload", "ev=planning&kwh=3500&route=estimate");
+  const p = new URLSearchParams(q);
+  assert.equal(p.get("route"), "upload");
+  assert.equal(p.get("ev"), "planning");
+  assert.equal(p.get("kwh"), "3500");
+});
+
+test("each route has its own step", () => {
+  assert.deepEqual(ROUTE_PATHS, { upload: "/check/usage/upload", estimate: "/check/usage/estimate" });
 });

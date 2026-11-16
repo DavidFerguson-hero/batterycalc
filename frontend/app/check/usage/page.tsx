@@ -1,22 +1,20 @@
-import Link from "next/link";
+import { Suspense } from "react";
 
-/**
- * Step 2 — choose a route (usage data or quick estimate). Built in task 2.3;
- * this placeholder only lets step 1 be tried end to end.
- */
+import RouteChoice from "@/components/check/RouteChoice";
+
+/** Step 2 — choose a route: real usage data, or a quick estimate (story H2). */
 export default function CheckUsage() {
   return (
     <section aria-labelledby="usage-heading">
-      <h1 id="usage-heading" className="mb-4 text-3xl font-bold tracking-tight">Your usage</h1>
-      <p className="mb-6 text-lg text-slate-300">
-        This step is still being built. Until the new calculator is ready, please use the classic one.
+      <h1 id="usage-heading" className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+        How much electricity does your home use?
+      </h1>
+      <p className="mb-8 text-lg leading-relaxed text-slate-300">
+        A battery&apos;s value depends on when you use electricity, not just how much. Choose how you&apos;d like to tell us.
       </p>
-      <Link
-        href="/calculator"
-        className="inline-block rounded-full bg-[#f97316] px-6 py-3 font-semibold text-[#0a1628] hover:bg-[#fb8a3c]"
-      >
-        Go to the classic calculator
-      </Link>
+      <Suspense fallback={<p className="text-slate-300">Loading…</p>}>
+        <RouteChoice />
+      </Suspense>
     </section>
   );
 }
