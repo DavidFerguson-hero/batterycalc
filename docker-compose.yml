@@ -1,6 +1,6 @@
 # Local development: API on :8000, frontend on :3000.
 # Pass secrets from your shell if you want those features locally:
-#   ANTHROPIC_API_KEY (AI summary), EPC_EMAIL + EPC_API_KEY (postcode lookup).
+#   ANTHROPIC_API_KEY (AI summary), EPC_API_TOKEN (postcode lookup on the EPC register).
 #
 # Postgres and Redis were removed in task 0.6: nothing in the app uses them
 # (no accounts or saved results; uploads are processed in memory only).
@@ -17,8 +17,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - ANTHROPIC_API_KEY
-      - EPC_EMAIL
-      - EPC_API_KEY
+      - EPC_API_TOKEN
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:

@@ -2101,15 +2101,13 @@ function applyEpcProperty(prop) {
 function renderEpcResult(prop, inline = false) {
   const propLabels = {flat:'Flat',terraced:'Terraced',semi:'Semi-detached',detached:'Detached'};
 
-  let confNote;
-  if (prop.confidence === 'high' && prop.energy_per_m2) {
-    confNote = `kWh derived from EPC intensity (${Math.round(prop.energy_per_m2)} kWh/m²/yr × ${Math.round(prop.floor_area_m2)}m²), normalised to BEIS actuals`;
-  } else if (prop.confidence === 'high') {
-    confNote = 'kWh matched from BEIS metered data (property type + bedrooms)';
-  } else if (prop.confidence === 'medium') {
-    confNote = 'kWh estimated from nearest property size in BEIS data';
-  } else {
-    confNote = 'kWh estimated from floor area';
+  let confNote = prop.confidence === 'low'
+    ? 'kWh estimated from typical use for this type of home'
+    : 'kWh from typical metered use for this type and size of home (BEIS)';
+  if (prop.heating_kind === 'electric') {
+    confNote += ', plus electric heating for its floor area and EPC rating';
+  } else if (prop.heating_kind === 'heat_pump') {
+    confNote += ', plus its heat pump';
   }
 
   const ratingPill   = prop.epc_rating
