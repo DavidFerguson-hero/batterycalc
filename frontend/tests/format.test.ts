@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { BREAKDOWN_LABELS, CONFIDENCE, VERDICT, gbp, gbpRange, kwh, plainUpgradeLabel, ukDate, years, yearsRange } from "../lib/format.ts";
+import { BREAKDOWN_LABELS, CONFIDENCE, VERDICT, gbp, gbpRange, kwh, paybackNote, plainUpgradeLabel, ukDate, years, yearsRange } from "../lib/format.ts";
 
 test("pounds", () => {
   assert.equal(gbp(6500), "£6,500");
@@ -63,4 +63,9 @@ test("upgrade labels explain their acronyms", () => {
   assert.equal(plainUpgradeLabel("Solar panels (4 kWp)"), "Solar panels (4 kWp, about 10 panels)");
   assert.equal(plainUpgradeLabel("Home EV charger (7 kW)"), "Home electric car charger (7 kW)");
   assert.equal(plainUpgradeLabel("Air source heat pump"), "Air source heat pump");
+});
+
+test("payback note never says 'could be not within'", () => {
+  assert.equal(paybackNote(5.9, 14.62), "Could be 5.9 to 14.6 years");
+  assert.doesNotMatch(paybackNote(null, null), /could be/i);
 });
