@@ -21,6 +21,7 @@ from engine.lifetime import BORDERLINE_SHARE, WORTH_IT_SHARE, lifetime_finance
 from engine.optimiser import build_opt_matrix
 from engine.profile_estimator import make_parse_result
 from engine.simulator import IMPLIED_RATE, calc_day_flows, run_simulation
+from engine.solar_profile import annual_generation_kwh, generation_days
 from engine.size_comparison import compare_sizes, options_from_matrix
 from engine.tariff_check import tariff_check
 from engine.tariffs import TARIFFS, TARIFFS_CHECKED
@@ -89,13 +90,39 @@ def _with_loads(parse: ParseResult, req: AssessRequest) -> ParseResult:
         "ev": req.ev.model_dump(), "heat_pump": req.heat_pump.model_dump(), **res.summary()})
 
 
+def _solar(req: AssessRequest, parse: ParseResult) -> tuple[ParseResult, list[list[float]] | None, dict | None]:
+    """
+    Take solar generation off the usage, half-hour by half-hour, so a negative half-hour is
+    spare solar that can charge the battery or be exported. Returns the net usage, the
+    generation days (None when not modelled) and the summary for the response.
+
+    Panels already fitted on the upload route are left alone: the meter readings already
+    have the solar taken off.
+    """
+    s = req.solar
+    if s.status == "none":
+        return parse, None, None
+    summary = {"status": s.status, "kwp": s.kwp, "orientation": s.orientation,
+               "annual_generation_kwh": round(annual_generation_kwh(s.kwp, s.orientation)),
+               "modelled": False, "used_at_home_kwh": None, "spare_kwh": None}
+    if s.status == "have" and req.usage.route == "upload":
+        return parse, None, summary
+    gen = generation_days(len(parse.days), parse.dates, s.kwp, s.orientation)
+    net = [[l - g for l, g in zip(day, gd)] for day, gd in zip(parse.days, gen)]
+    scale = 365 / len(net)
+    used = sum(min(l, g) for day, gd in zip(parse.days, gen) for l, g in zip(day, gd)) * scale
+    spare = sum(max(0.0, g - l) for day, gd in zip(parse.days, gen) for l, g in zip(day, gd)) * scale
+    summary.update(modelled=True, used_at_home_kwh=round(used), spare_kwh=round(spare))
+    return replace(parse, days=net), gen, summary
+
+
 def _average(days: list[list[float]]) -> list[float]:
     return [sum(d[i] for d in days) / len(days) for i in range(48)]
 
 
-def _day(label, load, tariff, cap, rate_kw, eff) -> dict:
-    f = calc_day_flows(load, tariff, cap, rate_kw, eff, None)
-    return {
+def _day(label, load, tariff, cap, rate_kw, eff, solar=None) -> dict:
+    f = calc_day_flows(load, tariff, cap, rate_kw, eff, solar)
+    out = {
         "label": label,
         "load": [round(v, 4) for v in load],
         "grid_to_battery": f["grid_to_batt"],
@@ -103,17 +130,25 @@ def _day(label, load, tariff, cap, rate_kw, eff) -> dict:
         "grid_to_home": f["grid_to_load"],
         "battery_level": f["soc_profile"],
     }
+    if solar is not None:
+        out.update(solar_generation=f["solar_gen"], solar_to_battery=f["solar_to_batt"],
+                   exported=f["exported"])
+    return out
 
 
-def _day_in_life(parse: ParseResult, tariff, cap, rate_kw, eff) -> dict:
-    out = {"average": _day("Average day", _average(parse.days), tariff, cap, rate_kw, eff),
-           "summer": None, "winter": None}
-    if parse.dates:
+def _day_in_life(days, dates, gen, tariff, cap, rate_kw, eff) -> dict:
+    """days: the home's use before solar. gen: solar generation per day, or None."""
+    def avg_day(label, idx):
+        return _day(label, _average([days[i] for i in idx]), tariff, cap, rate_kw, eff,
+                    _average([gen[i] for i in idx]) if gen else None)
+
+    out = {"average": avg_day("Average day", range(len(days))), "summer": None, "winter": None}
+    if dates:
         for key, months, label in (("summer", {6, 7, 8}, "Summer day (Jun–Aug average)"),
                                    ("winter", {12, 1, 2}, "Winter day (Dec–Feb average)")):
-            sel = [d for d, x in zip(parse.days, parse.dates) if x.month in months]
-            if sel:
-                out[key] = _day(label, _average(sel), tariff, cap, rate_kw, eff)
+            idx = [i for i, x in enumerate(dates) if x.month in months]
+            if idx:
+                out[key] = avg_day(label, idx)
     return out
 
 
@@ -136,8 +171,9 @@ async def assess(request: Request) -> AssessResponse:
     if b.tariff_key and b.tariff_key not in TARIFFS:
         _bad(f"Unknown tariff: {b.tariff_key}", 400)
 
-    parse = _with_loads(_usage(req, files), req)
-    days = parse.days
+    home = _with_loads(_usage(req, files), req)
+    parse, gen, solar_summary = _solar(req, home)
+    days = parse.days   # net of any solar: a negative half-hour is spare solar
     unit_rate = (t.unit_rate_p / 100) if t.unit_rate_p else (parse.inferred_rate or IMPLIED_RATE)
     eff = b.efficiency_pct / 100
     export = t.export_rate_p / 100
@@ -153,7 +189,7 @@ async def assess(request: Request) -> AssessResponse:
         days=days, current_rate=unit_rate, max_rate_kw=b.max_charge_rate_kw, efficiency=eff,
         selected_cap_kwh=first_cap,
         selected_cost_gbp=b.price_gbp or battery_price(first_cap)["typical"],
-        current_sc_pd=t.standing_charge_p,
+        current_sc_pd=t.standing_charge_p, export_rate=export,
     )
     sizes = compare_sizes(
         options_from_matrix(matrix, {k: v.name for k, v in TARIFFS.items()}, tc["current"]),
@@ -203,13 +239,14 @@ async def assess(request: Request) -> AssessResponse:
     return AssessResponse(
         usage={
             "route": req.usage.route,
-            "annual_kwh": round(sum(map(sum, days)) * 365 / len(days), 1),
+            "annual_kwh": round(sum(map(sum, home.days)) * 365 / len(home.days), 1),
             "days_modelled": len(days),
             "days_found": parse.days_count if req.usage.route == "upload" else None,
             "confidence": parse.confidence or "low",
             "coverage": parse.coverage,
             "extra_loads": parse.extra_loads,
             "unit_rate_p": round(unit_rate * 100, 2),
+            "solar": solar_summary,
         },
         recommendation={
             "battery_kwh": cap, "battery_label": label, "tariff_key": tkey,
@@ -232,7 +269,7 @@ async def assess(request: Request) -> AssessResponse:
         tariff_check=tc,
         size_comparison=sizes,
         what_would_make_it_pay_back=levers,
-        day_in_life=_day_in_life(parse, tariff, cap, b.max_charge_rate_kw, eff),
+        day_in_life=_day_in_life(home.days, home.dates, gen, tariff, cap, b.max_charge_rate_kw, eff),
         fair_price=fair_price(cap, price),
         context_costs=context_costs(),
         assumptions={

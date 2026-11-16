@@ -48,6 +48,8 @@ export function buildAssessRequest(query: QueryLike, hasFiles = false): BuiltReq
           ...(e.floorArea !== null ? { floor_area_m2: e.floorArea } : {}),
           ...(e.epcRating !== null ? { epc_rating: e.epcRating } : {}),
         },
+    // The journey asks only whether they have solar; the API assumes a typical 4 kWp south-facing roof.
+    solar: { status: j.home.solar },
     tariff: {
       ...(isTimeOfUse(t.choice) ? { current_tariff_key: t.choice } : {}),
       ...(t.choice === "flat" && t.unitRateP !== null ? { unit_rate_p: t.unitRateP } : {}),

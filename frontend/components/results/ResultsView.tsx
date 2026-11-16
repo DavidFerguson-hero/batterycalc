@@ -111,11 +111,11 @@ export default function ResultsView() {
       <SavingBreakdown data={data} />
       <SizeComparison data={data} />
       <TariffCheck data={data} />
-      <WhatIfs key={requestKey} data={data} base={built.request} files={files} ev={home.ev} heatPump={home.heat_pump} />
+      <WhatIfs key={requestKey} data={data} base={built.request} files={files} ev={home.ev} heatPump={home.heat_pump} solar={home.solar} />
       <DayInLife data={data} />
-      <ContextPanel data={data} solar={home.solar} />
+      <ContextPanel data={data} />
       <NextSteps data={data} />
-      <Assumptions data={data} solar={home.solar} />
+      <Assumptions data={data} />
       <p className="text-sm text-slate-400">
         Prices as of {ukDate(data.assumptions.costs_as_of)}; tariffs checked {ukDate(data.assumptions.tariffs_checked)}.
         Figures are estimates, not financial advice.{" "}

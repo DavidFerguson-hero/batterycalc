@@ -4,7 +4,9 @@ import { useEffect, useId, useState } from "react";
 
 import { ApiError, type AssessRequest, type AssessResponse, assess } from "@/lib/api";
 import { VERDICT, gbp, years } from "@/lib/format";
-import { type LoadStatus, PRICE_MAX, PRICE_MIN, type WhatIf, applyWhatIf, initialWhatIf, sameWhatIf } from "@/lib/whatif";
+import {
+  type LoadStatus, PRICE_MAX, PRICE_MIN, type WhatIf, alreadyIncludedNote, applyWhatIf, initialWhatIf, sameWhatIf,
+} from "@/lib/whatif";
 
 const DEBOUNCE_MS = 700;
 
@@ -20,11 +22,12 @@ interface Props {
   files: File[];
   ev: LoadStatus;
   heatPump: LoadStatus;
+  solar: LoadStatus;
 }
 
 /** "What would make it pay back?" (H14) and live what-ifs (H6), re-run through the API as you change them. */
-export default function WhatIfs({ data, base, files, ev, heatPump }: Props) {
-  const start = initialWhatIf(data.recommendation, ev, heatPump);
+export default function WhatIfs({ data, base, files, ev, heatPump, solar }: Props) {
+  const start = initialWhatIf(data.recommendation, ev, heatPump, solar);
   const [w, setW] = useState<WhatIf>(start);
   const [priceEdited, setPriceEdited] = useState(false);
   const [priceText, setPriceText] = useState(String(start.priceGbp));
@@ -52,7 +55,7 @@ export default function WhatIfs({ data, base, files, ev, heatPump }: Props) {
     return () => { clearTimeout(timer); ctrl.abort(); };
     // w and changed are the inputs; base and files are fixed for this answer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [w.sizeKwh, w.priceGbp, w.ev, w.heatPump]);
+  }, [w.sizeKwh, w.priceGbp, w.ev, w.heatPump, w.solar]);
 
   const typicalFor = (kwh: number) => sizes.find((r) => r.kwh === kwh)?.installed_cost ?? w.priceGbp;
 
@@ -70,6 +73,8 @@ export default function WhatIfs({ data, base, files, ev, heatPump }: Props) {
   };
   const tryPrice = (n: number) => { setPriceText(String(n)); setPriceEdited(true); setW((p) => ({ ...p, priceGbp: n })); };
   const reset = () => { setW(start); setPriceText(String(start.priceGbp)); setPriceEdited(false); setResult({ kind: "idle" }); };
+
+  const included = alreadyIncludedNote(ev, heatPump, solar);
 
   const priceNum = Number(priceText.replace(/[£,\s]/g, ""));
   const priceInvalid = !Number.isFinite(priceNum) || priceNum < PRICE_MIN || priceNum > PRICE_MAX;
@@ -145,12 +150,15 @@ export default function WhatIfs({ data, base, files, ev, heatPump }: Props) {
               A heat pump
             </label>
           )}
+          {solar !== "have" && (
+            <label className="flex items-center gap-2 text-slate-100">
+              <input type="checkbox" checked={w.solar} onChange={(e) => setW((p) => ({ ...p, solar: e.target.checked }))}
+                className="h-5 w-5 accent-[#f97316]" />
+              Solar panels (a typical home-sized set)
+            </label>
+          )}
         </div>
-        {(ev === "have" || heatPump === "have") && (
-          <p className="mt-2 text-sm text-slate-400">
-            Your {ev === "have" && heatPump === "have" ? "electric car and heat pump are" : ev === "have" ? "electric car is" : "heat pump is"} already included.
-          </p>
-        )}
+        {included && <p className="mt-2 text-sm text-slate-400">{included}</p>}
       </fieldset>
 
       <div aria-live="polite" className="mt-5">

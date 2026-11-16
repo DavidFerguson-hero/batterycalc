@@ -25,7 +25,8 @@ Content-Type: application/json
   "usage":     { "route": "estimate", "annual_kwh": 3500, "property_type": "semi", "heating_type": "gas" },
   "ev":        { "status": "planning", "annual_miles": 10000 },
   "heat_pump": { "status": "none" },
-  "tariff":    { "unit_rate_p": 28.16, "standing_charge_p": 53.0 },
+  "solar":     { "status": "have", "kwp": 4 },
+  "tariff":    { "unit_rate_p": 28.16, "standing_charge_p": 53.0, "export_rate_p": 15 },
   "battery":   {}
 }
 ```
@@ -58,10 +59,13 @@ Only `usage.route` is required (plus `usage.annual_kwh` on the estimate route). 
 | `heat_pump.status` | `"none"` | As for `ev.status` |
 | `heat_pump.heat_demand_kwh` | — | Annual heat demand; else `floor_area_m2` × the rate for `epc_rating` |
 | `heat_pump.efficiency` | 3.0 | kWh of heat per kWh of electricity |
+| `solar.status` | `"none"` | `none`, `have` (panels fitted), `planning` (panels to add). See [Solar](#solar) |
+| `solar.kwp` | 4 | Panel size in kWp (kilowatts peak), 0.5–20 |
+| `solar.orientation` | `"south"` | `south`, `south_east`, `south_west`, `east`, `west` |
 | `tariff.current_tariff_key` | — | If already on a time-of-use tariff (a key from `GET /api/tariffs`); else a flat rate |
 | `tariff.unit_rate_p` | from CSV, else 28.16 | Current unit rate, pence per kWh |
 | `tariff.standing_charge_p` | 53.0 | Pence per day |
-| `tariff.export_rate_p` | 0 | Pence per kWh for stored energy sold back |
+| `tariff.export_rate_p` | 0 | Pence per kWh for electricity sold back: spare solar and stored energy |
 | `battery.size_kwh` | — | Leave empty to get the **best-value** size |
 | `battery.price_gbp` | typical for the size | Installed price |
 | `battery.tariff_key` | best for the battery | Tariff to pair it with |
@@ -83,16 +87,16 @@ The sections appear in the order the results page shows them.
 | Field | What it holds | Results page |
 |---|---|---|
 | `schema_version` | `"2.0"` | — |
-| `usage` | Modelled annual kWh, days modelled, days found, `confidence` (`high`/`medium`/`low`/`estimate`), CSV `coverage`, EV/heat pump `extra_loads`, unit rate used | ConfidenceBadge |
+| `usage` | Modelled annual kWh, days modelled, days found, `confidence` (`high`/`medium`/`low`/`estimate`), CSV `coverage`, EV/heat pump `extra_loads`, unit rate used, `solar` (size, typical generation, whether it was modelled, kWh used at home and spare with no battery; `null` without panels). `annual_kwh` is the home's use before solar | ConfidenceBadge |
 | `recommendation` | Battery size, tariff, installed price; `chosen_by` is `best_value` or `you` | — |
 | `verdict` | `worth_it` (likely payback ≤ 70% of the warranty), `borderline` (≤ 100%), `not_yet` | VerdictCard |
 | `headline` | Installed cost range, year-1 battery saving, average yearly saving range, payback range, lifetime net gain range | HeadlineNumbers |
 | `break_even` | `years` 0–15 and the cumulative £ for `optimistic`, `likely`, `pessimistic` | BreakEvenChart |
-| `saving_breakdown` | `time_shifting`, `solar_storage`, `other` (stored energy sold back), `total` | SavingBreakdown |
+| `saving_breakdown` | `time_shifting`, `solar_storage` (spare solar stored and used at home, less the export income given up), `other` (stored energy sold back), `total` | SavingBreakdown |
 | `size_comparison` | `best_value` (with its `fair_price`), `smaller`, `larger`, `biggest_saving_kwh`, `all_sizes` | SizeComparison |
 | `tariff_check` | Current and best tariffs with and without a battery, `savings`, `battery_adds`, `switch_first`, `by_tariff` | TariffCheck |
 | `what_would_make_it_pay_back` | Only when `not_yet`: `price`, `switch_tariff`, `add_ev` levers | WhatIfs |
-| `day_in_life` | Half-hourly `load`, `grid_to_battery`, `from_battery`, `grid_to_home`, `battery_level` for an `average` day, plus `summer` and `winter` when dates are known | DayInLife |
+| `day_in_life` | Half-hourly `load`, `grid_to_battery`, `from_battery`, `grid_to_home`, `battery_level` for an `average` day, plus `summer` and `winter` when dates are known. With solar modelled, also `solar_generation`, `solar_to_battery` and `exported` (otherwise `null`) | DayInLife |
 | `context_costs` | Solar, heat pump (with grant) and EV charger price ranges | ContextPanel |
 | `fair_price` | Low/typical/high for the size, and where the given price sits | NextSteps |
 | `assumptions` | Battery life, warranty, wear, price growth, inverter replacement, verdict thresholds, `costs_as_of`, `tariffs_checked` | Assumptions |
@@ -102,7 +106,15 @@ The sections appear in the order the results page shows them.
 - **Battery saving** is what the battery saves **beyond the best tariff the home could switch to without one** (tariff check case B minus the chosen tariff with the battery). Money from switching tariff alone is not credited to the battery.
 - **Ranges** come from three cases: optimistic (low price, 5% a year energy price growth), likely (typical price, 3%), pessimistic (high price, 1%). Each year's saving allows for 2% a year capacity loss, and the inverter is replaced in year 10.
 - **Payback** is when the cumulative cash stays above zero for good; `null` means not within the battery's 15-year life.
+- **Solar** (see below) is taken off the usage before any of this, so every tariff, size and lever is worked out with the panels in place.
 - **Best value** is the size with the highest likely lifetime net gain, which is often not the size with the biggest saving.
+
+### Solar
+
+- **Generation** is about 850 kWh per kWp a year, split by a typical UK monthly yield (December ≈ 20, June ≈ 115 kWh per kWp) and spread over each day between sunrise and sunset for the month. East or west roofs make 82% of a south roof and peak 1½ hours earlier or later; south-east and south-west make 95%. There's no network call and no postcode: the v1 PVGIS fetcher (`engine/solar_fetcher.py`) is not used.
+- **Which usage is changed:** the generation is subtracted half-hour by half-hour on the estimate route (`have` or `planning`) and for `planning` on the upload route. For `have` on the upload route the meter readings already have the solar taken off, so they are used as they are and `usage.solar.modelled` is `false`. (Import readings don't show the spare solar that went to the grid, so the battery's solar saving isn't counted there.)
+- **Spare solar** first charges the battery; what doesn't fit is exported at `tariff.export_rate_p`. On days with spare solar, cheap-rate grid charging stops short of full to leave room. Stored solar can be used in any half-hour that isn't a cheap charging slot, including on a flat rate.
+- **Limits:** every day in a month is that month's average day, so bright and dull days aren't told apart. The model knows the day's generation in advance, as a forecast-driven battery would.
 
 ### Example (abridged)
 

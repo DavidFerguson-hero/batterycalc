@@ -6,6 +6,7 @@ export interface AssessRequest {
   battery?: BatteryInput;
   ev?: EVInput;
   heat_pump?: HeatPumpInput;
+  solar?: SolarInput;
   tariff?: TariffInput;
   usage: UsageInput;
 }
@@ -39,13 +40,27 @@ export interface HeatPumpInput {
   heat_demand_kwh?: number | null;
   status?: "none" | "have" | "planning";
 }
+export interface SolarInput {
+  /**
+   * Size of the panels in kWp (kilowatts peak).
+   */
+  kwp?: number;
+  /**
+   * Which way the panels face.
+   */
+  orientation?: "south" | "south_east" | "south_west" | "east" | "west";
+  /**
+   * "have": panels already fitted. "planning": panels you plan to add.
+   */
+  status?: "none" | "have" | "planning";
+}
 export interface TariffInput {
   /**
    * Leave empty for a flat rate at unit_rate_p and standing_charge_p.
    */
   current_tariff_key?: string | null;
   /**
-   * Pence per kWh for stored energy sold back.
+   * Pence per kWh for electricity sold back: spare solar and stored energy.
    */
   export_rate_p?: number;
   /**
@@ -131,11 +146,20 @@ export interface DayInLife {
 }
 export interface DayFlows {
   battery_level: number[];
+  /**
+   * Spare solar sent to the grid.
+   */
+  exported?: number[] | null;
   from_battery: number[];
   grid_to_battery: number[];
   grid_to_home: number[];
   label: string;
   load: number[];
+  /**
+   * Only when solar is modelled.
+   */
+  solar_generation?: number[] | null;
+  solar_to_battery?: number[] | null;
 }
 export interface FairPrice {
   as_of: string;
@@ -262,9 +286,34 @@ export interface UsageSummary {
   extra_loads: {} | null;
   route: "estimate" | "upload";
   /**
+   * None when there are no solar panels.
+   */
+  solar?: SolarSummary | null;
+  /**
    * Current unit rate used, pence per kWh.
    */
   unit_rate_p: number;
+}
+export interface SolarSummary {
+  /**
+   * Typical yearly generation for this size and direction.
+   */
+  annual_generation_kwh: number;
+  kwp: number;
+  /**
+   * True when generation was taken off the usage. False on the upload route with panels already fitted: the meter readings already include them.
+   */
+  modelled: boolean;
+  orientation: "south" | "south_east" | "south_west" | "east" | "west";
+  /**
+   * Solar left over with no battery, exported or stored. None when not modelled.
+   */
+  spare_kwh: number | null;
+  status: "none" | "have" | "planning";
+  /**
+   * Solar used as it's made, no battery. None when not modelled.
+   */
+  used_at_home_kwh: number | null;
 }
 export interface Levers {
   add_ev: VerdictChange | null;

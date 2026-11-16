@@ -100,12 +100,13 @@ export function hasNothing(home: HomeSetup): boolean {
 }
 
 /**
- * The parts of the v2 assess request this step decides. The API models EVs and heat
- * pumps directly; solar and an existing battery are context for the results page.
+ * The parts of the v2 assess request this step decides. The API models EVs, heat pumps
+ * and solar panels directly; an existing battery is context for the results page.
  */
 export function homeToRequest(home: HomeSetup): {
   ev: { status: Ownership };
   heat_pump: { status: Ownership };
+  solar: { status: Ownership };
 } {
-  return { ev: { status: home.ev }, heat_pump: { status: home.heat_pump } };
+  return { ev: { status: home.ev }, heat_pump: { status: home.heat_pump }, solar: { status: home.solar } };
 }

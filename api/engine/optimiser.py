@@ -26,6 +26,7 @@ def build_opt_matrix(
     selected_cost_gbp: float,
     inflation_pct: float = 5.0,
     current_sc_pd: float = 53.0,
+    export_rate: float = 0.0,
 ) -> dict:
     """
     Run simulation for every tariff in OPT_TARIFF_KEYS × every standard battery size (engine/costs.py).
@@ -51,6 +52,7 @@ def build_opt_matrix(
                 days=days,
                 current_rate=current_rate,
                 current_sc_pd=current_sc_pd,
+                export_rate=export_rate,
             )
             if sim is None:
                 continue
