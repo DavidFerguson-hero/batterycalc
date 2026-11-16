@@ -9,9 +9,9 @@
  * a quiet spell can take 30–60 seconds. Callers should show a "waking up" message
  * rather than treat a slow reply as an error.
  */
-import type { AssessRequest, AssessResponse } from "./api-v2-types";
+import type { AssessRequest, AssessResponse, UsageCheckResponse } from "./api-v2-types";
 
-export type { AssessRequest, AssessResponse } from "./api-v2-types";
+export type { AssessRequest, AssessResponse, UsageCheckResponse } from "./api-v2-types";
 
 export const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 
@@ -93,6 +93,17 @@ export async function assess(
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(inputs) },
     signal,
   );
+}
+
+/**
+ * Read uploaded usage files and report what was found (dates, days, gaps), without
+ * running the assessment. Each file gets its own ok/error, so one bad file doesn't
+ * hide the others. Processed in memory by the API; never stored.
+ */
+export async function checkUsage(files: File[], signal?: AbortSignal): Promise<UsageCheckResponse> {
+  const form = new FormData();
+  for (const f of files) form.append("files", f);
+  return request<UsageCheckResponse>("/api/v2/usage/check", { method: "POST", body: form }, signal);
 }
 
 /** A tariff as listed by GET /api/tariffs (for the tariff picker). */

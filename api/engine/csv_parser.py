@@ -82,11 +82,60 @@ def _find_col(columns: list[str], aliases: list[str]) -> str | None:
     return None
 
 
-def _to_uk_local(raw: pd.Series) -> pd.Series:
-    """Parse timestamps to naive UK local time. Offsets/Z are honoured; naive values are taken as UK local."""
+# Exports differ by supplier and app (Octopus, OVO, Bright/Glowmarkt, n3rgy...), so when no exact
+# name matches, columns are recognised by what their names contain.
+_NOT_CONSUMPTION = ("export", "generat", "cost", "£", "price", "rate", "cumulative", "register", "standing")
+
+
+def _find_consumption_col(df: pd.DataFrame) -> str | None:
+    exact = _find_col(list(df.columns), _CONSUMPTION_ALIASES)
+    if exact is not None:
+        return exact
+    for c in df.columns:
+        name = str(c).lower()
+        if any(w in name for w in ("kwh", "consumption", "usage", "import")) and \
+                not any(w in name for w in _NOT_CONSUMPTION):
+            if pd.to_numeric(df[c], errors="coerce").notna().mean() >= 0.9:
+                return c
+    return None
+
+
+def _find_time(df: pd.DataFrame) -> tuple[pd.Series | None, bool, bool]:
+    """
+    The column (or date + time pair) giving each reading's time. Returns (series, is_end, is_utc):
+    is_end means the time marks the end of the half-hour; is_utc means the column says it's UTC.
+    """
+    cols = list(df.columns)
+    utc = lambda c: "utc" in str(c).lower()   # noqa: E731
+    start = _find_col(cols, _START_ALIASES)
+    if start is not None:
+        return df[start], False, utc(start)
+    end = _find_col(cols, _END_ALIASES)
+    if end is not None:
+        return df[end], True, utc(end)
+    lower = {str(c).lower().strip(): c for c in cols}
+    for name, c in lower.items():
+        if any(w in name for w in ("timestamp", "datetime", "date time", "start", "interval", "period")) \
+                and "end" not in name:
+            return df[c], False, utc(c)
+    date_col = next((c for n, c in lower.items() if "date" in n), None)
+    time_col = next((c for n, c in lower.items() if "time" in n and "date" not in n), None)
+    if date_col is not None and time_col is not None:
+        joined = df[date_col].astype(str).str.strip() + " " + df[time_col].astype(str).str.strip()
+        return joined, False, utc(date_col) or utc(time_col)
+    if date_col is not None:
+        return df[date_col], False, utc(date_col)
+    return None, False, False
+
+
+def _to_uk_local(raw: pd.Series, assume_utc: bool = False) -> pd.Series:
+    """
+    Parse timestamps to naive UK local time. Offsets/Z are honoured; naive values are taken
+    as UK local, unless the column says they're UTC (assume_utc).
+    """
     text = raw.astype(str).str.strip()
     sample = text.dropna().head(20)
-    if any(_TZ_SUFFIX.search(s) for s in sample):
+    if assume_utc or any(_TZ_SUFFIX.search(s) for s in sample):
         ts = pd.to_datetime(text, utc=True, errors="coerce", format="mixed")
         return ts.dt.tz_convert(UK_TZ).dt.tz_localize(None)
     return pd.to_datetime(text, errors="coerce", dayfirst=True, format="mixed")
@@ -103,6 +152,29 @@ def _readings_by_date(local: pd.Series, kwh: list[float]) -> dict[date, list[flo
         day = out.setdefault(d, [None] * SLOTS)
         day[slot] = v if day[slot] is None else day[slot] + v
     return out
+
+
+def _to_half_hours(local: pd.Series, values: list[float]) -> tuple[pd.Series, list[float]]:
+    """
+    Check the reading interval. Half-hourly data passes through; hourly data (some supplier
+    apps) is split evenly into two half-hours; anything coarser can't show when electricity
+    was used, which is what a battery's value depends on, so it's rejected with a clear message.
+    """
+    ts = local.dropna().sort_values()
+    if len(ts) < 2:
+        return local, values
+    step = ts.diff().dropna().median()
+    if step <= pd.Timedelta(minutes=35):
+        return local, values
+    if step <= pd.Timedelta(minutes=65):
+        half = pd.Timedelta(minutes=30)
+        split_ts = pd.concat([local, local + half], ignore_index=True)
+        split_v = [v / 2 for v in values] * 2
+        return split_ts, split_v
+    raise ValueError(
+        "This file has one reading per day (or less), but we need half-hourly readings to see when "
+        "you use electricity. Please download half-hourly data, for example from the Bright app."
+    )
 
 
 def _nonexistent_slots(d: date) -> list[int]:
@@ -144,11 +216,12 @@ def parse_csv_bytes(raw: bytes, heating: str = "gas") -> ParseResult:
     df = pd.read_csv(io.BytesIO(raw))
     cols = list(df.columns)
 
-    cons_col = _find_col(cols, _CONSUMPTION_ALIASES)
+    cons_col = _find_consumption_col(df)
     if cons_col is None:
         raise ValueError(
-            f"Could not find consumption column. Expected one of: {_CONSUMPTION_ALIASES}. "
-            f"Found: {cols}"
+            "We couldn't find the electricity use (kWh) column in this file. "
+            f"Its columns are: {', '.join(str(c).strip() for c in cols)}. "
+            "Please upload the half-hourly usage export from your supplier or the Bright app."
         )
     cost_col = _find_col(cols, _COST_ALIASES)
 
@@ -156,15 +229,15 @@ def parse_csv_bytes(raw: bytes, heating: str = "gas") -> ParseResult:
     costs = pd.to_numeric(df[cost_col], errors="coerce").fillna(0.0).tolist() if cost_col else None
     rate = _infer_rate(values, costs)
 
-    start_col = _find_col(cols, _START_ALIASES)
-    end_col = _find_col(cols, _END_ALIASES)
+    times, is_end, is_utc = _find_time(df)
     local = None
-    if start_col is not None:
-        local = _to_uk_local(df[start_col])
-    elif end_col is not None:
-        local = _to_uk_local(df[end_col]) - pd.Timedelta(minutes=30)
+    if times is not None:
+        local = _to_uk_local(times, assume_utc=is_utc)
+        if is_end:
+            local = local - pd.Timedelta(minutes=30)
 
     if local is not None and local.notna().mean() >= 0.9:
+        local, values = _to_half_hours(local, values)
         readings = _readings_by_date(local, values)
         return build_year(readings, rate, heating)
 

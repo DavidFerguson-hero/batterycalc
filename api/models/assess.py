@@ -265,3 +265,36 @@ class AssessResponse(BaseModel):
     fair_price: FairPrice
     context_costs: dict[str, ContextCost]
     assumptions: Assumptions
+
+
+# ── Usage check (POST /api/v2/usage/check) ────────────────────────────────────
+
+class FileCheck(BaseModel):
+    name: str
+    ok: bool
+    error: Optional[str] = Field(None, description="Plain-English reason the file couldn't be used.")
+    days_found: Optional[int] = None
+    first_date: Optional[str] = None
+    last_date: Optional[str] = None
+
+
+class UsageCoverage(BaseModel):
+    has_dates: bool
+    first_date: Optional[str]
+    last_date: Optional[str]
+    days_found: int
+    complete_days: Optional[int]
+    partial_days_filled: Optional[int]
+    missing_days_filled: Optional[int]
+    half_hours_filled: Optional[int]
+    days_scaled_from_estimate: Optional[int]
+    days_dropped_older_than_a_year: Optional[int]
+    confidence: Confidence
+    annual_kwh_estimate: float
+    inferred_unit_rate_p: Optional[float] = Field(description="From a cost column, if the file has one.")
+
+
+class UsageCheckResponse(BaseModel):
+    schema_version: Literal["2.0"] = SCHEMA_VERSION
+    files: list[FileCheck]
+    combined: Optional[UsageCoverage] = Field(description="None when no file could be used.")

@@ -285,3 +285,42 @@ export interface PriceLever {
   price_for_payback_within_warranty: number | null;
   price_for_worth_it: number | null;
 }
+
+
+export interface UsageCheckResponse {
+  /**
+   * None when no file could be used.
+   */
+  combined: UsageCoverage | null;
+  files: FileCheck[];
+  schema_version?: "2.0";
+}
+export interface UsageCoverage {
+  annual_kwh_estimate: number;
+  complete_days: number | null;
+  confidence: "high" | "medium" | "low" | "estimate";
+  days_dropped_older_than_a_year: number | null;
+  days_found: number;
+  days_scaled_from_estimate: number | null;
+  first_date: string | null;
+  half_hours_filled: number | null;
+  has_dates: boolean;
+  /**
+   * From a cost column, if the file has one.
+   */
+  inferred_unit_rate_p: number | null;
+  last_date: string | null;
+  missing_days_filled: number | null;
+  partial_days_filled: number | null;
+}
+export interface FileCheck {
+  days_found?: number | null;
+  /**
+   * Plain-English reason the file couldn't be used.
+   */
+  error?: string | null;
+  first_date?: string | null;
+  last_date?: string | null;
+  name: string;
+  ok: boolean;
+}
