@@ -1,23 +1,20 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
 import BackLink from "@/components/check/BackLink";
+import EstimateStep from "@/components/check/EstimateStep";
 
-/** Placeholder: built in task 2.5. */
+/** Route B — quick estimate from the EPC register and a couple of questions (story H3). */
 export default function CheckEstimate() {
   return (
     <section aria-labelledby="estimate-heading">
-      <h1 id="estimate-heading" className="mb-4 text-3xl font-bold tracking-tight">Quick estimate</h1>
-      <p className="mb-6 text-lg text-slate-300">
-        This step, using your Energy Performance Certificate (EPC), is still being built. Until it&apos;s ready, please use the classic calculator.
+      <h1 id="estimate-heading" className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Quick estimate</h1>
+      <p className="mb-8 text-lg leading-relaxed text-slate-300">
+        We&apos;ll estimate how much electricity your home uses from its details. It takes about two minutes.
       </p>
-      <Link
-        href="/calculator"
-        className="mb-8 inline-block rounded-full bg-[#f97316] px-6 py-3 font-semibold text-[#0a1628] hover:bg-[#fb8a3c]"
-      >
-        Go to the classic calculator
-      </Link>
-      <p>
+      <Suspense fallback={<p className="text-slate-300">Loading…</p>}>
+        <EstimateStep />
+      </Suspense>
+      <p className="mt-10">
         <Suspense>
           <BackLink href="/check/usage">Choose a different way</BackLink>
         </Suspense>
