@@ -66,7 +66,7 @@ export default function UploadStep() {
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); onPicked(e.dataTransfer.files); }}
-        className={`relative rounded-xl border-2 border-dashed p-6 text-center transition-colors has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-4 has-[input:focus-visible]:outline-[#f97316] ${
+        className={`relative rounded-xl border-2 border-dashed p-6 text-center transition-colors has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-4 has-[input:focus-visible]:outline-white ${
           dragging ? "border-[#f97316] bg-[#f97316]/10" : "border-slate-500 bg-[#0f1f38]"
         }`}
       >
@@ -109,7 +109,7 @@ export default function UploadStep() {
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  className="shrink-0 rounded px-2 py-1 text-sm text-slate-300 underline-offset-4 hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f97316]"
+                  className="shrink-0 rounded px-2 py-1 text-sm text-slate-300 underline-offset-4 hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
                 >
                   Remove<span className="sr-only"> {f.name}</span>
                 </button>

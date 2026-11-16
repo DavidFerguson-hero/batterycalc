@@ -105,10 +105,10 @@ function TariffRow({ t }: { t: TariffResult }) {
               </span>
             ) : null}
           </div>
-          <div className="text-xs text-slate-500 mt-0.5">{t.source}</div>
+          <div className="text-xs text-slate-400 mt-0.5">{t.source}</div>
         </div>
         {hasDetail && (
-          <svg className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         )}
@@ -137,12 +137,12 @@ function TariffRow({ t }: { t: TariffResult }) {
           {t.current_rates && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div className="bg-white/5 rounded px-3 py-2">
-                <div className="text-slate-500 mb-1">Current in tariffs.py</div>
+                <div className="text-slate-400 mb-1">Current in tariffs.py</div>
                 <div className="text-slate-300 font-mono">{fmtRates(t.current_rates)}</div>
               </div>
               {t.found_rates && (
                 <div className={`rounded px-3 py-2 ${t.status === 'changed' ? 'bg-orange-500/10' : 'bg-white/5'}`}>
-                  <div className="text-slate-500 mb-1">Found from source</div>
+                  <div className="text-slate-400 mb-1">Found from source</div>
                   <div className={`font-mono ${t.status === 'changed' ? 'text-orange-300' : 'text-slate-300'}`}>
                     {fmtRates(t.found_rates)}
                   </div>
@@ -180,7 +180,7 @@ function TariffRow({ t }: { t: TariffResult }) {
 
           {/* Product code */}
           {t.product_code && (
-            <div className="text-xs text-slate-600 font-mono">Product code: {t.product_code}</div>
+            <div className="text-xs text-slate-400 font-mono">Product code: {t.product_code}</div>
           )}
         </div>
       )}
@@ -213,7 +213,7 @@ function RunCard({ run }: { run: Run }) {
             <span className="text-sm font-semibold text-white">{fmtDate(run.timestamp)}</span>
             <span className={`text-xs font-medium ${cfg.text}`}>{cfg.label}</span>
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
             {run.summary.ok      > 0 && <span className="text-emerald-500">{run.summary.ok} no change</span>}
             {run.summary.changed > 0 && <span className="text-orange-400 font-medium">{run.summary.changed} changed</span>}
             {run.summary.manual  > 0 && <span>{run.summary.manual} manual</span>}
@@ -222,7 +222,7 @@ function RunCard({ run }: { run: Run }) {
         </div>
 
         {/* Expand chevron */}
-        <svg className={`w-4 h-4 text-slate-500 shrink-0 mt-1 sm:mt-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className={`w-4 h-4 text-slate-400 shrink-0 mt-1 sm:mt-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -297,23 +297,23 @@ export default function TariffUpdatesPage() {
           <div className="mt-6 flex flex-wrap gap-4">
             <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-center min-w-[100px]">
               <div className="text-2xl font-bold text-white">{totalRuns}</div>
-              <div className="text-xs text-slate-500 mt-0.5">Runs logged</div>
+              <div className="text-xs text-slate-400 mt-0.5">Runs logged</div>
             </div>
             {latest && (
               <>
                 <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-center min-w-[100px]">
                   <div className="text-2xl font-bold text-emerald-400">{latest.summary.ok}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">Up to date</div>
+                  <div className="text-xs text-slate-400 mt-0.5">Up to date</div>
                 </div>
                 <div className={`bg-white/5 border rounded-lg px-4 py-3 text-center min-w-[100px] ${latest.summary.changed > 0 ? 'border-orange-500/30' : 'border-white/10'}`}>
-                  <div className={`text-2xl font-bold ${latest.summary.changed > 0 ? 'text-orange-400' : 'text-slate-500'}`}>
+                  <div className={`text-2xl font-bold ${latest.summary.changed > 0 ? 'text-orange-400' : 'text-slate-400'}`}>
                     {latest.summary.changed}
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5">Need update</div>
+                  <div className="text-xs text-slate-400 mt-0.5">Need update</div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-center min-w-[100px]">
                   <div className="text-2xl font-bold text-slate-400">{latest.summary.manual}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">Manual check</div>
+                  <div className="text-xs text-slate-400 mt-0.5">Manual check</div>
                 </div>
               </>
             )}
@@ -332,7 +332,7 @@ export default function TariffUpdatesPage() {
             <div key={item.title} className="bg-white/[0.03] border border-white/8 rounded-xl p-4">
               <div className="text-xl mb-2">{item.icon}</div>
               <div className="text-sm font-semibold text-white mb-1">{item.title}</div>
-              <div className="text-xs text-slate-500 leading-relaxed">{item.desc}</div>
+              <div className="text-xs text-slate-400 leading-relaxed">{item.desc}</div>
             </div>
           ))}
         </div>
@@ -342,11 +342,11 @@ export default function TariffUpdatesPage() {
       <section className="max-w-6xl mx-auto px-6 pb-20">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Run history</h2>
-          {data && <span className="text-xs text-slate-500">{totalRuns} run{totalRuns !== 1 ? 's' : ''} · last 90 days</span>}
+          {data && <span className="text-xs text-slate-400">{totalRuns} run{totalRuns !== 1 ? 's' : ''} · last 90 days</span>}
         </div>
 
         {loading && (
-          <div className="text-slate-500 text-sm py-12 text-center">Loading…</div>
+          <div className="text-slate-400 text-sm py-12 text-center">Loading…</div>
         )}
 
         {error && (
@@ -354,7 +354,7 @@ export default function TariffUpdatesPage() {
         )}
 
         {data && data.runs.length === 0 && (
-          <div className="text-slate-500 text-sm py-12 text-center">
+          <div className="text-slate-400 text-sm py-12 text-center">
             No runs yet. The checker runs nightly at 02:00 UTC, or can be triggered manually from GitHub Actions.
           </div>
         )}
@@ -368,7 +368,7 @@ export default function TariffUpdatesPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-sm">
           <span>© {new Date().getFullYear()} BatterySizer</span>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-slate-300 transition-colors">Home</Link>

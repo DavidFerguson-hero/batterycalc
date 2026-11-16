@@ -38,7 +38,7 @@ export default function BreakEvenChart({ data }: { data: AssessResponse }) {
 
       <div className="h-72 w-full rounded-xl border border-slate-700 bg-[#0f1f38] p-2 sm:p-4" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={rows} margin={{ top: 10, right: 12, bottom: 4, left: 4 }}>
+          <ComposedChart accessibilityLayer={false} data={rows} margin={{ top: 10, right: 12, bottom: 4, left: 4 }}>
             <CartesianGrid stroke="#1e3354" vertical={false} />
             <XAxis dataKey="year" type="number" domain={[0, life]} ticks={be.years} allowDecimals={false}
               tick={{ fill: "#cbd5e1", fontSize: 12 }} stroke="#475569"
@@ -65,7 +65,7 @@ export default function BreakEvenChart({ data }: { data: AssessResponse }) {
 
       <details className="mt-3">
         <summary className="cursor-pointer text-sm text-slate-200 underline underline-offset-4">Show the figures as a table</summary>
-        <div className="mt-2 max-h-72 overflow-auto rounded-lg border border-slate-700">
+        <div className="mt-2 max-h-72 overflow-auto rounded-lg border border-slate-700" tabIndex={0} role="region" aria-label="Money position by year">
           <table className="w-full text-right text-sm">
             <caption className="sr-only">Cumulative money position by year</caption>
             <thead className="sticky top-0 bg-[#13233d] text-slate-200">

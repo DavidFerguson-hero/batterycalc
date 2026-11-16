@@ -54,7 +54,7 @@ export default function DayInLife({ data }: { data: AssessResponse }) {
 
       <div className="h-72 w-full rounded-xl border border-slate-700 bg-[#0f1f38] p-2 sm:p-4" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+          <ComposedChart accessibilityLayer={false} data={rows} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
             <CartesianGrid stroke="#1e3354" vertical={false} />
             <XAxis dataKey="t" interval={7} tick={{ fill: "#cbd5e1", fontSize: 12 }} stroke="#475569" />
             <YAxis yAxisId="flow" tick={{ fill: "#cbd5e1", fontSize: 12 }} stroke="#475569" width={40}

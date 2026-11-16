@@ -70,7 +70,7 @@ export default function Term({ k, children }: { k: GlossaryKey; children?: React
           if (hoverOpened.current) { hoverOpened.current = false; setOpen(true); }   // pin it open
           else setOpen((v) => !v);
         }}
-        className="underline decoration-dotted decoration-2 underline-offset-4 decoration-[#f97316] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316] rounded-sm cursor-help"
+        className="underline decoration-dotted decoration-2 underline-offset-4 decoration-[#f97316] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded-sm cursor-help"
       >
         {children ?? entry.label}
         <span className="sr-only"> (what does this mean?)</span>

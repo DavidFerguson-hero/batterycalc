@@ -74,7 +74,7 @@ export default function SupplierHowTo() {
         id={selectId}
         value={supplier}
         onChange={(e) => setSupplier(e.target.value as SupplierKey | "")}
-        className="mb-4 w-full rounded-lg border border-slate-500 bg-[#0a1628] px-3 py-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316] sm:w-80"
+        className="mb-4 w-full rounded-lg border border-slate-500 bg-[#0a1628] px-3 py-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-80"
       >
         <option value="">Choose your supplier</option>
         {(Object.keys(SUPPLIERS) as SupplierKey[]).map((k) => (

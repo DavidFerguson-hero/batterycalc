@@ -26,7 +26,7 @@ export default function CheckLayout({ children }: { children: React.ReactNode })
       <WarmUp />
       <header className="border-b border-slate-800">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/" aria-label="BatterySizer home" className="rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f97316]">
+          <Link href="/" aria-label="BatterySizer home" className="rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
             <Image src="/batterysizer-logo.png" alt="BatterySizer" width={180} height={42} priority />
           </Link>
           <Link

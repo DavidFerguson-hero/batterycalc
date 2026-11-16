@@ -61,7 +61,7 @@ export default function Home() {
           </Link>
           <Link
             href="/calculator"
-            className="hidden sm:inline-flex items-center gap-2 bg-[#f97316] hover:bg-[#ea6c0a] text-white font-semibold px-5 py-2.5 rounded-full transition-colors text-sm"
+            className="hidden sm:inline-flex items-center gap-2 bg-[#f97316] hover:bg-[#fb8a3c] text-[#0a1628] font-semibold px-5 py-2.5 rounded-full transition-colors text-sm"
           >
             Get My Recommendation
           </Link>
@@ -83,7 +83,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/calculator"
-              className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#ea6c0a] text-white font-semibold px-8 py-4 rounded-full transition-colors text-lg"
+              className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#fb8a3c] text-[#0a1628] font-semibold px-8 py-4 rounded-full transition-colors text-lg"
             >
               Get My Free Recommendation
               <svg className="w-5 h-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -250,7 +250,7 @@ export default function Home() {
           </p>
           <Link
             href="/calculator"
-            className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#ea6c0a] text-white font-bold px-10 py-5 rounded-full transition-colors text-xl"
+            className="inline-flex items-center justify-center gap-2 bg-[#f97316] hover:bg-[#fb8a3c] text-[#0a1628] font-bold px-10 py-5 rounded-full transition-colors text-xl"
           >
             Get My Free Recommendation
             <svg className="w-5 h-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -262,7 +262,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-slate-700/50 bg-[#0a1628] py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-sm">
           <Link href="/" aria-label="BatterySizer home">
             <Image
               src="/batterysizer-logo.png"
