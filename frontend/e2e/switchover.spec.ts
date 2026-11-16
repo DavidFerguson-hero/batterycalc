@@ -28,3 +28,11 @@ test("/check is indexable", async ({ page }) => {
   await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute("content", /noindex/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://www.batterysizer.co.uk/check");
 });
+
+test("every footer link leads to a real page", async ({ page, request }) => {
+  await page.goto("/");
+  const hrefs = await page.getByRole("navigation", { name: "Footer navigation" }).locator("a")
+    .evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+  expect(hrefs).toEqual(["/check", "/how-we-calculate", "/tariff-updates", "/privacy", "/legal", "/contact"]);
+  for (const h of hrefs) expect((await request.get(h!)).status(), h!).toBe(200);
+});

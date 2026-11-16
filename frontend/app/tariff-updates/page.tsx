@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { FooterLinks } from '@/components/InfoPage'
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface TariffResult {
@@ -370,10 +372,7 @@ export default function TariffUpdatesPage() {
       <footer className="border-t border-white/5 py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-sm">
           <span>© {new Date().getFullYear()} BatterySizer</span>
-          <div className="flex gap-6">
-            <Link href="/" className="hover:text-slate-300 transition-colors">Home</Link>
-            <Link href="/check" className="hover:text-slate-300 transition-colors">Check your home</Link>
-          </div>
+          <FooterLinks />
         </div>
       </footer>
     </div>

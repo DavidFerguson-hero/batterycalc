@@ -1,6 +1,8 @@
 "use client";
 
 
+import Link from "next/link";
+
 import Term from "@/components/Term";
 import ShareBar from "@/components/results/Share";
 import type { AssessResponse } from "@/lib/api";
@@ -276,7 +278,8 @@ export function Assumptions({ data }: { data: AssessResponse }) {
         </dl>
         <p className={`mt-4 ${sub}`}>
           Savings are compared with the best tariff you could switch to without a battery.
-          Figures are estimates, not financial advice.
+          Figures are estimates, not financial advice.{" "}
+          <Link href="/how-we-calculate" className="text-white underline underline-offset-4">How we calculate</Link>
         </p>
       </details>
     </section>

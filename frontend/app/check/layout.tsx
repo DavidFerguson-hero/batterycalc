@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import StepProgress from "@/components/check/StepProgress";
+import { FooterLinks } from "@/components/InfoPage";
 import WarmUp from "@/components/check/WarmUp";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default function CheckLayout({ children }: { children: React.ReactNode })
           Free and independent. Your usage data is used only to work out your answer and is never stored.
           Figures are estimates, not financial advice.
         </p>
+        <FooterLinks className="mt-4" />
       </footer>
     </div>
   );
