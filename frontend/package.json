@@ -13,6 +13,7 @@
     "test:a11y": "playwright test"
   },
   "dependencies": {
+    "@vercel/analytics": "2.0.1",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

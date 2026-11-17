@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
+import { countStep } from "@/lib/analytics";
 import { ApiError, type AssessResponse, assess } from "@/lib/api";
 import { ukDate } from "@/lib/format";
 import { buildAssessRequest } from "@/lib/request";
@@ -50,7 +51,10 @@ export default function ResultsView() {
     const slow = setTimeout(() => setState((s) => (s && s.kind === "loading" && s.key === key ? { ...s, slow: true } : s)), 5000);
     Promise.resolve().then(() => setState({ kind: "loading", key, slow: false }));
     assess(built.request, built.request.usage.route === "upload" ? files : [], ctrl.signal)
-      .then((data) => setState({ kind: "done", key, data }))
+      .then((data) => {
+        setState({ kind: "done", key, data });
+        countStep("Result shown", { route: data.usage.route, verdict: data.verdict });
+      })
       .catch((e) => {
         if (ctrl.signal.aborted) return;
         setState({ kind: "error", key, message: e instanceof ApiError ? e.message : "Something went wrong working out your answer." });

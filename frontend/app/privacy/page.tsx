@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <InfoPage
       title="Privacy"
-      intro={<p>The short version: no account, no cookies, no tracking. Your smart meter data is used to work out your answer and then thrown away. It&apos;s never stored.</p>}
+      intro={<p>The short version: no account, no cookies, no advertising trackers. Your smart meter data is used to work out your answer and then thrown away. It&apos;s never stored.</p>}
     >
       <h2>Who we are</h2>
       <p>
@@ -49,6 +49,16 @@ export default function PrivacyPage() {
             </td>
           </tr>
           <tr>
+            <td>Which pages are visited</td>
+            <td>
+              Counted with Vercel Web Analytics, which uses no cookies and doesn&apos;t identify you. We send only the page&apos;s
+              address without your answers (for example <code>/check/results</code>), plus a few anonymous steps such as
+              which route you chose and whether you shared your result. Vercel tells repeat visits apart for a day using a
+              scrambled code it then discards. It also records your rough location (such as town), browser, device type and
+              the website that linked you here.
+            </td>
+          </tr>
+          <tr>
             <td>Your IP address (your connection&apos;s internet address)</td>
             <td>
               Seen by our hosting providers in their standard server logs. Our server also holds it in memory for up to an
@@ -58,13 +68,13 @@ export default function PrivacyPage() {
         </tbody>
       </table>
       <p>
-        We don&apos;t use cookies, analytics or advertising trackers, and we don&apos;t sell or share your information. If we
-        add privacy-friendly visitor counts, this page will say so first.
+        We don&apos;t use cookies or advertising trackers, and we don&apos;t sell or share your information. The visitor
+        counts above are only ever seen as totals.
       </p>
 
       <h2>Who else handles it</h2>
       <ul>
-        <li><strong>Vercel</strong> hosts the website.</li>
+        <li><strong>Vercel</strong> hosts the website and counts visits.</li>
         <li><strong>Render</strong> hosts the calculation server.</li>
         <li><strong>Anthropic</strong> writes the AI summary.</li>
         <li><strong>The EPC register</strong> (Ministry of Housing, Communities and Local Government) answers postcode lookups.</li>

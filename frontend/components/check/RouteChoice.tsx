@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { countStep } from "@/lib/analytics";
+
 import Term from "@/components/Term";
 import { ROUTE_PATHS, type Route, parseJourney, stepHref, withRoute } from "@/lib/journey";
 
@@ -66,6 +68,7 @@ export default function RouteChoice() {
                 <h2 id={headingId} className="mb-1 text-xl font-semibold text-white">
                   <Link
                     href={stepHref(ROUTE_PATHS[route], withRoute(route, query))}
+                    onClick={() => countStep("Route chosen", { route })}
                     aria-describedby={`${headingId}-meta`}
                     className="outline-none after:absolute after:inset-0 after:rounded-xl after:content-['']"
                   >
