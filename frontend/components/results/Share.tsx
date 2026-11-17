@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { countStep } from "@/lib/analytics";
 import { shareNote } from "@/lib/summary";
 
 const primary =
@@ -16,6 +17,7 @@ export default function ShareBar({ route, compact = false }: { route: "estimate"
     try {
       await navigator.clipboard.writeText(window.location.href);
       setStatus("Link copied.");
+      countStep("Share", { method: "link", route });
     } catch {
       setStatus("Couldn't copy. Copy the address from your browser's address bar instead.");
     }
@@ -25,7 +27,7 @@ export default function ShareBar({ route, compact = false }: { route: "estimate"
       {!compact && <p className="mb-3 text-sm text-slate-300">{shareNote(route)}</p>}
       <div className="flex flex-wrap gap-3">
         <button type="button" onClick={copy} className={primary}>Copy link</button>
-        <button type="button" onClick={() => window.print()} className={secondary}>Save as PDF or print</button>
+        <button type="button" onClick={() => { countStep("Share", { method: "print", route }); window.print(); }} className={secondary}>Save as PDF or print</button>
       </div>
       <p role="status" className="mt-2 min-h-5 text-sm text-slate-300">{status}</p>
     </div>

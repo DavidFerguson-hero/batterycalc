@@ -1,0 +1,87 @@
+name: Uptime check
+
+# Task 3.3. Every 10 minutes: is the website up, and does the API answer /health and work out an
+# estimate? When something breaks it opens one GitHub issue labelled "uptime", which GitHub emails
+# to the repo's watchers (the owner by default). When everything works again it comments and closes
+# the issue. So there's one email when it goes down and one when it recovers, not one every
+# 10 minutes. The checks also keep the Render API awake, so visitors don't wait for it to start.
+# GitHub can run scheduled jobs a few minutes late; that's fine for this.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+env:
+  SITE: https://www.batterysizer.co.uk
+  API: https://batterysizer-api.onrender.com
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check the site and the API
+        id: check
+        run: |
+          problems=()
+          # fetch <curl args...>: up to 3 tries, 90 s each (a sleeping Render service can take
+          # about a minute to start). The response body is left in /tmp/body.
+          fetch() {
+            for attempt in 1 2 3; do
+              curl -fsS --max-time 90 -o /tmp/body "$@" && return 0
+              sleep 10
+            done
+            return 1
+          }
+          if ! fetch "$API/health" || ! grep -q '"ok"' /tmp/body; then
+            problems+=("API /health")
+          fi
+          if ! fetch -X POST -H 'content-type: application/json' \
+              -d '{"usage":{"route":"estimate","annual_kwh":3500,"property_type":"semi"},"tariff":{}}' \
+              "$API/api/v2/assess" || ! grep -q '"verdict"' /tmp/body; then
+            problems+=("API estimate (POST /api/v2/assess)")
+          fi
+          fetch "$SITE/" || problems+=("Website home page")
+          fetch "$SITE/check" || problems+=("Website /check")
+          if [ ${#problems[@]} -eq 0 ]; then
+            echo "status=up" >> "$GITHUB_OUTPUT"
+            echo "All checks passed."
+          else
+            echo "status=down" >> "$GITHUB_OUTPUT"
+            { echo 'problems<<EOF'; printf -- '- %s\n' "${problems[@]}"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
+            printf 'Failed: %s\n' "${problems[@]}"
+          fi
+
+      - name: Open or update the alert issue
+        if: steps.check.outputs.status == 'down'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PROBLEMS: ${{ steps.check.outputs.problems }}
+        run: |
+          gh label create uptime --color B60205 --description "Uptime check alerts" 2>/dev/null || true
+          open=$(gh issue list --label uptime --state open --json number -q '.[0].number')
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          if [ -z "$open" ]; then
+            gh issue create --label uptime --title "BatterySizer is down" --body "$(printf 'The uptime check failed at %s UTC:\n\n%s\n\nRun: %s\n\nThis issue closes itself when the checks pass again.' "$(date -u '+%Y-%m-%d %H:%M')" "$PROBLEMS" "$run")"
+          else
+            echo "Already reported in issue #$open."
+          fi
+
+      - name: Close the alert issue on recovery
+        if: steps.check.outputs.status == 'up'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for n in $(gh issue list --label uptime --state open --json number -q '.[].number'); do
+            gh issue close "$n" --comment "Back up: all checks passed at $(date -u '+%Y-%m-%d %H:%M') UTC."
+          done
