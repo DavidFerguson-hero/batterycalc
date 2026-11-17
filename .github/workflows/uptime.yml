@@ -1,10 +1,11 @@
 name: Uptime check
 
-# Task 3.3. Every 10 minutes: is the website up, and does the API answer /health and work out an
-# estimate? When something breaks it opens one GitHub issue labelled "uptime", which GitHub emails
-# to the repo's watchers (the owner by default). When everything works again it comments and closes
-# the issue. So there's one email when it goes down and one when it recovers, not one every
-# 10 minutes. The checks also keep the Render API awake, so visitors don't wait for it to start.
+# Task 3.3. Every 10 minutes: is the website up, does the API answer /health with its optional
+# features (EPC lookup, AI summary) switched on, and can it work out an estimate?
+# When something breaks it opens one GitHub issue labelled "uptime", which GitHub emails to the
+# repo's watchers (the owner by default). When everything works again it comments and closes the
+# issue. So there's one email when it goes down and one when it recovers, not one every 10 minutes.
+# The checks also keep the Render API awake, so visitors don't wait for it to start.
 # GitHub can run scheduled jobs a few minutes late; that's fine for this.
 
 on:
@@ -43,6 +44,10 @@ jobs:
           }
           if ! fetch "$API/health" || ! grep -q '"ok"' /tmp/body; then
             problems+=("API /health")
+          else
+            # Features that need a key set on Render. Off means visitors silently lose them.
+            grep -q '"epc_lookup":true' /tmp/body || problems+=("EPC postcode lookup is off: set EPC_API_TOKEN on Render")
+            grep -q '"ai_summary":true' /tmp/body || problems+=("AI summary is off: set ANTHROPIC_API_KEY on Render")
           fi
           if ! fetch -X POST -H 'content-type: application/json' \
               -d '{"usage":{"route":"estimate","annual_kwh":3500,"property_type":"semi"},"tariff":{}}' \

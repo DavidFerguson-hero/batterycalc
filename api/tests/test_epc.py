@@ -90,7 +90,9 @@ def test_bad_postcode_is_rejected_before_calling_out(fake_epc):
 
 def test_not_configured(monkeypatch):
     monkeypatch.delenv("EPC_API_TOKEN", raising=False)
-    assert client.get("/api/epc/lookup", params={"postcode": "AB1 2CD"}).status_code == 503
+    r = client.get("/api/epc/lookup", params={"postcode": "AB1 2CD"})
+    assert r.status_code == 503
+    assert r.json()["detail"] == "Looking up homes by postcode isn't available right now."   # plain English, no server jargon
 
 
 @pytest.mark.parametrize("status,expected", [(401, 503), (403, 503), (429, 503), (500, 502)])

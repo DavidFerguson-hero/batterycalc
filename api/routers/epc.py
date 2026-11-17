@@ -29,6 +29,8 @@ from engine.profile_estimator import SUGGESTED_KWH
 router = APIRouter(tags=["epc"])
 
 EPC_API = "https://api.get-energy-performance-data.communities.gov.uk"
+# Shown to homeowners (followed by "Please enter your home's details below instead."), so no server jargon.
+LOOKUP_OFF = "Looking up homes by postcode isn't available right now."
 TIMEOUT_S = 10.0
 MAX_HOMES = 40          # homes shown per postcode (newest certificate per address)
 CONCURRENCY = 8         # certificate fetches in flight at once (service limit: 6000 per 5 minutes)
@@ -54,8 +56,8 @@ async def _get_json(client: httpx.AsyncClient, path: str, params: dict) -> tuple
 
 
 def _raise_for(status: int) -> None:
-    if status in (401, 403):
-        raise EpcUnavailable(503, "EPC lookup isn't authorised on this server (check EPC_API_TOKEN).")
+    if status in (401, 403):   # the token is missing, wrong or expired: fix EPC_API_TOKEN on the server
+        raise EpcUnavailable(503, LOOKUP_OFF)
     if status == 429:
         raise EpcUnavailable(503, "The EPC register is busy. Please try again in a minute.")
     raise EpcUnavailable(502, "The EPC register returned an unexpected error. Please try again later.")
@@ -290,7 +292,7 @@ def normalise_postcode(postcode: str) -> str:
 async def epc_lookup(postcode: str = Query(..., min_length=5, max_length=10)):
     token = os.getenv("EPC_API_TOKEN", "")
     if not token:
-        raise HTTPException(status_code=503, detail="EPC lookup is not configured on this server.")
+        raise HTTPException(status_code=503, detail=LOOKUP_OFF)   # EPC_API_TOKEN isn't set
     pc = normalise_postcode(postcode)
     try:
         homes = await lookup_postcode(pc, token)
