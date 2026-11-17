@@ -57,4 +57,11 @@ app.include_router(summary.router,   prefix="/api")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    """Up, plus which optional features have their keys set (the uptime check alerts when one is off)."""
+    return {
+        "status": "ok",
+        "features": {
+            "epc_lookup": bool(os.environ.get("EPC_API_TOKEN")),
+            "ai_summary": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        },
+    }

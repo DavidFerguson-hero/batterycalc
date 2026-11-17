@@ -95,6 +95,7 @@ Both sides deploy themselves from **`main`**. Work happens on a branch and reach
 - **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the API tests, the tariff checker tests, and the frontend checks (API types, unit tests, lint, build, accessibility) on every pull request.
 - **Uptime** ([`.github/workflows/uptime.yml`](.github/workflows/uptime.yml)):
   - Every 10 minutes it checks the API's `/health`, a real estimate, and the website.
+  - `/health` also reports whether the EPC lookup and AI summary have their keys set. If either is off, that counts as a failure, so a missing key on Render doesn't go unnoticed.
   - If something fails, it opens one GitHub issue labelled `uptime`, which GitHub emails to the repo's watchers. It closes the issue when everything works again.
   - It also keeps the free Render service from going to sleep.
 
