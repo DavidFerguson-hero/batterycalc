@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+import { FooterLinks } from "@/components/InfoPage";
+
 export const metadata: Metadata = {
   title: "Free Solar & Battery Calculator for UK Homeowners — BatterySizer",
   description:
@@ -273,12 +275,7 @@ export default function Home() {
             />
           </Link>
           <p>© {new Date().getFullYear()} BatterySizer. All rights reserved.</p>
-          <nav aria-label="Footer navigation">
-            <ul className="flex gap-5 text-xs list-none">
-              <li><Link href="/check" className="hover:text-slate-300 transition-colors">Check your home</Link></li>
-              <li><Link href="/tariff-updates" className="hover:text-slate-300 transition-colors">Tariff updates</Link></li>
-            </ul>
-          </nav>
+          <FooterLinks />
         </div>
       </footer>
     </div>

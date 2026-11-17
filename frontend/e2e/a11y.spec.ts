@@ -24,6 +24,10 @@ const PAGES: { name: string; path: string; ready: string }[] = [
   { name: "confirm", path: "/check/confirm?kwh=3000&prop=semi&route=estimate&tariff=octopusGo", ready: "h1" },
   { name: "results", path: "/check/results?kwh=3000&prop=semi&route=estimate&tariff=octopusGo", ready: "#verdict-heading" },
   { name: "tariff updates", path: "/tariff-updates", ready: "h1" },
+  { name: "how we calculate", path: "/how-we-calculate", ready: "h1" },
+  { name: "privacy", path: "/privacy", ready: "h1" },
+  { name: "legal", path: "/legal", ready: "h1" },
+  { name: "contact", path: "/contact", ready: "h1" },
 ];
 
 /** Answer every API call from fixtures, so the pages render the same everywhere. */
